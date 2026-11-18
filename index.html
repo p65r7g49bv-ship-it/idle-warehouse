@@ -3,62 +3,58 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Idle Warehouse 0.4</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Idle Warehouse 0.4.1</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#111820;color:#e9eef3;font-family:Arial,sans-serif}
-header{padding:15px 18px;background:#1b2733;border-bottom:2px solid #34485a}
-h1{margin:0;font-size:23px}
-header small{color:#9fb1c1}
+body{margin:0;background:#111a22;color:#eaf0f4;font-family:Arial,sans-serif}
+header{padding:15px;background:#1b2935;border-bottom:2px solid #3d5365}
+h1{font-size:23px;margin:0}
+header small{color:#9bafbf}
 main{max-width:1250px;margin:auto;padding:12px}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-.stat,.panel{background:#202d39;border:1px solid #394c5d;border-radius:9px;padding:12px}
-.stat span{display:block;color:#9eb0c0;font-size:12px;margin-bottom:5px}
+.stat,.panel{background:#202e3a;border:1px solid #3a5060;border-radius:9px;padding:12px}
+.stat span{display:block;color:#a9bac6;font-size:12px;margin-bottom:5px}
 .stat strong{font-size:20px}
-.scene{background:#141c24;border:1px solid #394c5d;border-radius:9px;overflow:hidden}
-.scene-title{padding:10px 13px;background:#263746;font-weight:bold}
-canvas{display:block;width:100%;height:auto;background:#202a31}
+.scene{background:#141e26;border:1px solid #405565;border-radius:9px;overflow:hidden}
+.scene-title{padding:11px;background:#263a49;font-weight:bold}
+canvas{display:block;width:100%;height:auto}
 .columns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .panel h2{font-size:17px;margin:0 0 10px}
-button{border:0;border-radius:6px;padding:11px 12px;background:#2879b9;color:white;font-weight:bold;cursor:pointer;margin:3px 2px}
-button:hover{background:#3695db}
-button:disabled{opacity:.4;cursor:not-allowed}
-button.secondary{background:#526575}
-button.danger{background:#a64c43}
-.info{color:#aab9c5;font-size:13px;line-height:1.5}
-.item{padding:9px 0;border-bottom:1px solid #3a4a57;font-size:14px}
-.item:last-child{border:0}
+button{border:0;border-radius:6px;padding:11px 13px;background:#287fba;color:white;font-weight:bold;cursor:pointer;margin:3px}
+button:hover{background:#3698d9}
+button.secondary{background:#536b7d}
+button:disabled{opacity:.4}
+.actions{display:flex;flex-wrap:wrap}
+.info{color:#b0c0cb;font-size:13px;line-height:1.6}
+.item{padding:9px 0;border-bottom:1px solid #3b4d5b;font-size:13px}
 .item strong{display:block;margin-bottom:4px}
 .progress{height:7px;background:#101820;border-radius:6px;overflow:hidden;margin-top:5px}
-.progress div{height:100%;background:#45a6df}
-.log{height:130px;overflow:auto;font-size:12px;color:#b9c8d4;line-height:1.6}
-.actions{display:flex;flex-wrap:wrap;gap:3px}
-footer{text-align:center;color:#748695;font-size:11px;padding:20px}
+.progress div{height:100%;background:#43a6dc}
+.log{height:140px;overflow:auto;font-size:12px;color:#b9c9d3;line-height:1.6}
+footer{text-align:center;color:#778b99;font-size:11px;padding:20px}
 @media(max-width:650px){
 .stats{grid-template-columns:repeat(2,1fr)}
 .columns{grid-template-columns:1fr}
-.stat strong{font-size:18px}
 }
 </style>
 </head>
 <body>
 <header>
-<h1>📦 IDLE WAREHOUSE <small>v0.4</small></h1>
+<h1>📦 IDLE WAREHOUSE <small>v0.4.1</small></h1>
 <small>Centrum operacyjne magazynu</small>
 </header>
-
 <main>
 <section class="stats">
 <div class="stat"><span>ŚRODKI FINANSOWE</span><strong id="money">0 zł</strong></div>
 <div class="stat"><span>PALETY W MAGAZYNIE</span><strong id="stock">0 / 24</strong></div>
 <div class="stat"><span>ZAMÓWIENIA</span><strong id="orders">0</strong></div>
-<div class="stat"><span>PRACOWNICY</span><strong id="workers">0</strong></div>
+<div class="stat"><span>OPERATORZY WÓZKÓW</span><strong id="workers">0</strong></div>
 </section>
 
 <section class="scene">
-<div class="scene-title">WIDOK MAGAZYNU — HALA GŁÓWNA</div>
-<canvas id="warehouse" width="1100" height="620"></canvas>
+<div class="scene-title">HALA MAGAZYNOWA — WIDOK 2.5D</div>
+<canvas id="warehouse" width="1100" height="650"></canvas>
 </section>
 
 <div class="columns">
@@ -67,15 +63,15 @@ footer{text-align:center;color:#748695;font-size:11px;padding:20px}
 <div class="actions">
 <button id="deliveryBtn">Przyjmij dostawę</button>
 <button id="orderBtn">Nowe zamówienie</button>
-<button class="secondary" id="expandBtn">Rozbuduj regały</button>
+<button class="secondary" id="expandBtn">Rozbuduj magazyn</button>
 </div>
-<p class="info" id="operationInfo">Magazyn gotowy do pracy. Oczekiwanie na pierwszą dostawę.</p>
+<p class="info" id="operationInfo">Magazyn gotowy do pracy.</p>
 </section>
 
 <section class="panel">
-<h2>👷 Kadra pracownicza</h2>
+<h2>👷 Operatorzy</h2>
 <div class="actions">
-<button id="hireBtn">Zatrudnij pracownika — 350 zł</button>
+<button id="hireBtn">Zatrudnij operatora — 350 zł</button>
 </div>
 <div id="workerList"></div>
 </section>
@@ -91,526 +87,514 @@ footer{text-align:center;color:#748695;font-size:11px;padding:20px}
 </section>
 </div>
 </main>
-
-<footer>Idle Warehouse 0.4 • System zarządzania magazynem</footer>
+<footer>Idle Warehouse 0.4.1 • System zarządzania magazynem</footer>
 
 <script>
 "use strict";
 
-const canvas = document.getElementById("warehouse");
-const ctx = canvas.getContext("2d");
+const canvas=document.getElementById("warehouse");
+const ctx=canvas.getContext("2d");
 
-const names = [
-"Adam","Marek","Kamil","Tomasz","Paweł",
-"Daniel","Robert","Łukasz","Michał","Filip",
-"Artur","Piotr","Karol","Bartek","Rafał"
-];
+const SAVE_KEY="idleWarehouseSave041";
+const names=["Marek","Adam","Kamil","Tomasz","Paweł","Daniel","Robert","Łukasz","Michał","Filip","Artur","Piotr","Karol","Bartek","Rafał"];
 
-const state = {
- money: 1500,
- capacity: 24,
- stock: [],
- workers: [],
- orders: 0,
- completed: 0,
- totalDeliveries: 0,
- lastPayroll: 0,
- gameTime: 0,
- nextId: 1,
- log: []
+const state={
+ money:1500,
+ capacity:24,
+ stock:[],
+ workers:[],
+ orders:0,
+ completed:0,
+ totalDeliveries:0,
+ gameTime:0,
+ lastPayroll:0,
+ nextId:1,
+ log:[]
 };
 
-function createWorker(name, experience) {
+function worker(name,experience){
  return {
-  id: state.nextId++,
+  id:state.nextId++,
   name,
   experience,
-  wage: Math.round(18 + experience * 0.08),
-  x: 480 + Math.random()*100,
-  y: 390 + Math.random()*50,
-  targetX: 480,
-  targetY: 390,
-  task: "idle",
-  pallet: null,
-  timer: 0
+  wage:Math.round(18+experience*.08),
+  x:500+Math.random()*100,
+  y:515,
+  targetX:500,
+  targetY:515,
+  task:"idle",
+  pallet:null,
+  timer:0,
+  direction:1
  };
 }
 
-function addLog(message) {
- const time = new Date().toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
- state.log.unshift(time + " — " + message);
- state.log = state.log.slice(0,35);
- document.getElementById("log").innerHTML =
- state.log.map(x => `<div>${escapeHTML(x)}</div>`).join("");
-}
-
-function escapeHTML(text) {
- return String(text).replace(/[&<>"']/g, c => ({
+function escapeHTML(v){
+ return String(v).replace(/[&<>"']/g,c=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
  }[c]));
 }
 
-function saveGame() {
- try {
-  localStorage.setItem("idleWarehouseSave04", JSON.stringify(state));
- } catch(e) {
-  console.warn("Nie udało się zapisać gry.",e);
- }
+function log(message){
+ const t=new Date().toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
+ state.log.unshift(t+" — "+message);
+ state.log=state.log.slice(0,35);
+ document.getElementById("log").innerHTML=state.log.map(x=>"<div>"+escapeHTML(x)+"</div>").join("");
 }
 
-function loadGame() {
- try {
-  const saved = localStorage.getItem("idleWarehouseSave04");
-  if (!saved) return;
-  const data = JSON.parse(saved);
-  if (!data || !Array.isArray(data.workers) || !Array.isArray(data.stock)) return;
-  Object.assign(state,data);
-  state.workers.forEach(w => {
-   w.targetX = w.x;
-   w.targetY = w.y;
-   w.task = "idle";
-   w.pallet = null;
-   w.timer = 0;
+function save(){
+ try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}
+ catch(e){console.warn("Nie udało się zapisać gry",e);}
+}
+
+function load(){
+ try{
+  const raw=localStorage.getItem(SAVE_KEY);
+  if(!raw)return false;
+  const d=JSON.parse(raw);
+  if(!d||!Array.isArray(d.workers)||!Array.isArray(d.stock))return false;
+  Object.assign(state,d);
+  state.workers.forEach(w=>{
+   w.targetX=w.x;
+   w.targetY=w.y;
+   w.task="idle";
+   w.pallet=null;
+   w.timer=0;
   });
- } catch(e) {
-  console.warn("Zapis gry jest nieprawidłowy.",e);
- }
+  return true;
+ }catch(e){return false;}
 }
 
-function hireWorker() {
- if (state.money < 350) {
-  addLog("Brak środków na zatrudnienie pracownika.");
-  return;
- }
- if (state.workers.length >= 8) {
-  addLog("Osiągnięto limit 8 pracowników.");
-  return;
- }
- state.money -= 350;
- const used = state.workers.map(w => w.name);
- const name = names.find(n => !used.includes(n)) || "Pracownik " + (state.workers.length+1);
- const worker = createWorker(name,Math.floor(Math.random()*30));
- state.workers.push(worker);
- addLog("Do zespołu dołącza " + name + ".");
+function hire(){
+ if(state.money<350){log("Brak środków na zatrudnienie.");return;}
+ if(state.workers.length>=8){log("Limit operatorów wynosi 8.");return;}
+ state.money-=350;
+ const used=state.workers.map(w=>w.name);
+ const name=names.find(n=>!used.includes(n))||"Operator "+(state.workers.length+1);
+ state.workers.push(worker(name,Math.floor(Math.random()*30)));
+ log("Zatrudniono operatora: "+name+".");
  render();
 }
 
-function receiveDelivery() {
- const occupied = state.stock.length;
- const available = state.capacity - occupied;
- if (available <= 0) {
-  addLog("Brak wolnych miejsc w regałach. Rozbuduj magazyn.");
-  return;
+function delivery(){
+ const free=state.capacity-state.stock.length;
+ if(free<=0){log("Magazyn jest pełny.");return;}
+ const amount=Math.min(4,free);
+ for(let i=0;i<amount;i++){
+  state.stock.push({id:state.nextId++,type:"incoming"});
  }
- const amount = Math.min(4,available);
- for (let i=0;i<amount;i++) {
-  state.stock.push({
-   id:state.nextId++,
-   type:"incoming",
-   location:"receiving",
-   value:100
-  });
- }
- state.totalDeliveries += amount;
- addLog("Przyjęto dostawę: " + amount + " palet. Rozpoczyna się rozładunek.");
+ state.totalDeliveries+=amount;
+ log("Przyjęto dostawę: "+amount+" palet.");
  assignIncoming();
  render();
 }
 
-function assignIncoming() {
- for (const pallet of state.stock) {
-  if (pallet.type !== "incoming") continue;
-  const worker = state.workers.find(w => w.task === "idle");
-  if (!worker) return;
-  worker.task = "toStorage";
-  worker.pallet = pallet.id;
-  worker.targetX = 690 + Math.random()*120;
-  worker.targetY = 245 + Math.random()*90;
-  pallet.type = "reserved";
+function assignIncoming(){
+ for(const p of state.stock){
+  if(p.type!=="incoming")continue;
+  const w=state.workers.find(x=>x.task==="idle");
+  if(!w)return;
+  p.type="reserved";
+  w.task="toStorage";
+  w.pallet=p.id;
+  w.targetX=300+(Math.random()*500);
+  w.targetY=220+(Math.random()*120);
  }
 }
 
-function createOrder() {
- const available = state.stock.find(p => p.type === "stored");
- if (!available) {
-  addLog("Brak dostępnego towaru. Najpierw przyjmij dostawę.");
-  return;
- }
- const worker = state.workers.find(w => w.task === "idle");
- if (!worker) {
-  addLog("Brak wolnego operatora. Zatrudnij kolejnego pracownika.");
-  return;
- }
- available.type = "reservedOrder";
- worker.task = "toDispatch";
- worker.pallet = available.id;
- worker.targetX = 180 + Math.random()*90;
- worker.targetY = 255 + Math.random()*70;
+function newOrder(){
+ const p=state.stock.find(x=>x.type==="stored");
+ if(!p){log("Brak dostępnych palet do wysyłki.");return;}
+ const w=state.workers.find(x=>x.task==="idle");
+ if(!w){log("Wszyscy operatorzy są zajęci.");return;}
+ p.type="reservedOrder";
+ w.task="toDispatch";
+ w.pallet=p.id;
+ w.targetX=900;
+ w.targetY=510;
  state.orders++;
- addLog("Przyjęto zamówienie. Operator " + worker.name + " kompletuje paletę.");
+ log("Przyjęto nowe zamówienie. Operator "+w.name+" rozpoczął kompletację.");
  render();
 }
 
-function expandWarehouse() {
- const cost = 900 + (state.capacity-24)*35;
- if (state.money < cost) {
-  addLog("Za mało środków na rozbudowę. Koszt: " + cost + " zł.");
-  return;
- }
- state.money -= cost;
- state.capacity += 12;
- addLog("Rozbudowano regały. Nowa pojemność: " + state.capacity + " palet.");
+function expand(){
+ const cost=900+(state.capacity-24)*35;
+ if(state.money<cost){log("Rozbudowa kosztuje "+cost+" zł.");return;}
+ state.money-=cost;
+ state.capacity+=12;
+ log("Zwiększono pojemność magazynu do "+state.capacity+" palet.");
  render();
 }
 
-function completeTask(worker) {
- const pallet = state.stock.find(p => p.id === worker.pallet);
- if (worker.task === "toStorage") {
-  if (pallet) pallet.type = "stored";
-  worker.experience += 0.5;
-  addLog(worker.name + " umieścił paletę w regale.");
- } else if (worker.task === "toDispatch") {
-  if (pallet) state.stock = state.stock.filter(p => p.id !== pallet.id);
-  state.money += 180;
+function finish(w){
+ const p=state.stock.find(x=>x.id===w.pallet);
+ if(w.task==="toStorage"){
+  if(p)p.type="stored";
+  w.experience+=.5;
+  log(w.name+" odłożył paletę na regał.");
+ }else if(w.task==="toDispatch"){
+  if(p)state.stock=state.stock.filter(x=>x.id!==p.id);
+  state.money+=180;
   state.completed++;
-  worker.experience += 1;
-  addLog(worker.name + " zrealizował zamówienie. Przychód: 180 zł.");
+  w.experience+=1;
+  log(w.name+" zakończył wysyłkę. Przychód: 180 zł.");
  }
- worker.wage = Math.round(18 + worker.experience * 0.08);
- worker.task = "idle";
- worker.pallet = null;
- worker.timer = 0;
- worker.targetX = 480 + Math.random()*100;
- worker.targetY = 390 + Math.random()*50;
+ w.wage=Math.round(18+w.experience*.08);
+ w.task="idle";
+ w.pallet=null;
+ w.timer=0;
+ w.targetX=500;
+ w.targetY=515;
  assignIncoming();
  render();
 }
 
-function update(dt) {
- state.gameTime += dt;
-
- for (const worker of state.workers) {
-  if (worker.task === "idle") continue;
-
-  const dx = worker.targetX - worker.x;
-  const dy = worker.targetY - worker.y;
-  const distance = Math.hypot(dx,dy);
-  const speed = 65 + Math.min(worker.experience,150)*0.12;
-
-  if (distance > 3) {
-   const step = Math.min(distance,speed*dt);
-   worker.x += dx/distance*step;
-   worker.y += dy/distance*step;
-  } else {
-   worker.timer += dt;
-   if (worker.timer > 1.2) completeTask(worker);
+function update(dt){
+ state.gameTime+=dt;
+ for(const w of state.workers){
+  if(w.task==="idle")continue;
+  const dx=w.targetX-w.x;
+  const dy=w.targetY-w.y;
+  const dist=Math.hypot(dx,dy);
+  w.direction=dx>=0?1:-1;
+  const speed=65+Math.min(w.experience,150)*.12;
+  if(dist>4){
+   const step=Math.min(dist,speed*dt);
+   w.x+=dx/dist*step;
+   w.y+=dy/dist*step;
+  }else{
+   w.timer+=dt;
+   if(w.timer>1.2)finish(w);
   }
  }
-
- // Wynagrodzenia są naliczane co 60 sekund czasu rzeczywistego.
- if (state.gameTime - state.lastPayroll >= 60) {
-  state.lastPayroll = state.gameTime;
-  const payroll = state.workers.reduce((sum,w)=>sum+w.wage,0);
-  state.money -= payroll;
-  addLog("Wypłacono wynagrodzenia: " + payroll + " zł.");
-  if (state.money < 0) addLog("Uwaga: magazyn ma ujemne saldo!");
+ if(state.gameTime-state.lastPayroll>=60){
+  state.lastPayroll=state.gameTime;
+  const pay=state.workers.reduce((s,w)=>s+w.wage,0);
+  state.money-=pay;
+  log("Wypłacono wynagrodzenia: "+pay+" zł.");
   render();
  }
 }
 
-function drawFloor() {
- ctx.fillStyle = "#626a6c";
- ctx.fillRect(0,0,1100,620);
+/* RYSOWANIE 2.5D */
 
- // Posadzka przemysłowa
- for(let y=0;y<620;y+=48) {
-  ctx.strokeStyle="rgba(25,32,34,.19)";
-  ctx.lineWidth=1;
+function polygon(points,fill,stroke){
+ ctx.beginPath();
+ ctx.moveTo(points[0][0],points[0][1]);
+ for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);
+ ctx.closePath();
+ ctx.fillStyle=fill;
+ ctx.fill();
+ if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.5;ctx.stroke();}
+}
+
+function floor(){
+ ctx.fillStyle="#687477";
+ ctx.fillRect(0,0,1100,650);
+
+ // Panele betonowej posadzki
+ for(let y=0;y<650;y+=45){
+  ctx.strokeStyle="rgba(24,34,36,.18)";
   ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(1100,y);ctx.stroke();
  }
- for(let x=0;x<1100;x+=55) {
-  ctx.strokeStyle="rgba(25,32,34,.12)";
-  ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,620);ctx.stroke();
+ for(let x=0;x<1100;x+=55){
+  ctx.strokeStyle="rgba(24,34,36,.12)";
+  ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,650);ctx.stroke();
  }
 
- // Linie komunikacyjne
- ctx.fillStyle="#d6b54c";
- ctx.fillRect(0,470,1100,5);
- ctx.fillRect(0,475,1100,3);
- ctx.fillStyle="#303a3e";
- ctx.fillRect(0,485,1100,115);
+ // Główna droga i jednakowo szerokie alejki
+ ctx.fillStyle="#343f43";
+ ctx.fillRect(0,490,1100,110);
+ ctx.fillRect(0,230,1100,110);
 
- // Oznaczenia posadzki
- ctx.fillStyle="rgba(255,255,255,.55)";
- ctx.font="bold 15px Arial";
- ctx.fillText("STREFA PRZYJĘĆ",65,190);
- ctx.fillText("STREFA SKŁADOWANIA",420,75);
- ctx.fillText("STREFA WYSYŁKI",850,190);
+ // Drogi poprzeczne
+ ctx.fillRect(255,0,110,650);
+ ctx.fillRect(735,0,110,650);
 
- ctx.fillStyle="#e6bf50";
- for(let i=0;i<5;i++) {
-  ctx.fillRect(120+i*35,500,18,4);
-  ctx.fillRect(850+i*35,500,18,4);
- }
+ // Oznaczenia pasów
+ ctx.strokeStyle="#e4bd4f";
+ ctx.lineWidth=3;
+ ctx.setLineDash([22,18]);
+ [490,600,230,340].forEach(y=>{
+  ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(1100,y);ctx.stroke();
+ });
+ [255,365,735,845].forEach(x=>{
+  ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,650);ctx.stroke();
+ });
+ ctx.setLineDash([]);
+
+ ctx.fillStyle="#f3d16a";
+ ctx.font="bold 13px Arial";
+ ctx.fillText("GŁÓWNA DROGA TRANSPORTOWA",405,575);
+ ctx.fillText("ALEJKA A",375,280);
+ ctx.fillText("ALEJKA B",855,280);
 }
 
-function drawRack(x,y,rows,label) {
+function drawRack(x,y,width,depth,label){
+ const h=125;
+ const d=24;
+
  // Cień
- ctx.fillStyle="rgba(0,0,0,.25)";
- ctx.fillRect(x+12,y+15,rows*48+15,160);
+ polygon([[x+8,y+12],[x+width+8,y+12],[x+width+d+8,y-d+12],[x+d+8,y-d+12]],"rgba(0,0,0,.25)");
 
- // Tylna konstrukcja
- ctx.fillStyle="#26343c";
- ctx.fillRect(x,y,rows*48,145);
+ // Górna bryła
+ polygon([[x,y],[x+width,y],[x+width+d,y-d],[x+d,y-d]],"#829095","#3b484d");
 
- for(let r=0;r<rows;r++) {
-  const rx=x+r*48;
-  ctx.fillStyle="#d0a64c";
-  ctx.fillRect(rx, y, 7, 145);
-  ctx.fillRect(rx+40, y, 7, 145);
-  ctx.fillStyle="#8b969b";
-  for(let level=0;level<3;level++) {
-   const yy=y+42+level*42;
-   ctx.fillRect(rx,yy,47,6);
-   ctx.fillStyle="#4d5c63";
-   ctx.fillRect(rx+8,yy-26,30,25);
-   ctx.fillStyle="#8b969b";
+ // Boczna ściana
+ polygon([[x+width,y],[x+width+d,y-d],[x+width+d,y+h-d],[x+width,y+h]],"#46565d","#253238");
+
+ // Tylna ściana
+ polygon([[x,y],[x+width,y],[x+width,y+h],[x,y+h]],"#36464d","#202d33");
+
+ // Poziomy składowania
+ for(let level=0;level<3;level++){
+  const yy=y+level*39+10;
+  ctx.fillStyle="#c4a05c";
+  ctx.fillRect(x,yy,width,6);
+  ctx.fillStyle="#e1b74e";
+  for(let px=x;px<x+width;px+=42){
+   ctx.fillRect(px,yy-8,5,38);
+   ctx.fillStyle="#ad823c";
+   ctx.fillRect(px+5,yy-8,32,35);
+   ctx.fillStyle="#e1b74e";
   }
  }
- ctx.fillStyle="#d5e0e5";
+
+ // Słupy przednie
+ for(let px=x;px<=x+width;px+=42){
+  ctx.fillStyle="#e3aa36";
+  ctx.fillRect(px,y-2,7,h+3);
+  ctx.fillStyle="#f3c34f";
+  ctx.fillRect(px,y-2,2,h+3);
+  ctx.fillStyle="#7e5d2d";
+  ctx.fillRect(px+1,y+h-5,7,5);
+ }
+
+ // Tabliczka
+ ctx.fillStyle="#17252b";
+ ctx.fillRect(x+5,y-22,Math.min(width-10,100),17);
+ ctx.fillStyle="#e7eef0";
  ctx.font="bold 11px Arial";
- ctx.fillText(label,x,y-9);
+ ctx.fillText(label,x+10,y-10);
 }
 
-function drawPallet(x,y,color) {
- ctx.fillStyle="rgba(0,0,0,.3)";
- ctx.fillRect(x+5,y+16,34,9);
- ctx.fillStyle="#9c713e";
- ctx.fillRect(x,y+10,36,7);
- ctx.fillRect(x+5,y+17,6,4);
- ctx.fillRect(x+25,y+17,6,4);
- ctx.fillStyle=color || "#b77c43";
- ctx.fillRect(x+4,y-10,28,20);
- ctx.fillStyle="rgba(255,255,255,.15)";
- ctx.fillRect(x+7,y-8,5,15);
+function drawPallet(x,y,color="#b47b42"){
+ // Cień
+ ctx.fillStyle="rgba(0,0,0,.25)";
+ ctx.fillRect(x+5,y+17,38,8);
+ // Drewniana podstawa
+ polygon([[x,y+10],[x+37,y+10],[x+43,y+5],[x+6,y+5]],"#d4a365");
+ ctx.fillStyle="#81572f";
+ ctx.fillRect(x+2,y+10,38,6);
+ // Towar
+ polygon([[x+3,y-14],[x+35,y-14],[x+41,y-19],[x+9,y-19]],"#d9a96b");
+ polygon([[x+3,y-14],[x+35,y-14],[x+35,y+8],[x+3,y+8]],color);
+ polygon([[x+35,y-14],[x+41,y-19],[x+41,y+3],[x+35,y+8]],"#805832");
+ ctx.fillStyle="rgba(255,255,255,.18)";
+ ctx.fillRect(x+7,y-11,4,16);
 }
 
-function drawForklift(x,y,dir) {
+function drawForklift(w){
+ const x=w.x,y=w.y;
+ const moving=w.task!=="idle";
+ const dir=w.direction||1;
  ctx.save();
  ctx.translate(x,y);
- if(dir<0) ctx.scale(-1,1);
+ if(dir<0)ctx.scale(-1,1);
 
  // Cień
  ctx.fillStyle="rgba(0,0,0,.35)";
- ctx.beginPath();ctx.ellipse(0,15,34,10,0,0,Math.PI*2);ctx.fill();
+ ctx.beginPath();ctx.ellipse(0,16,37,12,0,0,Math.PI*2);ctx.fill();
 
  // Koła
- ctx.fillStyle="#171b1d";
- ctx.beginPath();ctx.arc(-19,10,8,0,Math.PI*2);ctx.arc(19,10,8,0,Math.PI*2);ctx.fill();
- ctx.fillStyle="#68747a";
- ctx.beginPath();ctx.arc(-19,10,3,0,Math.PI*2);ctx.arc(19,10,3,0,Math.PI*2);ctx.fill();
-
- // Korpus
- ctx.fillStyle="#d89c22";
- ctx.fillRect(-25,-7,47,18);
- ctx.fillStyle="#f0b52c";
- ctx.fillRect(-24,-13,27,10);
-
- // Kabina
- ctx.fillStyle="#273b47";
- ctx.fillRect(-3,-32,23,25);
- ctx.fillStyle="#86aab8";
- ctx.fillRect(1,-29,15,12);
- ctx.fillStyle="#1d252a";
- ctx.fillRect(-7,-8,25,4);
-
- // Operator
- ctx.fillStyle="#e6bd8d";
- ctx.beginPath();ctx.arc(8,-23,5,0,Math.PI*2);ctx.fill();
- ctx.fillStyle="#334f69";
- ctx.fillRect(4,-18,9,10);
-
- // Maszt i widły
- ctx.fillStyle="#4b5559";
- ctx.fillRect(25,-36,5,49);
- ctx.fillRect(31,7,25,3);
- ctx.fillRect(28,-36,3,49);
-
- ctx.restore();
-}
-
-function drawWorker(worker) {
- const x=worker.x,y=worker.y;
- ctx.fillStyle="rgba(0,0,0,.25)";
- ctx.beginPath();ctx.ellipse(x,y+10,11,5,0,0,Math.PI*2);ctx.fill();
- ctx.fillStyle="#e0b58b";
- ctx.beginPath();ctx.arc(x,y-10,6,0,Math.PI*2);ctx.fill();
- ctx.fillStyle="#d18a32";
- ctx.fillRect(x-6,y-4,12,14);
- ctx.fillStyle="#293e4c";
- ctx.fillRect(x-5,y+9,4,8);
- ctx.fillRect(x+2,y+9,4,8);
- ctx.fillStyle="#fff";
- ctx.font="10px Arial";
- ctx.textAlign="center";
- ctx.fillText(worker.name,x,y-22);
- ctx.textAlign="left";
-}
-
-function drawScene() {
- ctx.clearRect(0,0,1100,620);
- drawFloor();
-
- // Ściany i elementy hali
- ctx.fillStyle="#37444a";
- ctx.fillRect(0,0,1100,18);
- ctx.fillStyle="#8b969a";
- for(let x=20;x<1100;x+=100) {
-  ctx.fillRect(x,18,3,18);
+ for(const px of [-23,20]){
+  ctx.fillStyle="#15191b";
+  ctx.beginPath();ctx.ellipse(px,10,8,12,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#68767a";
+  ctx.beginPath();ctx.arc(px,10,3.5,0,Math.PI*2);ctx.fill();
  }
 
- // Bramy magazynowe
- ctx.fillStyle="#26343b";
- ctx.fillRect(35,35,125,100);
- ctx.fillRect(940,35,125,100);
- ctx.strokeStyle="#859197";
+ // Korpus
+ polygon([[-30,-8],[18,-8],[29,5],[22,14],[-25,14]],"#d69b26","#573f1a");
+ polygon([[-30,-8],[-19,-18],[15,-18],[18,-8]],"#f0b72d","#75531b");
+
+ // Kabina
+ polygon([[-4,-18],[17,-18],[20,-48],[0,-48]],"#334d5c","#182c36");
+ polygon([[1,-23],[13,-23],[14,-42],[3,-42]],"#8ab5c5","#344e5b");
+
+ // Operator
+ ctx.fillStyle="#d8ac82";
+ ctx.beginPath();ctx.arc(8,-43,6,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#263b4c";
+ ctx.fillRect(3,-37,10,15);
+
+ // Dach ochronny
+ ctx.fillStyle="#e7a92a";
+ ctx.fillRect(-4,-52,25,5);
+ ctx.fillRect(-2,-49,3,7);
+ ctx.fillRect(18,-49,3,7);
+
+ // Maszt
+ ctx.fillStyle="#404d52";
+ ctx.fillRect(27,-54,5,67);
+ ctx.fillRect(34,-54,4,67);
+ ctx.fillStyle="#78858a";
+ ctx.fillRect(28,-51,3,58);
+
+ // Widły
+ ctx.fillStyle="#aeb8ba";
+ ctx.fillRect(35,6,30,3);
+ ctx.fillRect(35,12,30,3);
+
+ // Migające światło ostrzegawcze
+ ctx.fillStyle=moving?"#f5c84d":"#d9a43b";
+ ctx.beginPath();ctx.arc(9,-56,3,0,Math.PI*2);ctx.fill();
+
+ ctx.restore();
+
+ if(moving){
+  ctx.fillStyle="#fff";
+  ctx.font="bold 11px Arial";
+  ctx.textAlign="center";
+  ctx.fillText(w.name,x,y-66);
+  ctx.textAlign="left";
+ }
+}
+
+function drawWarehouse(){
+ ctx.clearRect(0,0,1100,650);
+ floor();
+
+ // Ściany i bramy
+ ctx.fillStyle="#34434b";
+ ctx.fillRect(0,0,1100,15);
+ ctx.fillStyle="#263840";
+ ctx.fillRect(25,30,130,105);
+ ctx.fillRect(945,30,130,105);
+ ctx.strokeStyle="#9da9ac";
  ctx.lineWidth=4;
- ctx.strokeRect(35,35,125,100);
- ctx.strokeRect(940,35,125,100);
- ctx.fillStyle="#9ba8ac";
+ ctx.strokeRect(25,30,130,105);
+ ctx.strokeRect(945,30,130,105);
+ ctx.fillStyle="#e6ecee";
  ctx.font="bold 12px Arial";
- ctx.fillText("BRAMA A",68,28);
- ctx.fillText("BRAMA B",972,28);
+ ctx.fillText("BRAMA PRZYJĘĆ",38,25);
+ ctx.fillText("BRAMA WYSYŁKI",958,25);
 
- // Regały
- const rows=Math.max(2,Math.ceil(state.capacity/12));
- drawRack(350,95,rows,"REGAŁ A");
- drawRack(350,280,rows,"REGAŁ B");
- drawRack(650,95,rows,"REGAŁ C");
- drawRack(650,280,rows,"REGAŁ D");
+ // Regały - dwie wyraźne bryły
+ drawRack(90,105,145,125,"REGAŁ A");
+ drawRack(390,105,145,125,"REGAŁ B");
+ drawRack(570,365,145,125,"REGAŁ C");
+ drawRack(870,365,145,125,"REGAŁ D");
 
- // Towar w strefie przyjęć
- let incomingIndex=0;
- for(const p of state.stock) {
-  if(p.type==="incoming" || p.type==="reserved") {
-   drawPallet(90+(incomingIndex%4)*48,235+Math.floor(incomingIndex/4)*38,"#b57a43");
-   incomingIndex++;
+ // Palety w strefie przyjęć
+ let incoming=0;
+ for(const p of state.stock){
+  if(p.type==="incoming"||p.type==="reserved"){
+   drawPallet(55+(incoming%3)*48,190+Math.floor(incoming/3)*35,"#b47b42");
+   incoming++;
   }
  }
 
- // Towar na regałach
- let storedIndex=0;
- for(const p of state.stock) {
-  if(p.type==="stored" || p.type==="reservedOrder") {
-   const rack=storedIndex%4;
-   const row=Math.floor(storedIndex/4);
-   const x=[365,665,365,665][rack]+(row%3)*48+5;
-   const y=[155,155,340,340][rack]+Math.floor(row/3)*28;
-   drawPallet(x,y,p.type==="reservedOrder"?"#d4a13c":"#a66e3c");
-   storedIndex++;
+ // Palety w regałach
+ let index=0;
+ for(const p of state.stock){
+  if(p.type==="stored"||p.type==="reservedOrder"){
+   const racks=[
+    [100,150],[400,150],[580,410],[880,410]
+   ];
+   const r=racks[index%4];
+   drawPallet(r[0]+(Math.floor(index/4)%2)*48,r[1]+Math.floor(index/8)*22,
+    p.type==="reservedOrder"?"#d5a33c":"#b47b42");
+   index++;
   }
  }
 
  // Strefa wysyłki
- ctx.fillStyle="#35464e";
- ctx.fillRect(850,215,180,130);
- ctx.strokeStyle="#d2b34c";
+ ctx.fillStyle="#25363e";
+ ctx.fillRect(875,160,175,65);
+ ctx.strokeStyle="#e1bd53";
  ctx.lineWidth=3;
- ctx.strokeRect(850,215,180,130);
- ctx.fillStyle="#dce5e8";
- ctx.font="bold 12px Arial";
- ctx.fillText("GOTOWE DO WYSYŁKI",865,205);
-
- // Wózki i pracownicy
- state.workers.forEach((w,i)=>{
-  const dir=w.targetX<w.x?-1:1;
-  if(w.task!=="idle") drawForklift(w.x,w.y,dir);
-  else drawWorker(w);
- });
-
- // Informacja o pojemności
- ctx.fillStyle="rgba(12,20,25,.8)";
- ctx.fillRect(15,555,275,48);
+ ctx.strokeRect(875,160,175,65);
  ctx.fillStyle="#fff";
- ctx.font="bold 14px Arial";
- ctx.fillText("ZAJĘTOŚĆ MAGAZYNU",28,575);
- ctx.fillStyle="#43545e";
- ctx.fillRect(28,584,240,9);
- ctx.fillStyle="#4ba5d7";
- ctx.fillRect(28,584,240*(state.stock.length/state.capacity),9);
+ ctx.font="bold 12px Arial";
+ ctx.fillText("STREFA WYSYŁKI",900,153);
+
+ // Wszystkie zatrudnione osoby mają swój wózek
+ state.workers.forEach(drawForklift);
+
+ // Oznaczenia stref
+ ctx.fillStyle="#f2f5f5";
+ ctx.font="bold 12px Arial";
+ ctx.fillText("PRZYJĘCIE TOWARU",35,320);
+ ctx.fillText("SKŁADOWANIE",410,320);
+ ctx.fillText("KOMPLETACJA",875,320);
+
+ // Licznik miejsc
+ ctx.fillStyle="rgba(12,20,25,.8)";
+ ctx.fillRect(15,610,260,28);
+ ctx.fillStyle="#fff";
+ ctx.font="bold 12px Arial";
+ ctx.fillText("ZAJĘTOŚĆ: "+state.stock.length+" / "+state.capacity,27,629);
 }
 
-function render() {
- document.getElementById("money").textContent =
- Math.floor(state.money).toLocaleString("pl-PL")+" zł";
- document.getElementById("stock").textContent =
- state.stock.length+" / "+state.capacity;
- document.getElementById("orders").textContent =
- state.completed+" / "+state.orders;
- document.getElementById("workers").textContent =
- state.workers.length;
+function render(){
+ document.getElementById("money").textContent=Math.floor(state.money).toLocaleString("pl-PL")+" zł";
+ document.getElementById("stock").textContent=state.stock.length+" / "+state.capacity;
+ document.getElementById("orders").textContent=state.completed+" / "+state.orders;
 
- document.getElementById("stockInfo").innerHTML =
- "Palety w magazynie: <strong>"+state.stock.length+"</strong><br>"+
- "Dostępne do sprzedaży: <strong>"+state.stock.filter(p=>p.type==="stored").length+"</strong><br>"+
- "W trakcie transportu: <strong>"+state.stock.filter(p=>p.type==="incoming"||p.type==="reserved"||p.type==="reservedOrder").length+"</strong><br>"+
- "Łącznie przyjęte palety: <strong>"+state.totalDeliveries+"</strong><br>"+
- "Zrealizowane zamówienia: <strong>"+state.completed+"</strong><br>"+
- "Pojemność: <strong>"+state.capacity+" palet</strong>";
+ // Licznik jest zawsze zgodny z liczbą zatrudnionych operatorów.
+ document.getElementById("workers").textContent=state.workers.length;
 
- document.getElementById("workerList").innerHTML =
- state.workers.map(w=>{
-  const status = w.task==="idle"?"Odpoczywa":
-   w.task==="toStorage"?"Transport do regału":"Kompletowanie zamówienia";
-  const progress=Math.min(100,w.experience/2);
+ document.getElementById("workerList").innerHTML=state.workers.map(w=>{
+  const status=w.task==="idle"?"Postój":"W trakcie transportu";
   return `<div class="item">
-  <strong>${escapeHTML(w.name)} — ${status}</strong>
-  Staż: ${w.experience.toFixed(1)} godz. jazdy<br>
-  Stawka: ${w.wage} zł / godzinę
-  <div class="progress"><div style="width:${progress}%"></div></div>
+   <strong>${escapeHTML(w.name)} — ${status}</strong>
+   Staż: ${w.experience.toFixed(1)} godz. jazdy<br>
+   Wynagrodzenie: ${w.wage} zł / godzinę
+   <div class="progress"><div style="width:${Math.min(100,w.experience/2)}%"></div></div>
   </div>`;
- }).join("") || '<p class="info">Brak pracowników. Zatrudnij pierwszego operatora.</p>';
+ }).join("")||'<p class="info">Brak operatorów.</p>';
 
- document.getElementById("operationInfo").textContent =
- state.stock.length>=state.capacity
- ? "Magazyn pełny. Rozbuduj regały, aby przyjmować kolejne dostawy."
- : "Magazyn pracuje. Wolne miejsca: "+(state.capacity-state.stock.length)+".";
+ document.getElementById("stockInfo").innerHTML=
+ "Palety ogółem: <strong>"+state.stock.length+"</strong><br>"+
+ "Gotowe do wysyłki: <strong>"+state.stock.filter(p=>p.type==="stored").length+"</strong><br>"+
+ "W transporcie: <strong>"+state.stock.filter(p=>p.type==="reserved"||p.type==="reservedOrder"||p.type==="incoming").length+"</strong><br>"+
+ "Łącznie przyjęte: <strong>"+state.totalDeliveries+"</strong><br>"+
+ "Zrealizowane zamówienia: <strong>"+state.completed+"</strong><br>"+
+ "Pojemność: <strong>"+state.capacity+"</strong>";
+
+ document.getElementById("operationInfo").textContent=
+ "Wolne miejsca: "+(state.capacity-state.stock.length)+
+ ". Operatorzy: "+state.workers.length+".";
 }
 
-document.getElementById("deliveryBtn").addEventListener("click",receiveDelivery);
-document.getElementById("orderBtn").addEventListener("click",createOrder);
-document.getElementById("hireBtn").addEventListener("click",hireWorker);
-document.getElementById("expandBtn").addEventListener("click",expandWarehouse);
+document.getElementById("deliveryBtn").onclick=delivery;
+document.getElementById("orderBtn").onclick=newOrder;
+document.getElementById("hireBtn").onclick=hire;
+document.getElementById("expandBtn").onclick=expand;
 
-loadGame();
-
-if(state.workers.length===0) {
- state.workers.push(createWorker("Marek",45));
- state.workers.push(createWorker("Adam",12));
- addLog("Uruchomiono magazyn. Na zmianie pracują Marek i Adam.");
+const loaded=load();
+if(!loaded){
+ state.workers.push(worker("Marek",45));
+ log("Otwarto magazyn. Na zmianie pracuje operator Marek.");
 }
-
 render();
 
 let previous=performance.now();
 let saveTimer=0;
 
-function loop(now) {
- const dt=Math.min((now-previous)/1000,0.05);
+function loop(now){
+ const dt=Math.min((now-previous)/1000,.05);
  previous=now;
  update(dt);
- drawScene();
+ drawWarehouse();
  saveTimer+=dt;
- if(saveTimer>=5) {
-  saveGame();
-  saveTimer=0;
- }
+ if(saveTimer>=5){save();saveTimer=0;}
  requestAnimationFrame(loop);
 }
 
 requestAnimationFrame(loop);
-
-window.addEventListener("beforeunload",saveGame);
+window.addEventListener("beforeunload",save);
 </script>
 </body>
 </html>

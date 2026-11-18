@@ -1,125 +1,739 @@
-<!doctype html>
+
+
+<!DOCTYPE html>
+
 <html lang="pl">
+
 <head>
-<meta charset="utf-8">
+
+<meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Idle Warehouse</title>
+
+<title>Idle Warehouse 0.2</title>
+
 <style>
-:root{--bg:#101820;--panel:#192630;--panel2:#21323e;--line:#344956;--text:#edf3f5;--muted:#9fb1ba;--accent:#f4b942;--green:#62c795;--red:#ed8275}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -20%,#2a414e,#101820 55%);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,sans-serif}
-header{display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid #34434b;background:#111c24}
-.brand{font-weight:900;letter-spacing:.12em;font-size:18px}.brand span{color:var(--accent)}.sub{color:var(--muted);font-size:11px;letter-spacing:.13em;margin-top:2px}
-.status{display:flex;align-items:center;gap:8px;color:#b8c9ce;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
-main{max-width:1450px;margin:auto;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px}
+
+:root{--bg:#101820;--panel:#192630;--line:#344956;--text:#edf3f5;--muted:#9fb1ba;--gold:#f4b942;--green:#62c795}
+
+*{box-sizing:border-box}
+
+body{margin:0;background:radial-gradient(circle at 50% -20%,#2a414e,#101820 60%);color:var(--text);font:14px/1.4 system-ui,sans-serif}
+
+header{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;background:#111c24;border-bottom:1px solid var(--line)}
+
+.brand{font-weight:900;letter-spacing:.12em;font-size:18px}.brand span{color:var(--gold)}
+
+.sub{color:var(--muted);font-size:11px;letter-spacing:.1em}
+
+.status{font-size:12px;color:var(--green)}
+
+main{max-width:1550px;margin:auto;padding:14px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px}
+
 .card{background:linear-gradient(145deg,#1b2a34,#17232c);border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:0 12px 30px #0003}
-.topstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px}
-.stat{background:#111d25;border:1px solid #2d414d;border-radius:9px;padding:10px 12px}.stat label{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.09em}.stat strong{display:block;font-size:21px;margin-top:3px;font-variant-numeric:tabular-nums}
-.canvas-wrap{position:relative;background:#17252e;padding:10px;min-height:420px}.canvas-wrap canvas{width:100%;height:auto;display:block;border-radius:8px;background:#243943;image-rendering:auto}
-.legend{display:flex;flex-wrap:wrap;gap:14px;padding:10px 14px;color:var(--muted);font-size:11px;border-top:1px solid #2d414d}.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
-.side{display:flex;flex-direction:column;gap:12px}.section{padding:14px}.section h3{margin:0 0 10px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#c7d5da}
-.btn{border:1px solid #52636b;background:#2b3e49;color:#f3f6f7;border-radius:8px;padding:10px 12px;font-weight:700;cursor:pointer;transition:.15s;width:100%;text-align:left;margin:4px 0}.btn:hover{filter:brightness(1.15);transform:translateY(-1px)}.btn.primary{background:#b87c1b;border-color:#e6ad46;color:#171b1d}.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
-.row{display:flex;justify-content:space-between;gap:8px;align-items:center}.muted{color:var(--muted);font-size:12px}.value{font-weight:800;font-variant-numeric:tabular-nums}
-.progress{height:7px;background:#0e171d;border-radius:8px;overflow:hidden;margin-top:7px}.progress b{display:block;height:100%;background:linear-gradient(90deg,#d89128,#f5c45c);width:0}
-.log{height:155px;overflow:auto;display:flex;flex-direction:column-reverse;gap:7px}.log p{margin:0;padding:7px 8px;background:#111d25;border-radius:6px;color:#b9c8ce;font-size:11px}.log p strong{color:#f3c56c}
-.help{padding:12px 14px;color:#9fb1ba;font-size:11px;border-top:1px solid #2d414d}
-footer{text-align:center;color:#71858e;font-size:11px;padding:0 12px 20px}
-@media(max-width:900px){main{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.side .wide{grid-column:1/-1}}
-@media(max-width:560px){header{padding:13px}.topstats{grid-template-columns:repeat(2,1fr)}main{padding:9px;gap:10px}.side{grid-template-columns:1fr}.canvas-wrap{min-height:0}.stat strong{font-size:18px}}
+
+.topstats{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:10px}
+
+.stat{background:#111d25;border:1px solid #2d414d;border-radius:9px;padding:9px}
+
+.stat label{display:block;color:var(--muted);font-size:10px;text-transform:uppercase}
+
+.stat strong{display:block;font-size:18px;margin-top:3px}
+
+.canvas-wrap{padding:8px;background:#17252e}
+
+canvas{width:100%;height:auto;display:block;border-radius:8px}
+
+.legend{display:flex;flex-wrap:wrap;gap:12px;padding:10px;color:var(--muted);font-size:11px}
+
+.legend i{display:inline-block;width:9px;height:9px;margin-right:5px}
+
+.help{padding:10px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}
+
+.side{display:flex;flex-direction:column;gap:11px}
+
+.section{padding:13px}
+
+h3{margin:0 0 10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+
+.btn{width:100%;text-align:left;margin:4px 0;padding:10px;border:1px solid #52636b;border-radius:8px;background:#2b3e49;color:white;font-weight:700;cursor:pointer}
+
+.btn.primary{background:#b87c1b;color:#171b1d;border-color:#e6ad46}
+
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+.muted{color:var(--muted);font-size:11px}
+
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+
+.select{width:100%;background:#111d25;color:white;border:1px solid #405560;padding:9px;border-radius:8px;margin:5px 0}
+
+.progress{height:7px;background:#0e171d;border-radius:8px;overflow:hidden;margin-top:6px}
+
+.progress b{display:block;height:100%;background:linear-gradient(90deg,#d89128,#f5c45c)}
+
+.worker{padding:8px;background:#111d25;border:1px solid #2d414d;border-radius:8px;margin:7px 0}
+
+.worker-name{font-weight:800}
+
+.tag{font-size:10px;padding:2px 6px;border-radius:5px;background:#314954}
+
+.busy{background:#59451f;color:#f4cf78}
+
+.log{height:130px;overflow:auto;display:flex;flex-direction:column-reverse;gap:6px}
+
+.log p{margin:0;padding:7px;background:#111d25;border-radius:6px;color:#b9c8ce;font-size:11px}
+
+.log strong{color:#f3c56c}
+
+footer{text-align:center;color:#71858e;font-size:11px;padding:15px}
+
+@media(max-width:1000px){main{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.wide{grid-column:1/-1}}
+
+@media(max-width:600px){header{padding:12px}main{padding:8px}.topstats{grid-template-columns:repeat(2,1fr)}.side{grid-template-columns:1fr}}
+
 </style>
+
 </head>
+
 <body>
-<header><div><div class="brand">IDLE <span>WAREHOUSE</span></div><div class="sub">CENTRUM LOGISTYCZNE • ZMIANA 01</div></div><div class="status"><i class="dot"></i> SYSTEM OPERACYJNY</div></header>
+
+<header>
+
+ <div>
+
+  <div class="brand">IDLE <span>WAREHOUSE</span></div>
+
+  <div class="sub">CENTRUM LOGISTYCZNE • ZMIANA 01 • BUILD 0.2</div>
+
+ </div>
+
+ <div class="status">● SYSTEM OPERACYJNY</div>
+
+</header>
+
 <main>
+
 <div class="card">
+
  <div class="topstats">
-  <div class="stat"><label>Gotówka</label><strong id="money">1 200 zł</strong></div>
-  <div class="stat"><label>Palety w magazynie</label><strong id="stored">0 / 24</strong></div>
-  <div class="stat"><label>Obsłużone palety</label><strong id="done">0</strong></div>
-  <div class="stat"><label>Wózkowi</label><strong id="staff">1</strong></div>
+
+  <div class="stat"><label>Gotówka</label><strong id="money">1200 zł</strong></div>
+
+  <div class="stat"><label>Składowane</label><strong id="stored">0 / 24</strong></div>
+
+  <div class="stat"><label>Obsłużone</label><strong id="done">0</strong></div>
+
+  <div class="stat"><label>Pracownicy</label><strong id="staff">2</strong></div>
+
+  <div class="stat"><label>Czas zmiany</label><strong id="clock">06:00</strong></div>
+
  </div>
- <div class="canvas-wrap"><canvas id="warehouse" width="1000" height="650" aria-label="Izometryczny widok magazynu"></canvas></div>
- <div class="legend"><span><i style="background:#e0a33e"></i>Wózek widłowy</span><span><i style="background:#b9783e"></i>Paleta z towarem</span><span><i style="background:#466c7c"></i>Regały</span><span><i style="background:#69b98d"></i>Wolne miejsce</span></div>
- <div class="help">Widok izometryczny 2.5D • Wózkowi automatycznie odbierają dostawy i odkładają palety na regały. Kliknij „Przyjmij dostawę”, aby rozpocząć pracę.</div>
+
+ <div class="canvas-wrap">
+
+  <canvas id="warehouse" width="1100" height="690"></canvas>
+
+ </div>
+
+ <div class="legend">
+
+  <span><i style="background:#e0a33e"></i>Wózek widłowy</span>
+
+  <span><i style="background:#b9783e"></i>Paleta</span>
+
+  <span><i style="background:#466c7c"></i>Regały</span>
+
+  <span><i style="background:#69b98d"></i>Wysyłka</span>
+
+ </div>
+
+ <div class="help">Widok izometryczny 2.5D • Automatyczna logistyka • Cross-docking i składowanie</div>
+
 </div>
+
 <aside class="side">
+
  <div class="card section">
-  <h3>Operacje magazynowe</h3>
-  <button class="btn primary" id="shipment">＋ Przyjmij dostawę <span style="float:right">+5 palet</span></button>
-  <div class="muted">Dostawa kosztuje 100 zł. Za każdą prawidłowo odłożoną paletę otrzymujesz 35 zł.</div>
-  <button class="btn" id="hire">＋ Zatrudnij wózkowego <span style="float:right">650 zł</span></button>
-  <div class="muted">Nowy pracownik zwiększa przepustowość. Maksymalnie 3 wózkowych w tej wersji.</div>
-  <button class="btn" id="upgrade">＋ Rozbuduj regały <span style="float:right">500 zł</span></button>
-  <div class="muted" id="capacityText">Pojemność: 24 miejsca paletowe.</div>
+
+  <h3>Planowanie dostaw</h3>
+
+  <label class="muted">Rodzaj towaru</label>
+
+  <select id="deliveryType" class="select">
+
+   <option value="storage">Towar magazynowy • 5 palet</option>
+
+   <option value="cross">Cross-docking • 5 palet</option>
+
+  </select>
+
+  <button class="btn primary" id="shipment">＋ Przyjmij dostawę — 100 zł</button>
+
+  <div class="muted">Magazynowy trafia na regał. Cross-docking jedzie bezpośrednio do wysyłki.</div>
+
+  <button class="btn" id="hire">＋ Zatrudnij wózkowego — 650 zł</button>
+
+  <button class="btn" id="upgrade">＋ Rozbuduj regały — 500 zł</button>
+
+  <div class="muted" id="capacityText">Pojemność: 24 miejsca.</div>
+
  </div>
+
  <div class="card section">
+
   <h3>Stan operacji</h3>
-  <div class="row"><span class="muted">Oczekujące na przyjęcie</span><span class="value" id="waiting">0</span></div>
-  <div class="row" style="margin-top:9px"><span class="muted">W trakcie transportu</span><span class="value" id="moving">0</span></div>
-  <div class="row" style="margin-top:9px"><span class="muted">Wolne miejsca</span><span class="value" id="free">24</span></div>
-  <div style="margin-top:12px" class="muted">Wykorzystanie powierzchni</div><div class="progress"><b id="fill"></b></div>
+
+  <div class="row"><span class="muted">Kolejka przyjęcia</span><b id="waiting">0</b></div>
+
+  <div class="row"><span class="muted">W transporcie</span><b id="moving">0</b></div>
+
+  <div class="row"><span class="muted">Wysłane</span><b id="dispatch">0</b></div>
+
+  <div class="row"><span class="muted">Wolne miejsca</span><b id="free">24</b></div>
+
+  <div class="muted" style="margin-top:10px">Zajętość regałów</div>
+
+  <div class="progress"><b id="fill" style="width:0%"></b></div>
+
  </div>
+
  <div class="card section wide">
-  <h3>Dziennik zmiany</h3><div class="log" id="log"></div>
+
+  <h3>Załoga i doświadczenie</h3>
+
+  <div class="muted">Staż rośnie tylko podczas jazdy. Doświadczenie zwiększa wydajność i stawkę godzinową.</div>
+
+  <div id="crew"></div>
+
  </div>
+
  <div class="card section wide">
-  <div class="row"><h3 style="margin:0">Zapis gry</h3><span class="muted" id="saveState">Autozapis aktywny</span></div>
+
+  <h3>Dziennik zmiany</h3>
+
+  <div class="log" id="log"></div>
+
+ </div>
+
+ <div class="card section wide">
+
+  <div class="row"><h3>Zapis gry</h3><span class="muted" id="saveState">Autozapis aktywny</span></div>
+
   <button class="btn" id="reset">↻ Rozpocznij od nowa</button>
+
  </div>
+
 </aside>
+
 </main>
-<footer>Idle Warehouse • Wersja 0.1.0 • Prototyp gry</footer>
+
+<footer>Idle Warehouse • Wersja 0.2.0</footer>
+
 <script>
+
 (()=>{
-const canvas=document.getElementById('warehouse'),ctx=canvas.getContext('2d');
+
+"use strict";
+
+const canvas=document.getElementById("warehouse");
+
+const ctx=canvas.getContext("2d");
+
 const $=id=>document.getElementById(id);
-const S={money:1200,staff:1,capacity:24,stored:0,done:0,waiting:0,workers:[],pallets:[],tick:0};
-const COLS=10,ROWS=8,OX=500,OY=118,TW=76,TH=38;
+
+const names=["Adam Kowalski","Piotr Nowak","Marek Wiśniewski","Tomasz Zieliński","Paweł Wójcik","Kamil Lewandowski"];
+
+const S={money:1200,capacity:24,stored:0,done:0,workers:[],pallets:[],tick:0,gameMinutes:0};
+
+const COLS=11,ROWS=8,OX=550,OY=145,TW=78,TH=39;
+
 const iso=(x,y,z=0)=>({x:OX+(x-y)*TW/2,y:OY+(x+y)*TH/2-z});
-function log(msg){const p=document.createElement('p');p.innerHTML=msg;$('log').prepend(p);while($('log').children.length>35)$('log').lastChild.remove()}
-function palletAtRack(){for(let y=1;y<ROWS-1;y++)for(let x=2;x<COLS-1;x++){if((x===3||x===6||x===8)&&!S.pallets.some(p=>p.state==='stored'&&p.rx===x&&p.ry===y))return{x,y}}return null}
-function spawnWorker(){S.workers.push({x:0.6,y:6.5,state:'idle',target:null,pallet:null,speed:.045,phase:Math.random()*6.2})}
-function addDelivery(){if(S.money<100){log('Brakuje środków na dostawę.');return}if(S.waiting+S.pallets.filter(p=>p.state==='moving').length+S.stored+5>S.capacity+10){log('Brak miejsca na kolejną dostawę. Rozbuduj regały lub zwolnij miejsca.');return}S.money-=100;for(let i=0;i<5;i++)S.pallets.push({x:.4+i*.25,y:7.35,state:'waiting',rx:null,ry:null});S.waiting+=5;log('<strong>Dostawa przyjęta:</strong> 5 palet oczekuje w strefie rozładunku.');assign();update()}
-function assign(){for(const w of S.workers){if(w.state!=='idle')continue;const p=S.pallets.find(p=>p.state==='waiting');if(!p)continue;const slot=palletAtRack();if(!slot){log('Wszystkie miejsca składowania są zajęte.');break}p.state='moving';p.rx=slot.x;p.ry=slot.y;w.state='toPallet';w.pallet=p;w.target={x:p.x,y:p.y};}}
-function move(w){if(!w.target)return;const dx=w.target.x-w.x,dy=w.target.y-w.y,d=Math.hypot(dx,dy);if(d<.035){w.x=w.target.x;w.y=w.target.y;if(w.state==='toPallet'){w.state='toRack';w.target={x:w.pallet.rx,y:w.pallet.ry};w.pallet.x=w.x;w.pallet.y=w.y;w.pallet.state='carried'}else if(w.state==='toRack'){w.pallet.state='stored';w.pallet.x=w.pallet.rx;w.pallet.y=w.pallet.ry;S.stored++;S.done++;S.money+=35;w.pallet=null;w.state='idle';w.target=null;log('<strong>Paleta składowana:</strong> +35 zł za obsługę.');assign();update()}return}w.x+=dx/d*w.speed;w.y+=dy/d*w.speed}
-function update(){ $('money').textContent=Math.floor(S.money).toLocaleString('pl-PL')+' zł';$('stored').textContent=S.stored+' / '+S.capacity;$('done').textContent=S.done;$('staff').textContent=S.staff;$('waiting').textContent=S.pallets.filter(p=>p.state==='waiting').length;$('moving').textContent=S.pallets.filter(p=>p.state==='moving'||p.state==='carried').length;$('free').textContent=Math.max(0,S.capacity-S.stored);$('fill').style.width=Math.min(100,S.stored/S.capacity*100)+'%';$('capacityText').textContent='Pojemność: '+S.capacity+' miejsc paletowych.';$('hire').disabled=S.money<650||S.staff>=3;$('upgrade').disabled=S.money<500||S.capacity>=60;$('shipment').disabled=S.money<100}
-function poly(points,fill,stroke='#182830',lw=1){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}
-function diamond(x,y,z,fill,stroke){const p=iso(x,y,z);poly([{x:p.x,y:p.y},{x:p.x+TW/2,y:p.y+TH/2},{x:p.x,y:p.y+TH},{x:p.x-TW/2,y:p.y+TH/2}],fill,stroke||'#314a53',1)}
-function box3(x,y,z,w,h,d,top,side1,side2){const p=iso(x,y,z);const a={x:p.x,y:p.y},b={x:p.x+w*TW/2,y:p.y+w*TH/2},c={x:p.x+(w-d)*TW/2,y:p.y+(w+d)*TH/2},e={x:p.x-d*TW/2,y:p.y+d*TH/2};poly([a,b,c,e],top);const z2=iso(x,y,z-h);const aa={x:z2.x,y:z2.y},bb={x:z2.x+w*TW/2,y:z2.y+w*TH/2},cc={x:z2.x+(w-d)*TW/2,y:z2.y+(w+d)*TH/2},ee={x:z2.x-d*TW/2,y:z2.y+d*TH/2};poly([e,c,cc,ee],side1);poly([b,c,cc,bb],side2)}
-function drawFloor(){ctx.clearRect(0,0,1000,650);ctx.fillStyle='#243943';ctx.fillRect(0,0,1000,650);for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){let c=(x+y)%2?'#304852':'#2c434d';if((x===0||y===0||x===COLS-1||y===ROWS-1))c='#263b44';diamond(x,y,0,c,'#3a535d')}
- // floor markings / aisles
- ctx.save();ctx.setLineDash([7,8]);ctx.strokeStyle='#9eaa8b55';ctx.lineWidth=2;
- for(let x=1;x<COLS;x+=2){let a=iso(x,1,.5),b=iso(x,ROWS-1,.5);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}ctx.restore();
- // receiving and dispatch pads
- diamond(.25,6.8,1,'#80643a','#d5a34a');diamond(8.9,1.2,1,'#3b6657','#72b58d');
+
+const fmt=n=>Math.floor(n).toLocaleString("pl-PL");
+
+function log(message){
+
+ const p=document.createElement("p");
+
+ p.innerHTML=message;
+
+ $("log").prepend(p);
+
+ while($("log").children.length>35)$("log").lastChild.remove();
+
 }
-function drawRack(x,y){const p=iso(x,y,0); // rack uprights and shelves
- box3(x-.32,y-.32,45,.64,.16,.64,'#62808b','#344e5a','#46636e');
- for(let k=0;k<3;k++){let z=18+k*34;const q=iso(x-.32,y-.32,z);ctx.fillStyle='#78919a';ctx.fillRect(q.x-19,q.y-2,39,4);ctx.fillStyle='#263b45';ctx.fillRect(q.x-19,q.y+2,39,2)}
- for(const dx of [-.28,.28])for(const dy of [-.28,.28]){let q=iso(x+dx,y+dy,0);ctx.fillStyle='#9aaeb3';ctx.fillRect(q.x-3,q.y-48,6,49);ctx.fillStyle='#526d78';ctx.fillRect(q.x-3,q.y-48,2,49)}
+
+function wage(w){return Math.round(24+Math.min(18,w.hours*.035))}
+
+function workerSpeed(w){return .038+Math.min(.025,w.hours*.000035)}
+
+function spawnWorker(name,hours=0){
+
+ const i=S.workers.length;
+
+ S.workers.push({
+
+  id:Date.now()+Math.random(),name:name||names[i%names.length],
+
+  hours,state:"idle",target:null,pallet:null,
+
+  x:.65+(i%2)*.25,y:6.9,
+
+  speed:workerSpeed({hours}),phase:Math.random()*6.2
+
+ });
+
 }
-function drawPallet(p){const q=iso(p.x,p.y,2);ctx.fillStyle='#7b4c2d';ctx.fillRect(q.x-13,q.y-3,26,7);ctx.fillStyle='#b87943';ctx.fillRect(q.x-13,q.y-7,26,5);ctx.fillStyle='#d6a66a';ctx.fillRect(q.x-10,q.y-18,20,11);ctx.fillStyle='#8c5b36';ctx.fillRect(q.x-10,q.y-18,20,2);ctx.fillStyle='#d8bd8b';ctx.fillRect(q.x-5,q.y-15,8,5)}
-function drawForklift(w){const p=iso(w.x,w.y,5);ctx.save();ctx.translate(p.x,p.y+Math.sin(w.phase)*1.2);ctx.fillStyle='#101a20';ctx.beginPath();ctx.ellipse(0,4,22,9,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e4a62f';ctx.beginPath();ctx.moveTo(-18,-5);ctx.lineTo(9,-12);ctx.lineTo(19,-4);ctx.lineTo(13,7);ctx.lineTo(-14,7);ctx.closePath();ctx.fill();ctx.strokeStyle='#633f17';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#263e49';ctx.fillRect(-4,-18,13,12);ctx.fillStyle='#8eb5c2';ctx.fillRect(-2,-17,8,8);ctx.fillStyle='#d8e1dd';ctx.fillRect(14,-19,3,23);ctx.fillRect(17,2,14,3);ctx.fillStyle='#202a2e';for(const x of [-11,11]){ctx.beginPath();ctx.ellipse(x,7,5,3,0,0,Math.PI*2);ctx.fill()}ctx.fillStyle='#f6d16b';ctx.fillRect(-17,-7,4,3);ctx.restore()}
-function draw(){drawFloor();
- // racks in staggered rows
- for(let y=1;y<7;y++){for(const x of [2.7,5.5,8]){drawRack(x,y);}}
- // stored pallets placed visibly in front of rack base
- for(const p of S.pallets.filter(p=>p.state==='stored'))drawPallet(p);
- // waiting pallets
- S.pallets.filter(p=>p.state==='waiting').forEach(drawPallet);
- // carried cargo behind forklift
- for(const w of S.workers){if(w.pallet&&w.state==='toRack')drawPallet({x:w.x-.1,y:w.y-.1})}
- for(const w of S.workers)drawForklift(w);
- // zone labels
- ctx.font='bold 12px system-ui';ctx.fillStyle='#e5c27d';let a=iso(.1,7.1,4);ctx.fillText('PRZYJĘCIE',a.x-35,a.y+24);let b=iso(8.4,.8,4);ctx.fillStyle='#9bd1ae';ctx.fillText('WYSYŁKA',b.x-25,b.y+24);
- ctx.fillStyle='#d2e0e2';ctx.font='11px system-ui';ctx.fillText('REGAŁY WYSOKIEGO SKŁADOWANIA',360,80);
- requestAnimationFrame(draw)}
-function tick(){S.tick++;for(const w of S.workers){if(w.state!=='idle')move(w)}if(S.tick%5===0){assign();update()}if(S.tick%20===0){localStorage.setItem('idleWarehouseSave',JSON.stringify({money:S.money,staff:S.staff,capacity:S.capacity,stored:S.stored,done:S.done,pallets:S.pallets}));$('saveState').textContent='Zapisano'} }
-$('shipment').onclick=addDelivery;
-$('hire').onclick=()=>{if(S.money<650||S.staff>=3)return;S.money-=650;S.staff++;spawnWorker();log('<strong>Nowy wózkowy zatrudniony.</strong> Gotowy do pracy.');assign();update()};
-$('upgrade').onclick=()=>{if(S.money<500||S.capacity>=60)return;S.money-=500;S.capacity+=12;log('<strong>Rozbudowa regałów:</strong> +12 miejsc paletowych.');update()};
-$('reset').onclick=()=>{if(!confirm('Na pewno rozpocząć grę od nowa? Bieżący zapis zostanie usunięty.'))return;localStorage.removeItem('idleWarehouseSave');location.reload()};
-const saved=localStorage.getItem('idleWarehouseSave');if(saved){try{const d=JSON.parse(saved);Object.assign(S,{money:d.money,staff:d.staff,capacity:d.capacity,stored:d.stored,done:d.done,pallets:d.pallets||[]});for(let i=0;i<S.staff;i++)spawnWorker();log('Wczytano poprzedni zapis gry.');assign()}catch(e){}}
-if(!S.workers.length)spawnWorker();update();log('Zmiana rozpoczęta. Magazyn czeka na pierwszą dostawę.');draw();setInterval(tick,50);
+
+function rackSlot(){
+
+ for(let y=1;y<7;y++)for(const x of [3,6,9]){
+
+  if(!S.pallets.some(p=>p.state==="stored"&&p.rx===x&&p.ry===y))return{x,y};
+
+ }
+
+ return null;
+
+}
+
+function addDelivery(){
+
+ if(S.money<100){log("Brakuje środków na dostawę.");return}
+
+ const type=$("deliveryType").value;
+
+ const occupied=S.pallets.filter(p=>p.type==="storage"&&p.state!=="shipped").length;
+
+ if(type==="storage"&&occupied+5>S.capacity){log("Brak miejsca. Rozbuduj regały.");return}
+
+ S.money-=100;
+
+ for(let i=0;i<5;i++)S.pallets.push({x:.25+i*.23,y:7.25,type,state:"waiting",rx:null,ry:null});
+
+ log(type==="cross"?"<strong>Cross-docking:</strong> 5 palet skierowano do wysyłki.":"<strong>Dostawa magazynowa:</strong> 5 palet oczekuje na składowanie.");
+
+ assign();update();
+
+}
+
+function assign(){
+
+ for(const w of S.workers){
+
+  if(w.state!=="idle")continue;
+
+  const p=S.pallets.find(p=>p.state==="waiting");
+
+  if(!p)continue;
+
+  let target;
+
+  if(p.type==="storage"){target=rackSlot();if(!target)continue}
+
+  else target={x:9.65,y:.9};
+
+  p.state="moving";p.rx=target.x;p.ry=target.y;
+
+  w.pallet=p;w.state="toPallet";w.target={x:p.x,y:p.y};
+
+ }
+
+}
+
+function move(w){
+
+ if(!w.target)return;
+
+ const dx=w.target.x-w.x,dy=w.target.y-w.y,d=Math.hypot(dx,dy);
+
+ if(d<.035){
+
+  w.x=w.target.x;w.y=w.target.y;
+
+  if(w.state==="toPallet"){
+
+   w.state="toDestination";w.target={x:w.pallet.rx,y:w.pallet.ry};
+
+   w.pallet.state="carried";w.pallet.x=w.x;w.pallet.y=w.y;
+
+  }else if(w.state==="toDestination"){
+
+   const p=w.pallet;
+
+   if(p.type==="storage"){
+
+    p.state="stored";p.x=p.rx;p.y=p.ry;S.stored++;S.money+=35;
+
+    log("<strong>Składowanie zakończone:</strong> +35 zł.");
+
+   }else{
+
+    p.state="shipped";p.x=9.65;p.y=.9;S.done++;S.money+=55;
+
+    log("<strong>Wysyłka zakończona:</strong> +55 zł.");
+
+   }
+
+   w.pallet=null;w.state="idle";w.target=null;assign();update();
+
+  }
+
+  return;
+
+ }
+
+ const step=Math.min(w.speed,d);
+
+ w.x+=dx/d*step;w.y+=dy/d*step;
+
+ w.hours+=1/1200;
+
+ w.speed=workerSpeed(w);
+
+}
+
+function update(){
+
+ const waiting=S.pallets.filter(p=>p.state==="waiting").length;
+
+ const moving=S.pallets.filter(p=>p.state==="moving"||p.state==="carried").length;
+
+ const shipped=S.pallets.filter(p=>p.type==="cross"&&p.state==="shipped").length;
+
+ $("money").textContent=fmt(S.money)+" zł";
+
+ $("stored").textContent=S.stored+" / "+S.capacity;
+
+ $("done").textContent=S.done;
+
+ $("staff").textContent=S.workers.length;
+
+ $("waiting").textContent=waiting;
+
+ $("moving").textContent=moving;
+
+ $("dispatch").textContent=shipped;
+
+ $("free").textContent=Math.max(0,S.capacity-S.stored);
+
+ $("fill").style.width=Math.min(100,S.stored/S.capacity*100)+"%";
+
+ $("capacityText").textContent="Pojemność: "+S.capacity+" miejsc paletowych.";
+
+ $("hire").disabled=S.money<650||S.workers.length>=6;
+
+ $("upgrade").disabled=S.money<500||S.capacity>=72;
+
+ $("shipment").disabled=S.money<100;
+
+ $("crew").innerHTML=S.workers.map(w=>
+
+  '<div class="worker"><div class="row"><span class="worker-name">'+w.name+'</span><span class="tag '+(w.state==="idle"?"":"busy")+'">'+(w.state==="idle"?"WOLNY":"W TRASIE")+'</span></div>'+
+
+  '<div class="row muted"><span>Staż: '+w.hours.toFixed(1)+' h</span><b>'+wage(w)+' zł/h</b></div>'+
+
+  '<div class="progress"><b style="width:'+Math.min(100,w.hours/500*100)+'%"></b></div></div>'
+
+ ).join("");
+
+}
+
+function poly(points,fill,stroke="#182830",lw=1){
+
+ ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+
+ ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();
+
+}
+
+function diamond(x,y,z,fill,stroke="#314a53"){
+
+ const p=iso(x,y,z);
+
+ poly([{x:p.x,y:p.y},{x:p.x+TW/2,y:p.y+TH/2},{x:p.x,y:p.y+TH},{x:p.x-TW/2,y:p.y+TH/2}],fill,stroke);
+
+}
+
+function box3(x,y,z,w,d,h,top,side1,side2){
+
+ const p=iso(x,y,z),a=p;
+
+ const b={x:p.x+w*TW/2,y:p.y+w*TH/2};
+
+ const c={x:p.x+(w-d)*TW/2,y:p.y+(w+d)*TH/2};
+
+ const e={x:p.x-d*TW/2,y:p.y+d*TH/2};
+
+ const q=iso(x,y,z-h),aa=q;
+
+ const bb={x:q.x+w*TW/2,y:q.y+w*TH/2};
+
+ const cc={x:q.x+(w-d)*TW/2,y:q.y+(w+d)*TH/2};
+
+ const ee={x:q.x-d*TW/2,y:q.y+d*TH/2};
+
+ poly([e,c,cc,ee],side1);poly([b,c,cc,bb],side2);poly([a,b,c,e],top);
+
+}
+
+function floor(){
+
+ ctx.clearRect(0,0,1100,690);
+
+ const g=ctx.createLinearGradient(0,0,0,690);
+
+ g.addColorStop(0,"#314b55");g.addColorStop(1,"#1b3039");
+
+ ctx.fillStyle=g;ctx.fillRect(0,0,1100,690);
+
+ for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+
+  const edge=x===0||y===0||x===COLS-1||y===ROWS-1;
+
+  diamond(x,y,0,edge?"#263c45":((x+y)%2?"#304852":"#2c434d"),edge?"#405660":"#3a535d");
+
+ }
+
+ ctx.save();ctx.setLineDash([8,8]);ctx.strokeStyle="#e0c27b66";ctx.lineWidth=2;
+
+ for(const x of [1.5,4.5,7.5]){
+
+  const a=iso(x,.7,1),b=iso(x,7.2,1);
+
+  ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+
+ }
+
+ ctx.restore();
+
+ diamond(.25,7,2,"#80643a","#d5a34a");
+
+ diamond(9.55,.8,2,"#3b6657","#72b58d");
+
+}
+
+function rack(x,y){
+
+ const p=iso(x,y,0);
+
+ ctx.fillStyle="#101b21";ctx.beginPath();ctx.ellipse(p.x,p.y+3,25,9,0,0,Math.PI*2);ctx.fill();
+
+ for(let z=0;z<3;z++){
+
+  const q=iso(x-.35,y-.2,24+z*34);
+
+  box3(x-.35,y-.2,24+z*34,.7,.55,5,"#7d969d","#405b66","#526f7a");
+
+  ctx.fillStyle="#a2b5b8";ctx.fillRect(q.x-23,q.y-2,46,4);
+
+ }
+
+ for(const dx of [-.3,.3])for(const dy of [-.2,.2]){
+
+  const q=iso(x+dx,y+dy,0);
+
+  ctx.fillStyle="#9aafb5";ctx.fillRect(q.x-3,q.y-55,6,56);
+
+ }
+
+}
+
+function pallet(p){
+
+ const q=iso(p.x,p.y,3);
+
+ ctx.save();
+
+ ctx.fillStyle="#101a20aa";ctx.beginPath();ctx.ellipse(q.x+2,q.y+3,17,7,0,0,Math.PI*2);ctx.fill();
+
+ box3(p.x-.18,p.y-.12,7,.38,.25,5,"#d5a66a","#805333","#a66d3d");
+
+ box3(p.x-.18,p.y-.12,19,.38,.25,12,p.type==="cross"?"#d7c28b":"#c18b50","#8a603c","#a97442");
+
+ ctx.fillStyle="#f1dfb6";ctx.fillRect(q.x-5,q.y-12,8,5);
+
+ ctx.restore();
+
+}
+
+function forklift(w){
+
+ const p=iso(w.x,w.y,5);
+
+ ctx.save();ctx.translate(p.x,p.y+Math.sin(w.phase)*1.2);
+
+ ctx.fillStyle="#101a20aa";ctx.beginPath();ctx.ellipse(0,7,24,10,0,0,Math.PI*2);ctx.fill();
+
+ ctx.fillStyle="#171f23";
+
+ for(const x of [-12,12]){ctx.beginPath();ctx.ellipse(x,8,6,4,0,0,Math.PI*2);ctx.fill()}
+
+ ctx.fillStyle="#e2a52f";ctx.beginPath();
+
+ ctx.moveTo(-19,-4);ctx.lineTo(9,-14);ctx.lineTo(20,-5);ctx.lineTo(14,8);ctx.lineTo(-14,8);ctx.closePath();ctx.fill();
+
+ ctx.strokeStyle="#6d491b";ctx.lineWidth=2;ctx.stroke();
+
+ ctx.fillStyle="#263e49";ctx.fillRect(-3,-22,13,15);
+
+ ctx.fillStyle="#8ebbc7";ctx.fillRect(-1,-20,9,10);
+
+ ctx.fillStyle="#dce6e1";ctx.fillRect(16,-20,3,29);ctx.fillRect(19,7,15,3);
+
+ ctx.fillStyle="#f8d16c";ctx.fillRect(-17,-6,4,3);
+
+ ctx.restore();
+
+}
+
+function draw(){
+
+ floor();
+
+ for(let y=1;y<7;y++)for(const x of [3,6,9])rack(x,y);
+
+ for(const p of S.pallets.filter(p=>p.state==="stored"||p.state==="waiting"))pallet(p);
+
+ for(const w of S.workers){
+
+  if(w.pallet&&w.state==="toDestination")pallet({x:w.x-.1,y:w.y-.1,type:w.pallet.type});
+
+ }
+
+ for(const w of S.workers)forklift(w);
+
+ ctx.font="bold 13px system-ui";ctx.fillStyle="#f1cf88";
+
+ let a=iso(.1,7.2,5);ctx.fillText("STREFA PRZYJĘĆ",a.x-55,a.y+22);
+
+ let b=iso(9.1,.6,5);ctx.fillStyle="#9bd1ae";ctx.fillText("STREFA WYSYŁKI",b.x-48,b.y+24);
+
+ requestAnimationFrame(draw);
+
+}
+
+function gameTick(){
+
+ S.tick++;
+
+ for(const w of S.workers)if(w.state!=="idle")move(w);
+
+ S.gameMinutes++;
+
+ if(S.gameMinutes%1200===0){
+
+  const cost=S.workers.reduce((sum,w)=>sum+wage(w),0);
+
+  S.money-=cost;
+
+  log("<strong>Rozliczenie godzinowe:</strong> wypłacono "+cost+" zł.");
+
+  if(S.money<0)log("<strong>Uwaga:</strong> saldo ujemne. Zwiększ przychody.");
+
+ }
+
+ const total=360+Math.floor(S.tick/40);
+
+ $("clock").textContent=String(Math.floor(total/60)%24).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
+
+ if(S.tick%5===0){assign();update()}
+
+ if(S.tick%40===0){
+
+  localStorage.setItem("idleWarehouseSave",JSON.stringify({
+
+   money:S.money,capacity:S.capacity,stored:S.stored,done:S.done,
+
+   workers:S.workers.map(w=>({name:w.name,hours:w.hours})),
+
+   pallets:S.pallets
+
+  }));
+
+  $("saveState").textContent="Zapisano";
+
+ }
+
+}
+
+$("shipment").onclick=addDelivery;
+
+$("hire").onclick=()=>{
+
+ if(S.money<650||S.workers.length>=6)return;
+
+ S.money-=650;spawnWorker();
+
+ log("<strong>Nowy pracownik:</strong> "+S.workers[S.workers.length-1].name+" rozpoczyna zmianę.");
+
+ update();
+
+};
+
+$("upgrade").onclick=()=>{
+
+ if(S.money<500||S.capacity>=72)return;
+
+ S.money-=500;S.capacity+=12;
+
+ log("<strong>Rozbudowa regałów:</strong> +12 miejsc.");
+
+ update();
+
+};
+
+$("reset").onclick=()=>{
+
+ if(!confirm("Na pewno rozpocząć grę od nowa?"))return;
+
+ localStorage.removeItem("idleWarehouseSave");location.reload();
+
+};
+
+try{
+
+ const d=JSON.parse(localStorage.getItem("idleWarehouseSave")||"null");
+
+ if(d){
+
+  Object.assign(S,{
+
+   money:d.money??S.money,capacity:d.capacity??S.capacity,
+
+   stored:d.stored??0,done:d.done??0,pallets:d.pallets||[]
+
+  });
+
+  (d.workers||[]).forEach(w=>spawnWorker(w.name,w.hours||0));
+
+  log("Wczytano poprzedni zapis gry.");
+
+ }
+
+}catch(e){log("Nie udało się odczytać zapisu.");}
+
+if(!S.workers.length){
+
+ spawnWorker("Adam Kowalski",12);
+
+ spawnWorker("Piotr Nowak",150);
+
+}
+
+update();
+
+log("Zmiana rozpoczęta. Załoga gotowa do pracy.");
+
+draw();
+
+setInterval(gameTick,50);
+
 })();
+
 </script>
-</body></html>
+
+</body>
+
+</html>

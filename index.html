@@ -1,739 +1,898 @@
 
-
 <!DOCTYPE html>
-
 <html lang="pl">
-
 <head>
-
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width,initial-scale=1">
-
-<title>Idle Warehouse 0.2</title>
-
+<title>Idle Warehouse 0.3.0</title>
 <style>
-
-:root{--bg:#101820;--panel:#192630;--line:#344956;--text:#edf3f5;--muted:#9fb1ba;--gold:#f4b942;--green:#62c795}
-
+:root{
+  --bg:#0d151c;--panel:#182630;--panel2:#213541;
+  --line:#354b58;--text:#edf3f5;--muted:#9aadb7;
+  --gold:#e6aa42;--green:#65c994;--red:#e47c70;
+}
 *{box-sizing:border-box}
-
-body{margin:0;background:radial-gradient(circle at 50% -20%,#2a414e,#101820 60%);color:var(--text);font:14px/1.4 system-ui,sans-serif}
-
-header{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;background:#111c24;border-bottom:1px solid var(--line)}
-
-.brand{font-weight:900;letter-spacing:.12em;font-size:18px}.brand span{color:var(--gold)}
-
-.sub{color:var(--muted);font-size:11px;letter-spacing:.1em}
-
-.status{font-size:12px;color:var(--green)}
-
-main{max-width:1550px;margin:auto;padding:14px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px}
-
-.card{background:linear-gradient(145deg,#1b2a34,#17232c);border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:0 12px 30px #0003}
-
-.topstats{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:10px}
-
-.stat{background:#111d25;border:1px solid #2d414d;border-radius:9px;padding:9px}
-
-.stat label{display:block;color:var(--muted);font-size:10px;text-transform:uppercase}
-
-.stat strong{display:block;font-size:18px;margin-top:3px}
-
-.canvas-wrap{padding:8px;background:#17252e}
-
-canvas{width:100%;height:auto;display:block;border-radius:8px}
-
-.legend{display:flex;flex-wrap:wrap;gap:12px;padding:10px;color:var(--muted);font-size:11px}
-
-.legend i{display:inline-block;width:9px;height:9px;margin-right:5px}
-
-.help{padding:10px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}
-
-.side{display:flex;flex-direction:column;gap:11px}
-
+body{
+  margin:0;background:radial-gradient(ellipse at top,#263d49,#0d151c 65%);
+  color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif
+}
+header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 22px;background:#101b23;border-bottom:1px solid var(--line)
+}
+.brand{font-size:20px;font-weight:900;letter-spacing:.12em}
+.brand span{color:var(--gold)}
+.sub{font-size:10px;letter-spacing:.15em;color:var(--muted)}
+.status{font-size:11px;color:var(--green)}
+main{
+  max-width:1500px;margin:auto;padding:15px;
+  display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px
+}
+.card{
+  background:linear-gradient(145deg,#1b2b35,#14212a);
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  box-shadow:0 10px 30px #0004
+}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px}
+.stat{background:#101b23;border:1px solid #304550;border-radius:8px;padding:10px}
+.stat label{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.stat strong{display:block;font-size:20px;margin-top:3px;font-variant-numeric:tabular-nums}
+.canvas-wrap{padding:9px;background:#14232c}
+canvas{
+  display:block;width:100%;height:auto;border-radius:7px;
+  background:#263b43;touch-action:pan-y
+}
+.legend{display:flex;gap:13px;flex-wrap:wrap;padding:10px 13px;color:var(--muted);font-size:10px}
+.legend i{display:inline-block;width:9px;height:9px;margin-right:5px;border-radius:2px}
+.side{display:flex;flex-direction:column;gap:12px}
 .section{padding:13px}
-
-h3{margin:0 0 10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
-
-.btn{width:100%;text-align:left;margin:4px 0;padding:10px;border:1px solid #52636b;border-radius:8px;background:#2b3e49;color:white;font-weight:700;cursor:pointer}
-
-.btn.primary{background:#b87c1b;color:#171b1d;border-color:#e6ad46}
-
-.btn:disabled{opacity:.4;cursor:not-allowed}
-
-.muted{color:var(--muted);font-size:11px}
-
-.row{display:flex;justify-content:space-between;gap:8px;align-items:center}
-
-.select{width:100%;background:#111d25;color:white;border:1px solid #405560;padding:9px;border-radius:8px;margin:5px 0}
-
-.progress{height:7px;background:#0e171d;border-radius:8px;overflow:hidden;margin-top:6px}
-
-.progress b{display:block;height:100%;background:linear-gradient(90deg,#d89128,#f5c45c)}
-
-.worker{padding:8px;background:#111d25;border:1px solid #2d414d;border-radius:8px;margin:7px 0}
-
-.worker-name{font-weight:800}
-
-.tag{font-size:10px;padding:2px 6px;border-radius:5px;background:#314954}
-
-.busy{background:#59451f;color:#f4cf78}
-
-.log{height:130px;overflow:auto;display:flex;flex-direction:column-reverse;gap:6px}
-
-.log p{margin:0;padding:7px;background:#111d25;border-radius:6px;color:#b9c8ce;font-size:11px}
-
-.log strong{color:#f3c56c}
-
-footer{text-align:center;color:#71858e;font-size:11px;padding:15px}
-
-@media(max-width:1000px){main{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.wide{grid-column:1/-1}}
-
-@media(max-width:600px){header{padding:12px}main{padding:8px}.topstats{grid-template-columns:repeat(2,1fr)}.side{grid-template-columns:1fr}}
-
+h3{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#c8d7dc;margin:0 0 11px}
+.btn{
+  width:100%;margin:4px 0;padding:10px 11px;text-align:left;
+  border:1px solid #526671;border-radius:7px;background:#2b414d;
+  color:white;font-weight:700;cursor:pointer
+}
+.btn.primary{background:#a96e19;border-color:#e2aa49;color:#fff}
+.btn:hover{filter:brightness(1.15)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.muted{font-size:11px;color:var(--muted)}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:7px 0}
+.value{font-weight:800;font-variant-numeric:tabular-nums}
+.progress{height:7px;background:#0b141a;border-radius:8px;overflow:hidden;margin-top:7px}
+.progress b{display:block;height:100%;background:linear-gradient(90deg,#bd7c23,#f2c15c);width:0}
+.staff-list{display:flex;flex-direction:column;gap:7px}
+.worker-card{background:#101c24;border:1px solid #304550;border-radius:7px;padding:9px}
+.worker-card strong{font-size:12px}
+.worker-card small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.log{height:145px;overflow:auto;display:flex;flex-direction:column-reverse;gap:6px}
+.log p{margin:0;padding:7px;background:#101c24;border-radius:5px;color:#b8c8ce;font-size:10px}
+.log strong{color:#f0c46e}
+footer{text-align:center;padding:0 10px 20px;color:#71858e;font-size:10px}
+@media(max-width:950px){
+  main{grid-template-columns:1fr}
+  .side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .wide{grid-column:1/-1}
+}
+@media(max-width:560px){
+  header{padding:12px}.stats{grid-template-columns:repeat(2,1fr)}
+  main{padding:8px;gap:9px}.side{grid-template-columns:1fr}
+  .wide{grid-column:auto}.stat strong{font-size:18px}
+}
 </style>
-
 </head>
-
 <body>
-
 <header>
-
- <div>
-
-  <div class="brand">IDLE <span>WAREHOUSE</span></div>
-
-  <div class="sub">CENTRUM LOGISTYCZNE • ZMIANA 01 • BUILD 0.2</div>
-
- </div>
-
- <div class="status">● SYSTEM OPERACYJNY</div>
-
+  <div>
+    <div class="brand">IDLE <span>WAREHOUSE</span></div>
+    <div class="sub">CENTRUM LOGISTYCZNE • WERSJA 0.3.0</div>
+  </div>
+  <div class="status">● SYSTEM OPERACYJNY</div>
 </header>
 
 <main>
-
 <div class="card">
-
- <div class="topstats">
-
-  <div class="stat"><label>Gotówka</label><strong id="money">1200 zł</strong></div>
-
-  <div class="stat"><label>Składowane</label><strong id="stored">0 / 24</strong></div>
-
-  <div class="stat"><label>Obsłużone</label><strong id="done">0</strong></div>
-
-  <div class="stat"><label>Pracownicy</label><strong id="staff">2</strong></div>
-
-  <div class="stat"><label>Czas zmiany</label><strong id="clock">06:00</strong></div>
-
- </div>
-
- <div class="canvas-wrap">
-
-  <canvas id="warehouse" width="1100" height="690"></canvas>
-
- </div>
-
- <div class="legend">
-
-  <span><i style="background:#e0a33e"></i>Wózek widłowy</span>
-
-  <span><i style="background:#b9783e"></i>Paleta</span>
-
-  <span><i style="background:#466c7c"></i>Regały</span>
-
-  <span><i style="background:#69b98d"></i>Wysyłka</span>
-
- </div>
-
- <div class="help">Widok izometryczny 2.5D • Automatyczna logistyka • Cross-docking i składowanie</div>
-
+  <div class="stats">
+    <div class="stat"><label>Gotówka</label><strong id="money">1 200 zł</strong></div>
+    <div class="stat"><label>Składowane palety</label><strong id="stored">0 / 24</strong></div>
+    <div class="stat"><label>Obsłużone palety</label><strong id="done">0</strong></div>
+    <div class="stat"><label>Pracownicy</label><strong id="staff">2</strong></div>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="warehouse" width="1000" height="650"></canvas>
+  </div>
+  <div class="legend">
+    <span><i style="background:#e5a42f"></i>Wózek widłowy</span>
+    <span><i style="background:#b87943"></i>Paleta</span>
+    <span><i style="background:#587985"></i>Regały stalowe</span>
+    <span><i style="background:#65c994"></i>Wysyłka</span>
+  </div>
+  <div class="legend" style="border-top:1px solid #304550">
+    Symulacja czasu: 1 minuta rzeczywista = 1 godzina gry.
+    Doświadczenie pracowników rośnie tylko podczas jazdy wózkiem.
+  </div>
 </div>
 
 <aside class="side">
+  <div class="card section">
+    <h3>Operacje magazynowe</h3>
+    <button class="btn primary" id="storageDelivery">＋ Dostawa do magazynu <span style="float:right">100 zł</span></button>
+    <div class="muted">5 palet do składowania. Przychód za przyjęcie i odłożenie: 35 zł za paletę.</div>
+    <button class="btn" id="crossDelivery">⇢ Dostawa cross-docking <span style="float:right">100 zł</span></button>
+    <div class="muted">5 palet kierowanych bezpośrednio do strefy wysyłki. Przychód: 55 zł za paletę.</div>
+    <button class="btn" id="order">＋ Zrealizuj zamówienie</button>
+    <div class="muted">Pracownik pobierze paletę z regału i przewiezie ją do wysyłki. Przychód: 80 zł.</div>
+  </div>
 
- <div class="card section">
+  <div class="card section">
+    <h3>Rozwój firmy</h3>
+    <button class="btn" id="hire">＋ Zatrudnij pracownika <span style="float:right">650 zł</span></button>
+    <button class="btn" id="upgrade">＋ Rozbuduj regały <span style="float:right">500 zł</span></button>
+    <div class="muted" id="capacityText">Pojemność: 24 miejsca paletowe.</div>
+  </div>
 
-  <h3>Planowanie dostaw</h3>
+  <div class="card section">
+    <h3>Stan operacji</h3>
+    <div class="row"><span class="muted">Oczekujące dostawy</span><b id="waiting">0</b></div>
+    <div class="row"><span class="muted">W transporcie</span><b id="moving">0</b></div>
+    <div class="row"><span class="muted">Wolne miejsca</span><b id="free">24</b></div>
+    <div class="row"><span class="muted">Zamówienia w kolejce</span><b id="orders">0</b></div>
+    <div class="muted">Zapełnienie magazynu</div>
+    <div class="progress"><b id="fill"></b></div>
+  </div>
 
-  <label class="muted">Rodzaj towaru</label>
+  <div class="card section">
+    <h3>Załoga i doświadczenie</h3>
+    <div class="staff-list" id="staffList"></div>
+  </div>
 
-  <select id="deliveryType" class="select">
+  <div class="card section wide">
+    <h3>Dziennik zmiany</h3>
+    <div class="log" id="log"></div>
+  </div>
 
-   <option value="storage">Towar magazynowy • 5 palet</option>
-
-   <option value="cross">Cross-docking • 5 palet</option>
-
-  </select>
-
-  <button class="btn primary" id="shipment">＋ Przyjmij dostawę — 100 zł</button>
-
-  <div class="muted">Magazynowy trafia na regał. Cross-docking jedzie bezpośrednio do wysyłki.</div>
-
-  <button class="btn" id="hire">＋ Zatrudnij wózkowego — 650 zł</button>
-
-  <button class="btn" id="upgrade">＋ Rozbuduj regały — 500 zł</button>
-
-  <div class="muted" id="capacityText">Pojemność: 24 miejsca.</div>
-
- </div>
-
- <div class="card section">
-
-  <h3>Stan operacji</h3>
-
-  <div class="row"><span class="muted">Kolejka przyjęcia</span><b id="waiting">0</b></div>
-
-  <div class="row"><span class="muted">W transporcie</span><b id="moving">0</b></div>
-
-  <div class="row"><span class="muted">Wysłane</span><b id="dispatch">0</b></div>
-
-  <div class="row"><span class="muted">Wolne miejsca</span><b id="free">24</b></div>
-
-  <div class="muted" style="margin-top:10px">Zajętość regałów</div>
-
-  <div class="progress"><b id="fill" style="width:0%"></b></div>
-
- </div>
-
- <div class="card section wide">
-
-  <h3>Załoga i doświadczenie</h3>
-
-  <div class="muted">Staż rośnie tylko podczas jazdy. Doświadczenie zwiększa wydajność i stawkę godzinową.</div>
-
-  <div id="crew"></div>
-
- </div>
-
- <div class="card section wide">
-
-  <h3>Dziennik zmiany</h3>
-
-  <div class="log" id="log"></div>
-
- </div>
-
- <div class="card section wide">
-
-  <div class="row"><h3>Zapis gry</h3><span class="muted" id="saveState">Autozapis aktywny</span></div>
-
-  <button class="btn" id="reset">↻ Rozpocznij od nowa</button>
-
- </div>
-
+  <div class="card section wide">
+    <div class="row"><h3 style="margin:0">Zapis gry</h3><span class="muted" id="saveState">Autozapis aktywny</span></div>
+    <button class="btn" id="reset">↻ Rozpocznij od nowa</button>
+  </div>
 </aside>
-
 </main>
-
-<footer>Idle Warehouse • Wersja 0.2.0</footer>
+<footer>Idle Warehouse 0.3.0 • Izometryczne centrum logistyczne</footer>
 
 <script>
-
 (()=>{
-
 "use strict";
 
-const canvas=document.getElementById("warehouse");
-
+const $=id=>document.getElementById(id);
+const canvas=$("warehouse");
 const ctx=canvas.getContext("2d");
 
-const $=id=>document.getElementById(id);
+const S={
+  money:1200,capacity:24,stored:0,done:0,
+  pallets:[],workers:[],orderQueue:0,
+  gameMinutes:0,lastPayroll:0,nextId:1,tick:0
+};
 
-const names=["Adam Kowalski","Piotr Nowak","Marek Wiśniewski","Tomasz Zieliński","Paweł Wójcik","Kamil Lewandowski"];
+const names=[
+  "Adam Kowalski","Piotr Nowak","Marek Wiśniewski",
+  "Tomasz Wójcik","Kamil Lewandowski","Paweł Zieliński"
+];
 
-const S={money:1200,capacity:24,stored:0,done:0,workers:[],pallets:[],tick:0,gameMinutes:0};
+const COLS=[1.2,2.5,3.8,5.1,6.4,7.7];
+const OX=500,OY=105,TW=65,TH=27;
 
-const COLS=11,ROWS=8,OX=550,OY=145,TW=78,TH=39;
-
-const iso=(x,y,z=0)=>({x:OX+(x-y)*TW/2,y:OY+(x+y)*TH/2-z});
-
-const fmt=n=>Math.floor(n).toLocaleString("pl-PL");
-
+function iso(x,y,z=0){
+  return {x:OX+(x-y)*TW/2,y:OY+(x+y)*TH/2-z};
+}
+function money(v){
+  return Math.floor(v).toLocaleString("pl-PL")+" zł";
+}
 function log(message){
-
- const p=document.createElement("p");
-
- p.innerHTML=message;
-
- $("log").prepend(p);
-
- while($("log").children.length>35)$("log").lastChild.remove();
-
+  const p=document.createElement("p");
+  p.textContent=message;
+  $("log").prepend(p);
+  while($("log").children.length>35)$("log").lastChild.remove();
+}
+function wage(w){return 24+Math.min(18,w.hours*.035)}
+function speed(w){return .62+Math.min(.28,w.hours*.0008)}
+function createWorker(name,hours){
+  S.workers.push({
+    name,hours,state:"idle",x:.5,y:11.5,
+    target:null,palletId:null,mode:null,
+    phase:Math.random()*6.28
+  });
+}
+function getPallet(id){return S.pallets.find(p=>p.id===id)}
+function allSlots(){
+  const rows=S.capacity/6,slots=[];
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<6;c++)slots.push({x:COLS[c],y:2.1+r*.85});
+  }
+  return slots;
+}
+function occupiedCount(){
+  return S.pallets.filter(p=>p.state==="stored"||p.state==="reserved"&&p.mode==="storage").length;
+}
+function freeSlot(){
+  const slots=allSlots();
+  return slots.find(s=>!S.pallets.some(p=>
+    (p.state==="stored"||p.state==="reserved")&&p.rx===s.x&&p.ry===s.y
+  ))||null;
 }
 
-function wage(w){return Math.round(24+Math.min(18,w.hours*.035))}
+/* ----------------- GEOMETRIA 2.5D ----------------- */
 
-function workerSpeed(w){return .038+Math.min(.025,w.hours*.000035)}
-
-function spawnWorker(name,hours=0){
-
- const i=S.workers.length;
-
- S.workers.push({
-
-  id:Date.now()+Math.random(),name:name||names[i%names.length],
-
-  hours,state:"idle",target:null,pallet:null,
-
-  x:.65+(i%2)*.25,y:6.9,
-
-  speed:workerSpeed({hours}),phase:Math.random()*6.2
-
- });
-
+function polygon(points,fill,stroke="#172831",lw=1){
+  ctx.beginPath();
+  points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+  ctx.closePath();
+  ctx.fillStyle=fill;ctx.fill();
+  if(stroke){
+    ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();
+  }
 }
 
-function rackSlot(){
+/* Bryła z górną, przednią i boczną ścianą. */
+function prism(x,y,w,d,h,colors,z=0){
+  const A=iso(x,y,z+h);
+  const B=iso(x+w,y,z+h);
+  const C=iso(x+w,y+d,z+h);
+  const D=iso(x,y+d,z+h);
+  const a=iso(x,y,z);
+  const b=iso(x+w,y,z);
+  const c=iso(x+w,y+d,z);
+  const e=iso(x,y+d,z);
 
- for(let y=1;y<7;y++)for(const x of [3,6,9]){
-
-  if(!S.pallets.some(p=>p.state==="stored"&&p.rx===x&&p.ry===y))return{x,y};
-
- }
-
- return null;
-
+  // Lewa/przednia ściana
+  polygon([D,C,c,e],colors.front);
+  // Prawa ściana
+  polygon([B,C,c,b],colors.side);
+  // Górna powierzchnia
+  polygon([A,B,C,D],colors.top);
 }
 
-function addDelivery(){
+function line3(a,b,color,width=2){
+  const p=iso(a.x,a.y,a.z||0);
+  const q=iso(b.x,b.y,b.z||0);
+  ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);
+  ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();
+}
 
- if(S.money<100){log("Brakuje środków na dostawę.");return}
+function ellipseAt(x,y,rx,ry,color){
+  const p=iso(x,y,1);
+  ctx.beginPath();
+  ctx.ellipse(p.x,p.y,rx,ry,0,0,Math.PI*2);
+  ctx.fillStyle=color;ctx.fill();
+}
 
- const type=$("deliveryType").value;
+function drawFloor(){
+  const bg=ctx.createLinearGradient(0,0,0,650);
+  bg.addColorStop(0,"#879397");
+  bg.addColorStop(1,"#48565a");
+  ctx.fillStyle=bg;ctx.fillRect(0,0,1000,650);
 
- const occupied=S.pallets.filter(p=>p.type==="storage"&&p.state!=="shipped").length;
+  // Betonowe płyty posadzki
+  for(let y=0;y<15;y++){
+    for(let x=0;x<13;x++){
+      const p=iso(x,y);
+      const shade=(x+y)%2===0?"#929b9b":"#879292";
+      polygon([
+        {x:p.x,y:p.y},
+        {x:p.x+TW/2,y:p.y+TH/2},
+        {x:p.x,y:p.y+TH},
+        {x:p.x-TW/2,y:p.y+TH/2}
+      ],shade,"#727e80",.8);
+    }
+  }
 
- if(type==="storage"&&occupied+5>S.capacity){log("Brak miejsca. Rozbuduj regały.");return}
+  // Delikatne ślady eksploatacji i spoiny
+  ctx.save();
+  ctx.globalAlpha=.16;
+  for(let i=0;i<70;i++){
+    const x=(i*137)%950+20;
+    const y=(i*83)%600+20;
+    ctx.fillStyle=i%2?"#26373b":"#d2d3c9";
+    ctx.fillRect(x,y,12+(i%5)*4,1);
+  }
+  ctx.restore();
 
- S.money-=100;
+  // Główny korytarz transportowy
+  const roadA=iso(.3,11.5,2);
+  const roadB=iso(9.2,11.5,2);
+  const roadC=iso(9.2,.7,2);
 
- for(let i=0;i<5;i++)S.pallets.push({x:.25+i*.23,y:7.25,type,state:"waiting",rx:null,ry:null});
+  ctx.save();
+  ctx.lineCap="butt";
+  ctx.strokeStyle="#4d5859";
+  ctx.lineWidth=46;
+  ctx.beginPath();ctx.moveTo(roadA.x,roadA.y);
+  ctx.lineTo(roadB.x,roadB.y);ctx.lineTo(roadC.x,roadC.y);
+  ctx.stroke();
 
- log(type==="cross"?"<strong>Cross-docking:</strong> 5 palet skierowano do wysyłki.":"<strong>Dostawa magazynowa:</strong> 5 palet oczekuje na składowanie.");
+  ctx.strokeStyle="#b4a65e";
+  ctx.lineWidth=2;
+  ctx.setLineDash([14,12]);
+  ctx.beginPath();ctx.moveTo(roadA.x,roadA.y);
+  ctx.lineTo(roadB.x,roadB.y);ctx.lineTo(roadC.x,roadC.y);
+  ctx.stroke();
+  ctx.restore();
 
- assign();update();
+  // Linie bezpieczeństwa i strefy robocze
+  const intake=iso(.8,11.5,3);
+  const dispatch=iso(9.2,.8,3);
+  ctx.save();
+  ctx.setLineDash([8,5]);
+  ctx.lineWidth=3;
+  ctx.strokeStyle="#e2a64c";
+  ctx.strokeRect(intake.x-43,intake.y-19,86,38);
+  ctx.strokeStyle="#5fca92";
+  ctx.strokeRect(dispatch.x-43,dispatch.y-19,86,38);
+  ctx.restore();
 
+  label("STREFA PRZYJĘĆ",intake.x,intake.y+44,"#f5c16d");
+  label("STREFA WYSYŁKI",dispatch.x,dispatch.y-35,"#8de0ae");
+  label("KORYTARZ TRANSPORTOWY",roadB.x+5,roadB.y+28,"#f2df9b");
+}
+
+function label(str,x,y,color="#eaf0ed"){
+  ctx.save();
+  ctx.font="bold 12px Arial";
+  ctx.textAlign="center";
+  ctx.shadowColor="#18252b";
+  ctx.shadowBlur=4;
+  ctx.fillStyle=color;
+  ctx.fillText(str,x,y);
+  ctx.restore();
+}
+
+/* ----------------- REGAŁY ----------------- */
+
+function steelPost(x,y,height){
+  // Cień słupa
+  const p=iso(x,y,0);
+  ctx.fillStyle="rgba(0,0,0,.22)";
+  ctx.beginPath();ctx.ellipse(p.x,p.y+3,7,4,0,0,Math.PI*2);ctx.fill();
+
+  // Słup jako przestrzenna stalowa bryła
+  prism(x-.045,y-.045,.09,.09,height,{
+    top:"#c8d1d1",front:"#53666d",side:"#34464d"
+  });
+  // Przednia krawędź odbijająca światło
+  line3({x:x-.045,y:y-.045,z:height},{x:x-.045,y:y-.045,z:0},"#b6c4c5",1.5);
+}
+
+function rackBeam(x,y,width,z){
+  // Belka ma rzeczywistą wysokość i głębokość
+  prism(x,y,width,.13,.16,{
+    top:"#f0a44b",front:"#b95f2c",side:"#813e25"
+  },z);
+  // Jasna górna krawędź
+  line3({x,y,z:z+.16},{x:x+width,y,z:z+.16},"#ffd08a",1.5);
+}
+
+function drawRack(x,y){
+  const height=3.0;
+  const width=1.12;
+  const depth=.65;
+
+  // Cień całego regału
+  const shadow=iso(x,y+depth,0);
+  ctx.fillStyle="rgba(0,0,0,.24)";
+  ctx.beginPath();
+  ctx.ellipse(shadow.x+15,shadow.y+4,46,13,0,0,Math.PI*2);
+  ctx.fill();
+
+  // Tylne i przednie słupy
+  steelPost(x,y,height);
+  steelPost(x+width,y,height);
+  steelPost(x,y+depth,height);
+  steelPost(x+width,y+depth,height);
+
+  // Poprzeczne wzmocnienia z tyłu
+  for(let z=.4;z<height;z+=.65){
+    line3({x:x,y:y+depth,z},{x:x+width,y:y+depth,z},"#52666e",2);
+    line3({x:x+.08,y:y+depth,z:z+.55},{x:x+width-.08,y:y+depth,z:z},"#82959a",1.5);
+  }
+
+  // Belki nośne na trzech poziomach
+  for(let z of [.65,1.55,2.45]){
+    rackBeam(x,y,width,z);
+    rackBeam(x,y+depth,width,z);
+  }
+
+  // Łączniki boczne
+  for(let z of [.65,1.55,2.45]){
+    line3({x:x+width,y,z},{x:x+width,y:y+depth,z},"#d28b47",3);
+  }
+
+  // Stopy kotwiące
+  for(const px of [x,x+width]){
+    prism(px-.12,y-.1,.24,.22,.08,{
+      top:"#b8c1c2",front:"#56676c",side:"#39494d"
+    });
+  }
+}
+
+function drawRackContents(x,y){
+  // Trzy poziomy ładunku na regale
+  const levels=[.78,1.68,2.58];
+  for(let i=0;i<3;i++){
+    const z=levels[i];
+    const bx=x+.16;
+    const by=y+.13;
+
+    // Paleta
+    prism(bx,by,.75,.38,.09,{
+      top:"#c18b52",front:"#825631",side:"#674326"
+    },z);
+
+    // Kartony — oddzielne bryły
+    const boxColors=[
+      {top:"#d8b77d",front:"#9b744c",side:"#775537"},
+      {top:"#cda977",front:"#956e47",side:"#6f5035"}
+    ];
+    prism(bx+.05,by+.04,.29,.29,.35,boxColors[0],z+.09);
+    prism(bx+.38,by+.04,.29,.29,.35,boxColors[1],z+.09);
+
+    // Taśma na kartonach
+    const a=iso(bx+.19,by+.04,z+.44);
+    ctx.fillStyle="#e3d0a0";
+    ctx.fillRect(a.x-2,a.y-4,4,8);
+  }
+}
+
+/* ----------------- PALETY ----------------- */
+
+function drawPallet(p){
+  const x=p.x,y=p.y;
+  const z=3;
+
+  // Cień
+  const q=iso(x+.2,y+.2,0);
+  ctx.fillStyle="rgba(0,0,0,.25)";
+  ctx.beginPath();ctx.ellipse(q.x,q.y+3,22,9,0,0,Math.PI*2);ctx.fill();
+
+  // Drewniana podstawa
+  prism(x-.28,y-.2,.56,.4,.12,{
+    top:"#c39762",front:"#825b37",side:"#68472e"
+  },z);
+
+  // Kartony
+  const box=p.type==="crossdock"?{
+    top:"#d8c49c",front:"#a68b64",side:"#806747"
+  }:{
+    top:"#d5b78a",front:"#a17a4e",side:"#765536"
+  };
+  prism(x-.23,y-.16,.25,.31,.3,box,z+.12);
+  prism(x+.04,y-.16,.25,.31,.3,box,z+.12);
+
+  // Taśma pakowa
+  const t=iso(x-.1,y-.16,z+.43);
+  ctx.fillStyle="#ead9ac";
+  ctx.fillRect(t.x-2,t.y-3,4,9);
+}
+
+/* ----------------- WÓZEK WIDŁOWY ----------------- */
+
+function drawWheel(x,y,z){
+  const p=iso(x,y,z);
+  ctx.save();
+  ctx.translate(p.x,p.y);
+  ctx.fillStyle="#151c20";
+  ctx.beginPath();ctx.ellipse(0,0,7,12,-.12,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#69777b";
+  ctx.beginPath();ctx.ellipse(0,0,3,7,-.12,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#c3c9c5";
+  ctx.beginPath();ctx.arc(-1,-2,1.4,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+function drawForklift(w){
+  const x=w.x,y=w.y;
+  const bob=w.state==="idle"?0:Math.sin(w.phase)*.8;
+  const z=4+bob;
+
+  // Cień pojazdu
+  const sh=iso(x+.25,y+.35,0);
+  ctx.fillStyle="rgba(0,0,0,.34)";
+  ctx.beginPath();ctx.ellipse(sh.x,sh.y+5,31,14,0,0,Math.PI*2);ctx.fill();
+
+  // Koła z obu stron
+  drawWheel(x-.12,y+.08,2);
+  drawWheel(x+.53,y+.08,2);
+  drawWheel(x-.12,y+.43,2);
+  drawWheel(x+.53,y+.43,2);
+
+  // Podwozie
+  prism(x-.1,y,.78,.48,.19,{
+    top:"#f3bf45",front:"#b9781d",side:"#875515"
+  },z);
+
+  // Tylna przeciwwaga
+  prism(x-.1,y+.28,.28,.24,.38,{
+    top:"#f6c64f",front:"#bd811d",side:"#885819"
+  },z+.18);
+
+  // Komora silnika
+  prism(x+.17,y+.08,.38,.31,.32,{
+    top:"#ffd35a",front:"#d29325",side:"#9d6517"
+  },z+.19);
+
+  // Kabina operatora
+  prism(x+.24,y-.03,.31,.28,.54,{
+    top:"#425d67",front:"#29424c",side:"#1c333d"
+  },z+.5);
+
+  // Szyby kabiny
+  const glass=iso(x+.28,y-.04,z+.9);
+  ctx.fillStyle="#9fc3cc";
+  ctx.globalAlpha=.82;
+  ctx.beginPath();
+  ctx.moveTo(glass.x,glass.y);
+  ctx.lineTo(glass.x+10,glass.y+5);
+  ctx.lineTo(glass.x+10,glass.y+20);
+  ctx.lineTo(glass.x,glass.y+15);
+  ctx.closePath();ctx.fill();
+  ctx.globalAlpha=1;
+
+  // Operator
+  const op=iso(x+.4,y+.12,z+.94);
+  ctx.fillStyle="#d4a27a";
+  ctx.beginPath();ctx.arc(op.x,op.y,5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#263a42";
+  ctx.fillRect(op.x-4,op.y+4,9,10);
+
+  // Maszt — dwie stalowe prowadnice
+  prism(x+.76,y-.02,.08,.1,1.18,{
+    top:"#d8e0dc",front:"#829195",side:"#52646a"
+  },z+.05);
+  prism(x+.88,y-.02,.08,.1,1.18,{
+    top:"#c8d2d1",front:"#77888c",side:"#46595e"
+  },z+.05);
+
+  // Poprzeczka masztu
+  prism(x+.72,y-.03,.3,.11,.08,{
+    top:"#e4e9e5",front:"#7b8b8d",side:"#536469"
+  },z+.9);
+
+  // Widły — dwie długie stalowe belki
+  prism(x+.91,y+.02,.57,.07,.07,{
+    top:"#e0e5df",front:"#8d9999",side:"#58686b"
+  },z+.12);
+  prism(x+.91,y+.27,.57,.07,.07,{
+    top:"#e0e5df",front:"#8d9999",side:"#58686b"
+  },z+.12);
+
+  // Światło ostrzegawcze
+  const lamp=iso(x+.36,y+.08,z+1.12);
+  ctx.fillStyle="#ffcf43";
+  ctx.beginPath();ctx.arc(lamp.x,lamp.y,3,0,Math.PI*2);ctx.fill();
+
+  // Nazwa pracownika
+  const name=iso(x+.2,y+.12,z+1.35);
+  ctx.save();
+  ctx.font="bold 10px Arial";
+  ctx.textAlign="center";
+  ctx.fillStyle="#f3f6f1";
+  ctx.shadowColor="#14232a";ctx.shadowBlur=4;
+  ctx.fillText(w.name.split(" ")[0],name.x,name.y);
+  ctx.restore();
+}
+
+/* ----------------- SCENA ----------------- */
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawFloor();
+
+  // Regały i ich ładunki
+  for(let r=0;r<4;r++){
+    for(let c=0;c<6;c++){
+      const x=COLS[c],y=2.1+r*.85;
+      drawRack(x,y);
+      drawRackContents(x,y);
+    }
+  }
+
+  // Palety znajdujące się poza regałami
+  for(const p of S.pallets){
+    if(p.state==="waiting")drawPallet(p);
+    if(p.state==="stored")drawPallet(p);
+  }
+
+  // Ładunek przewożony przez wózek
+  for(const w of S.workers){
+    const p=getPallet(w.palletId);
+    if(p&&p.state==="carried"){
+      drawPallet({x:w.x+.65,y:w.y+.05,type:p.type});
+    }
+  }
+
+  // Wózki na pierwszym planie
+  for(const w of S.workers)drawForklift(w);
+
+  label("REGAŁY WYSOKIEGO SKŁADOWANIA",500,43,"#f2f4e9");
+  label("MAGAZYN • CENTRUM OPERACYJNE",500,625,"#e0e8e7");
+}
+
+/* ----------------- LOGISTYKA ----------------- */
+
+function addDelivery(type){
+  if(S.money<100){log("Brakuje środków na dostawę.");return}
+  if(type==="storage"&&
+    occupiedCount()+S.pallets.filter(p=>p.type==="storage"&&p.state==="waiting").length+5>S.capacity){
+    log("Brak wolnych miejsc. Rozbuduj magazyn lub zrealizuj zamówienia.");
+    return;
+  }
+
+  S.money-=100;
+  for(let i=0;i<5;i++){
+    S.pallets.push({
+      id:S.nextId++,type,state:"waiting",
+      x:.4+i*.22,y:11.8,rx:null,ry:null
+    });
+  }
+  log(type==="storage"
+    ?"Przyjęto 5 palet do składowania."
+    :"Przyjęto 5 palet cross-docking.");
+  assign();update();
 }
 
 function assign(){
+  for(const w of S.workers){
+    if(w.state!=="idle")continue;
 
- for(const w of S.workers){
+    let p=S.pallets.find(p=>p.state==="waiting");
+    if(p){
+      if(p.type==="storage"){
+        const slot=freeSlot();
+        if(!slot)continue;
+        p.rx=slot.x;p.ry=slot.y;p.state="reserved";
+      }else{
+        p.rx=9.2;p.ry=.8;p.state="reserved";
+      }
+      w.palletId=p.id;
+      w.mode=p.type;
+      w.state="toPallet";
+      w.target={x:p.x,y:p.y};
+      continue;
+    }
 
-  if(w.state!=="idle")continue;
-
-  const p=S.pallets.find(p=>p.state==="waiting");
-
-  if(!p)continue;
-
-  let target;
-
-  if(p.type==="storage"){target=rackSlot();if(!target)continue}
-
-  else target={x:9.65,y:.9};
-
-  p.state="moving";p.rx=target.x;p.ry=target.y;
-
-  w.pallet=p;w.state="toPallet";w.target={x:p.x,y:p.y};
-
- }
-
+    if(S.orderQueue>0){
+      p=S.pallets.find(p=>p.state==="stored");
+      if(!p)continue;
+      S.orderQueue--;
+      p.state="reserved";
+      w.palletId=p.id;
+      w.mode="order";
+      w.state="toPallet";
+      w.target={x:p.x,y:p.y};
+    }
+  }
 }
 
-function move(w){
-
- if(!w.target)return;
-
- const dx=w.target.x-w.x,dy=w.target.y-w.y,d=Math.hypot(dx,dy);
-
- if(d<.035){
-
-  w.x=w.target.x;w.y=w.target.y;
-
-  if(w.state==="toPallet"){
-
-   w.state="toDestination";w.target={x:w.pallet.rx,y:w.pallet.ry};
-
-   w.pallet.state="carried";w.pallet.x=w.x;w.pallet.y=w.y;
-
-  }else if(w.state==="toDestination"){
-
-   const p=w.pallet;
-
-   if(p.type==="storage"){
-
-    p.state="stored";p.x=p.rx;p.y=p.ry;S.stored++;S.money+=35;
-
-    log("<strong>Składowanie zakończone:</strong> +35 zł.");
-
-   }else{
-
-    p.state="shipped";p.x=9.65;p.y=.9;S.done++;S.money+=55;
-
-    log("<strong>Wysyłka zakończona:</strong> +55 zł.");
-
-   }
-
-   w.pallet=null;w.state="idle";w.target=null;assign();update();
-
+function completeTask(w){
+  const p=getPallet(w.palletId);
+  if(!p){
+    w.state="idle";w.target=null;w.palletId=null;w.mode=null;
+    return;
   }
 
-  return;
+  if(w.state==="toPallet"){
+    p.state="carried";
+    w.state="toDestination";
+    if(w.mode==="storage"){
+      w.target={x:p.rx,y:p.ry};
+    }else{
+      w.target={x:9.2,y:.8};
+    }
+    return;
+  }
 
- }
+  if(w.mode==="storage"){
+    p.state="stored";
+    p.x=p.rx;p.y=p.ry;
+    S.stored++;
+    S.money+=35;
+    S.done++;
+    log(w.name+" odłożył paletę na regał. +35 zł.");
+  }else{
+    S.pallets=S.pallets.filter(item=>item.id!==p.id);
+    if(w.mode==="crossdock"){
+      S.money+=55;
+      log(w.name+" wysłał paletę cross-docking. +55 zł.");
+    }else{
+      S.stored=Math.max(0,S.stored-1);
+      S.money+=80;
+      log(w.name+" zrealizował zamówienie. +80 zł.");
+    }
+    S.done++;
+  }
 
- const step=Math.min(w.speed,d);
-
- w.x+=dx/d*step;w.y+=dy/d*step;
-
- w.hours+=1/1200;
-
- w.speed=workerSpeed(w);
-
+  w.state="idle";w.target=null;w.palletId=null;w.mode=null;
+  assign();update();
 }
+
+function moveWorker(w,dt){
+  if(!w.target)return;
+  const dx=w.target.x-w.x,dy=w.target.y-w.y;
+  const d=Math.hypot(dx,dy);
+
+  if(d>.025){
+    const step=Math.min(speed(w)*dt,d);
+    w.x+=dx/d*step;
+    w.y+=dy/d*step;
+    // Doświadczenie wyłącznie podczas rzeczywistej jazdy
+    w.hours+=dt/3600;
+  }else{
+    w.x=w.target.x;w.y=w.target.y;
+    w.target=null;
+    completeTask(w);
+  }
+}
+
+function payroll(){
+  const hour=Math.floor(S.gameMinutes/60);
+  if(hour<=S.lastPayroll)return;
+  const elapsed=hour-S.lastPayroll;
+  S.lastPayroll=hour;
+  let total=0;
+  for(const w of S.workers)total+=wage(w)*elapsed;
+  S.money-=total;
+  log("Wypłaty za "+elapsed+" godz. pracy: -"+money(total)+".");
+  if(S.money<0)log("Uwaga: firma ma ujemne saldo. Zwiększ przychody.");
+}
+
+function tick(dt){
+  S.tick++;
+  S.gameMinutes+=dt/1000;
+  for(const w of S.workers){
+    w.phase+=dt/250;
+    if(w.state!=="idle")moveWorker(w,dt/1000);
+  }
+  payroll();
+  if(S.tick%5===0)assign();
+  if(S.tick%5===0)update();
+  if(S.tick%40===0)save();
+}
+
+/* ----------------- INTERFEJS ----------------- */
 
 function update(){
+  $("money").textContent=money(S.money);
+  $("stored").textContent=S.stored+" / "+S.capacity;
+  $("done").textContent=S.done;
+  $("staff").textContent=S.workers.length;
+  $("waiting").textContent=S.pallets.filter(p=>p.state==="waiting").length;
+  $("moving").textContent=S.pallets.filter(p=>p.state==="reserved"||p.state==="carried").length;
+  $("free").textContent=Math.max(0,S.capacity-occupiedCount());
+  $("orders").textContent=S.orderQueue;
+  $("fill").style.width=Math.min(100,occupiedCount()/S.capacity*100)+"%";
+  $("capacityText").textContent="Pojemność: "+S.capacity+" miejsc paletowych.";
 
- const waiting=S.pallets.filter(p=>p.state==="waiting").length;
+  $("hire").disabled=S.money<650||S.workers.length>=names.length;
+  $("upgrade").disabled=S.money<500||S.capacity>=72;
+  $("storageDelivery").disabled=S.money<100||
+    occupiedCount()+S.pallets.filter(p=>p.type==="storage"&&p.state==="waiting").length+5>S.capacity;
+  $("crossDelivery").disabled=S.money<100;
+  $("order").disabled=S.stored-S.orderQueue<=0;
 
- const moving=S.pallets.filter(p=>p.state==="moving"||p.state==="carried").length;
-
- const shipped=S.pallets.filter(p=>p.type==="cross"&&p.state==="shipped").length;
-
- $("money").textContent=fmt(S.money)+" zł";
-
- $("stored").textContent=S.stored+" / "+S.capacity;
-
- $("done").textContent=S.done;
-
- $("staff").textContent=S.workers.length;
-
- $("waiting").textContent=waiting;
-
- $("moving").textContent=moving;
-
- $("dispatch").textContent=shipped;
-
- $("free").textContent=Math.max(0,S.capacity-S.stored);
-
- $("fill").style.width=Math.min(100,S.stored/S.capacity*100)+"%";
-
- $("capacityText").textContent="Pojemność: "+S.capacity+" miejsc paletowych.";
-
- $("hire").disabled=S.money<650||S.workers.length>=6;
-
- $("upgrade").disabled=S.money<500||S.capacity>=72;
-
- $("shipment").disabled=S.money<100;
-
- $("crew").innerHTML=S.workers.map(w=>
-
-  '<div class="worker"><div class="row"><span class="worker-name">'+w.name+'</span><span class="tag '+(w.state==="idle"?"":"busy")+'">'+(w.state==="idle"?"WOLNY":"W TRASIE")+'</span></div>'+
-
-  '<div class="row muted"><span>Staż: '+w.hours.toFixed(1)+' h</span><b>'+wage(w)+' zł/h</b></div>'+
-
-  '<div class="progress"><b style="width:'+Math.min(100,w.hours/500*100)+'%"></b></div></div>'
-
- ).join("");
-
+  $("staffList").replaceChildren();
+  for(const w of S.workers){
+    const card=document.createElement("div");
+    card.className="worker-card";
+    const title=document.createElement("strong");
+    title.textContent=w.name;
+    const detail=document.createElement("small");
+    detail.textContent="Staż: "+w.hours.toFixed(1)+" h • Stawka: "+wage(w).toFixed(2)+" zł/h";
+    const state=document.createElement("small");
+    state.textContent=w.state==="idle"?"Status: oczekuje":"Status: w trakcie transportu";
+    card.append(title,detail,state);
+    $("staffList").append(card);
+  }
 }
 
-function poly(points,fill,stroke="#182830",lw=1){
+/* ----------------- ZAPIS ----------------- */
 
- ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
-
- ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();
-
+function save(){
+  const data={
+    money:S.money,capacity:S.capacity,stored:S.stored,done:S.done,
+    pallets:S.pallets.filter(p=>p.state==="stored"),
+    workers:S.workers.map(w=>({name:w.name,hours:w.hours})),
+    gameMinutes:S.gameMinutes,lastPayroll:S.lastPayroll,
+    nextId:S.nextId
+  };
+  try{
+    localStorage.setItem("idleWarehouseSave03",JSON.stringify(data));
+    $("saveState").textContent="Zapisano";
+  }catch(e){
+    $("saveState").textContent="Błąd zapisu";
+  }
 }
 
-function diamond(x,y,z,fill,stroke="#314a53"){
-
- const p=iso(x,y,z);
-
- poly([{x:p.x,y:p.y},{x:p.x+TW/2,y:p.y+TH/2},{x:p.x,y:p.y+TH},{x:p.x-TW/2,y:p.y+TH/2}],fill,stroke);
-
+function load(){
+  const raw=localStorage.getItem("idleWarehouseSave03")||
+            localStorage.getItem("idleWarehouseSave02");
+  if(!raw)return false;
+  try{
+    const d=JSON.parse(raw);
+    S.money=Number(d.money)||1200;
+    S.capacity=Math.max(24,Math.min(72,Number(d.capacity)||24));
+    S.stored=Number(d.stored)||0;
+    S.done=Number(d.done)||0;
+    S.pallets=Array.isArray(d.pallets)?d.pallets:[];
+    S.gameMinutes=Number(d.gameMinutes)||0;
+    S.lastPayroll=Number(d.lastPayroll)||0;
+    S.nextId=Number(d.nextId)||1;
+    if(Array.isArray(d.workers)&&d.workers.length){
+      d.workers.forEach(w=>createWorker(w.name,Number(w.hours)||0));
+    }
+    log("Wczytano zapis magazynu.");
+    return true;
+  }catch(e){
+    log("Nie udało się odczytać zapisu. Rozpoczynam nową grę.");
+    return false;
+  }
 }
 
-function box3(x,y,z,w,d,h,top,side1,side2){
-
- const p=iso(x,y,z),a=p;
-
- const b={x:p.x+w*TW/2,y:p.y+w*TH/2};
-
- const c={x:p.x+(w-d)*TW/2,y:p.y+(w+d)*TH/2};
-
- const e={x:p.x-d*TW/2,y:p.y+d*TH/2};
-
- const q=iso(x,y,z-h),aa=q;
-
- const bb={x:q.x+w*TW/2,y:q.y+w*TH/2};
-
- const cc={x:q.x+(w-d)*TW/2,y:q.y+(w+d)*TH/2};
-
- const ee={x:q.x-d*TW/2,y:q.y+d*TH/2};
-
- poly([e,c,cc,ee],side1);poly([b,c,cc,bb],side2);poly([a,b,c,e],top);
-
-}
-
-function floor(){
-
- ctx.clearRect(0,0,1100,690);
-
- const g=ctx.createLinearGradient(0,0,0,690);
-
- g.addColorStop(0,"#314b55");g.addColorStop(1,"#1b3039");
-
- ctx.fillStyle=g;ctx.fillRect(0,0,1100,690);
-
- for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
-
-  const edge=x===0||y===0||x===COLS-1||y===ROWS-1;
-
-  diamond(x,y,0,edge?"#263c45":((x+y)%2?"#304852":"#2c434d"),edge?"#405660":"#3a535d");
-
- }
-
- ctx.save();ctx.setLineDash([8,8]);ctx.strokeStyle="#e0c27b66";ctx.lineWidth=2;
-
- for(const x of [1.5,4.5,7.5]){
-
-  const a=iso(x,.7,1),b=iso(x,7.2,1);
-
-  ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-
- }
-
- ctx.restore();
-
- diamond(.25,7,2,"#80643a","#d5a34a");
-
- diamond(9.55,.8,2,"#3b6657","#72b58d");
-
-}
-
-function rack(x,y){
-
- const p=iso(x,y,0);
-
- ctx.fillStyle="#101b21";ctx.beginPath();ctx.ellipse(p.x,p.y+3,25,9,0,0,Math.PI*2);ctx.fill();
-
- for(let z=0;z<3;z++){
-
-  const q=iso(x-.35,y-.2,24+z*34);
-
-  box3(x-.35,y-.2,24+z*34,.7,.55,5,"#7d969d","#405b66","#526f7a");
-
-  ctx.fillStyle="#a2b5b8";ctx.fillRect(q.x-23,q.y-2,46,4);
-
- }
-
- for(const dx of [-.3,.3])for(const dy of [-.2,.2]){
-
-  const q=iso(x+dx,y+dy,0);
-
-  ctx.fillStyle="#9aafb5";ctx.fillRect(q.x-3,q.y-55,6,56);
-
- }
-
-}
-
-function pallet(p){
-
- const q=iso(p.x,p.y,3);
-
- ctx.save();
-
- ctx.fillStyle="#101a20aa";ctx.beginPath();ctx.ellipse(q.x+2,q.y+3,17,7,0,0,Math.PI*2);ctx.fill();
-
- box3(p.x-.18,p.y-.12,7,.38,.25,5,"#d5a66a","#805333","#a66d3d");
-
- box3(p.x-.18,p.y-.12,19,.38,.25,12,p.type==="cross"?"#d7c28b":"#c18b50","#8a603c","#a97442");
-
- ctx.fillStyle="#f1dfb6";ctx.fillRect(q.x-5,q.y-12,8,5);
-
- ctx.restore();
-
-}
-
-function forklift(w){
-
- const p=iso(w.x,w.y,5);
-
- ctx.save();ctx.translate(p.x,p.y+Math.sin(w.phase)*1.2);
-
- ctx.fillStyle="#101a20aa";ctx.beginPath();ctx.ellipse(0,7,24,10,0,0,Math.PI*2);ctx.fill();
-
- ctx.fillStyle="#171f23";
-
- for(const x of [-12,12]){ctx.beginPath();ctx.ellipse(x,8,6,4,0,0,Math.PI*2);ctx.fill()}
-
- ctx.fillStyle="#e2a52f";ctx.beginPath();
-
- ctx.moveTo(-19,-4);ctx.lineTo(9,-14);ctx.lineTo(20,-5);ctx.lineTo(14,8);ctx.lineTo(-14,8);ctx.closePath();ctx.fill();
-
- ctx.strokeStyle="#6d491b";ctx.lineWidth=2;ctx.stroke();
-
- ctx.fillStyle="#263e49";ctx.fillRect(-3,-22,13,15);
-
- ctx.fillStyle="#8ebbc7";ctx.fillRect(-1,-20,9,10);
-
- ctx.fillStyle="#dce6e1";ctx.fillRect(16,-20,3,29);ctx.fillRect(19,7,15,3);
-
- ctx.fillStyle="#f8d16c";ctx.fillRect(-17,-6,4,3);
-
- ctx.restore();
-
-}
-
-function draw(){
-
- floor();
-
- for(let y=1;y<7;y++)for(const x of [3,6,9])rack(x,y);
-
- for(const p of S.pallets.filter(p=>p.state==="stored"||p.state==="waiting"))pallet(p);
-
- for(const w of S.workers){
-
-  if(w.pallet&&w.state==="toDestination")pallet({x:w.x-.1,y:w.y-.1,type:w.pallet.type});
-
- }
-
- for(const w of S.workers)forklift(w);
-
- ctx.font="bold 13px system-ui";ctx.fillStyle="#f1cf88";
-
- let a=iso(.1,7.2,5);ctx.fillText("STREFA PRZYJĘĆ",a.x-55,a.y+22);
-
- let b=iso(9.1,.6,5);ctx.fillStyle="#9bd1ae";ctx.fillText("STREFA WYSYŁKI",b.x-48,b.y+24);
-
- requestAnimationFrame(draw);
-
-}
-
-function gameTick(){
-
- S.tick++;
-
- for(const w of S.workers)if(w.state!=="idle")move(w);
-
- S.gameMinutes++;
-
- if(S.gameMinutes%1200===0){
-
-  const cost=S.workers.reduce((sum,w)=>sum+wage(w),0);
-
-  S.money-=cost;
-
-  log("<strong>Rozliczenie godzinowe:</strong> wypłacono "+cost+" zł.");
-
-  if(S.money<0)log("<strong>Uwaga:</strong> saldo ujemne. Zwiększ przychody.");
-
- }
-
- const total=360+Math.floor(S.tick/40);
-
- $("clock").textContent=String(Math.floor(total/60)%24).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
-
- if(S.tick%5===0){assign();update()}
-
- if(S.tick%40===0){
-
-  localStorage.setItem("idleWarehouseSave",JSON.stringify({
-
-   money:S.money,capacity:S.capacity,stored:S.stored,done:S.done,
-
-   workers:S.workers.map(w=>({name:w.name,hours:w.hours})),
-
-   pallets:S.pallets
-
-  }));
-
-  $("saveState").textContent="Zapisano";
-
- }
-
-}
-
-$("shipment").onclick=addDelivery;
+/* ----------------- PRZYCISKI ----------------- */
+
+$("storageDelivery").onclick=()=>addDelivery("storage");
+$("crossDelivery").onclick=()=>addDelivery("crossdock");
+
+$("order").onclick=()=>{
+  if(S.stored-S.orderQueue<=0)return;
+  S.orderQueue++;
+  log("Przyjęto zamówienie klienta. Oczekiwanie na kompletację.");
+  assign();update();
+};
 
 $("hire").onclick=()=>{
-
- if(S.money<650||S.workers.length>=6)return;
-
- S.money-=650;spawnWorker();
-
- log("<strong>Nowy pracownik:</strong> "+S.workers[S.workers.length-1].name+" rozpoczyna zmianę.");
-
- update();
-
+  if(S.money<650||S.workers.length>=names.length)return;
+  S.money-=650;
+  const name=names[S.workers.length];
+  createWorker(name,0);
+  log("Zatrudniono pracownika: "+name+".");
+  assign();update();
 };
 
 $("upgrade").onclick=()=>{
-
- if(S.money<500||S.capacity>=72)return;
-
- S.money-=500;S.capacity+=12;
-
- log("<strong>Rozbudowa regałów:</strong> +12 miejsc.");
-
- update();
-
+  if(S.money<500||S.capacity>=72)return;
+  S.money-=500;
+  S.capacity+=12;
+  log("Rozbudowano regały. Pojemność wzrosła o 12 miejsc.");
+  update();
 };
 
 $("reset").onclick=()=>{
-
- if(!confirm("Na pewno rozpocząć grę od nowa?"))return;
-
- localStorage.removeItem("idleWarehouseSave");location.reload();
-
+  if(!confirm("Rozpocząć nową grę? Dotychczasowy zapis zostanie usunięty."))return;
+  localStorage.removeItem("idleWarehouseSave03");
+  localStorage.removeItem("idleWarehouseSave02");
+  location.reload();
 };
 
-try{
+/* ----------------- START ----------------- */
 
- const d=JSON.parse(localStorage.getItem("idleWarehouseSave")||"null");
-
- if(d){
-
-  Object.assign(S,{
-
-   money:d.money??S.money,capacity:d.capacity??S.capacity,
-
-   stored:d.stored??0,done:d.done??0,pallets:d.pallets||[]
-
-  });
-
-  (d.workers||[]).forEach(w=>spawnWorker(w.name,w.hours||0));
-
-  log("Wczytano poprzedni zapis gry.");
-
- }
-
-}catch(e){log("Nie udało się odczytać zapisu.");}
-
-if(!S.workers.length){
-
- spawnWorker("Adam Kowalski",12);
-
- spawnWorker("Piotr Nowak",150);
-
+if(!load()){
+  createWorker("Adam Kowalski",12);
+  createWorker("Piotr Nowak",150);
 }
-
 update();
-
-log("Zmiana rozpoczęta. Załoga gotowa do pracy.");
+log("Rozpoczęto zmianę. Centrum logistyczne jest gotowe.");
 
 draw();
 
-setInterval(gameTick,50);
+let previous=performance.now();
+function loop(now){
+  const dt=Math.min(100,now-previous);
+  previous=now;
+  tick(dt);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+setInterval(save,5000);
+window.addEventListener("beforeunload",save);
 
 })();
-
 </script>
-
 </body>
-
 </html>

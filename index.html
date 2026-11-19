@@ -4,9 +4,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Idle Warehouse 3.7</title>
+<title>Idle Warehouse 3.8</title>
 <style>
-:root{--bg:#101722;--panel:#192433;--panel2:#202e40;--line:#34465b;--txt:#e8eef6;--muted:#9eafc2;--green:#55d69e;--red:#ff7373;--gold:#f4c76a}
+:root{--bg:#101722;--panel:#192433;--panel2:#202e40;--line:#34465b;--txt:#e8eef6;--muted:#9eafc2;--green:#55d69e;--red:#ff7373;--gold:#f4c76a;--blue:#65a9e8}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--txt);font:15px system-ui,Arial}
 header{padding:16px;background:#0b111a;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2}
@@ -21,18 +21,14 @@ main{max-width:1100px;margin:auto;padding:12px}
 .tab{white-space:nowrap;color:var(--txt);cursor:pointer}
 .tab.active{border-color:var(--green);color:var(--green)}
 .btn{border:0;border-radius:8px;padding:9px 12px;background:#31577c;color:white;font-weight:650;cursor:pointer;margin:4px 3px 0 0}
-.btn.green{background:#176b50}
-.btn.red{background:#8b3038}
-.btn.gold{background:#806021}
+.btn.green{background:#176b50}.btn.red{background:#8b3038}.btn.gold{background:#806021}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .row{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:7px 0}
 .truck{font-size:48px;text-align:center;padding:15px;background:linear-gradient(135deg,#293d51,#101a28);border-radius:9px;margin-bottom:8px}
 .event{background:#111b28;border-left:3px solid var(--gold);padding:8px;margin:7px 0;border-radius:4px}
-.employee{border:1px solid var(--line);border-radius:9px;padding:10px;margin:8px 0}
+.employee,.contract{border:1px solid var(--line);border-radius:9px;padding:10px;margin:8px 0}
 .pill{background:#31475c;border-radius:20px;padding:3px 7px;font-size:11px}
-.good{color:var(--green)}
-.bad{color:var(--red)}
-.hidden{display:none!important}
+.good{color:var(--green)}.bad{color:var(--red)}.hidden{display:none!important}
 input{display:block;width:100%;padding:10px;border-radius:8px;background:#0e1722;color:white;border:1px solid var(--line);margin:7px 0}
 .big{text-align:center;font-size:38px;margin:8px}
 .overlay{position:fixed;inset:0;background:#000b;z-index:5;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -42,15 +38,14 @@ input{display:block;width:100%;padding:10px;border-radius:8px;background:#0e1722
 .bar i{display:block;height:100%;background:var(--green)}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
 hr{border-color:var(--line)}
-@media(max-width:600px){
- main{padding:8px}
- .stats{grid-template-columns:repeat(2,1fr)}
-}
+.joke{font-family:Georgia,serif;font-style:italic;color:var(--gold);background:#282315;border-left:3px solid var(--gold);padding:9px;margin:7px 0;border-radius:5px}
+.contract h3{margin:4px 0}
+@media(max-width:600px){main{padding:8px}.stats{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 <header>
-<h1 id="brand">Idle Warehouse 3.7</h1>
+<h1 id="brand">Idle Warehouse 3.8</h1>
 <small class="muted">Symulator zarządzania magazynem</small>
 </header>
 
@@ -66,6 +61,7 @@ hr{border-color:var(--line)}
  <button class="tab active" data-tab="firma">Firma</button>
  <button class="tab" data-tab="flota">Flota</button>
  <button class="tab" data-tab="pracownicy">Pracownicy</button>
+ <button class="tab" data-tab="kontrakty">Kontrakty</button>
  <button class="tab" data-tab="rozwoj">Rozwój</button>
  <button class="tab" data-tab="socjal">Zaplecze socjalne</button>
  <button class="tab" data-tab="finanse">Finanse</button>
@@ -87,7 +83,6 @@ hr{border-color:var(--line)}
    <div id="events"></div>
   </div>
  </div>
-
  <div class="panel" style="margin-top:10px">
   <h2>Ustawienia firmy</h2>
   <label class="muted">Nazwa magazynu</label>
@@ -100,14 +95,8 @@ hr{border-color:var(--line)}
 </section>
 
 <section id="flota" class="view hidden">
- <div class="panel">
-  <h2>Posiadana flota</h2>
-  <div class="grid" id="ownedFleet"></div>
- </div>
- <div class="panel" style="margin-top:10px">
-  <h2>Wózki dostępne do zakupu</h2>
-  <div class="grid" id="truckShop"></div>
- </div>
+ <div class="panel"><h2>Posiadana flota</h2><div class="grid" id="ownedFleet"></div></div>
+ <div class="panel" style="margin-top:10px"><h2>Wózki dostępne do zakupu</h2><div class="grid" id="truckShop"></div></div>
 </section>
 
 <section id="pracownicy" class="view hidden">
@@ -115,6 +104,19 @@ hr{border-color:var(--line)}
   <h2>Zespół</h2>
   <button class="btn green" onclick="hire()">Zatrudnij magazyniera — 2 500 zł</button>
   <div id="employees"></div>
+ </div>
+</section>
+
+<section id="kontrakty" class="view hidden">
+ <div class="panel">
+  <h2>Rynek kontraktów</h2>
+  <p class="muted">Oferty są dobierane do udźwigu Twojej floty. Cięższe zlecenia wymagają mocniejszych wózków.</p>
+  <div id="offers"></div>
+  <button class="btn gold" onclick="refreshOffers()">Odśwież oferty</button>
+ </div>
+ <div class="panel" style="margin-top:10px">
+  <h2>Aktywne kontrakty</h2>
+  <div id="activeContracts"></div>
  </div>
 </section>
 
@@ -148,77 +150,64 @@ hr{border-color:var(--line)}
  </div>
 </section>
 
-<section id="socjal" class="view">
- <div class="grid" id="socialItems"></div>
-</section>
+<section id="socjal" class="view"><div class="grid" id="socialItems"></div></section>
 
 <section id="finanse" class="view">
- <div class="panel">
-  <h2>Finanse i prognoza</h2>
-  <div id="finance"></div>
- </div>
+ <div class="panel"><h2>Finanse i prognoza</h2><div id="finance"></div></div>
 </section>
 
-<footer>Idle Warehouse 3.7 • zapis lokalny w przeglądarce</footer>
+<footer>Idle Warehouse 3.8 • zapis lokalny w przeglądarce</footer>
 </main>
-
 <div id="modal"></div>
 
 <script>
-const KEY="idleWarehouse_37";
+const KEY="idleWarehouse_38";
 
 const MODELS=[
- {id:"rx18",name:"STILL RX 18",price:0,art:"🚜",capacity:2,rent:1250,energy:32},
- {id:"rx20",name:"STILL RX 20",price:96000,art:"🏗️",capacity:3,rent:2100,energy:38},
- {id:"rx30",name:"STILL RX 60-30",price:184000,art:"🚜",capacity:4,rent:4300,energy:53},
- {id:"rx50",name:"STILL RX 60-50",price:296000,art:"🏭",capacity:5,rent:6800,energy:72}
+ {id:"rx18",name:"STILL RX18",price:0,art:"🚜",capacity:1800,rent:1250,energy:32},
+ {id:"rx20",name:"STILL RX20",price:96000,art:"🏗️",capacity:2400,rent:2100,energy:38},
+ {id:"rx22",name:"STILL RX22",price:184000,art:"🚜",capacity:3000,rent:4300,energy:53},
+ {id:"rx30",name:"STILL RX30",price:296000,art:"🏭",capacity:5000,rent:6800,energy:72}
 ];
 
 const FIRST=["Adam","Michał","Paweł","Kamil","Tomasz","Łukasz","Marcin","Mateusz","Jakub","Damian","Piotr","Rafał","Sebastian","Bartosz","Dawid","Artur"];
 const LAST=["Kowalski","Nowak","Wiśniewski","Wójcik","Kamiński","Lewandowski","Zieliński","Szymański","Woźniak","Dąbrowski","Kozłowski","Jankowski","Mazur","Krawczyk","Piotrowski"];
 
 const JOKES=[
- "{n} ustanowił rekord prędkości w drodze do stołówki. Komisja nadal mierzy trasę.",
- "{n} po raz kolejny nie rozbił palety. Brawo! Dział jakości chce poznać sekret.",
- "{n} szukał skanera przez pięć minut. Skaner leżał w jego kieszeni.",
- "{n} twierdzi, że wózek sam skręcił. Wózek odmówił komentarza.",
- "{n} zaparkował tak precyzyjnie, że paleta poprosiła o autograf.",
- "{n} wygrał konkurs parkowania. Nagrodą jest parkowanie na końcu hali.",
- "{n} znalazł marker, którego szukano od zeszłego kwartału.",
- "{n} próbował zeskanować własną kanapkę. System zgłosił nieznany produkt.",
- "{n} sprawdził paletę tak dokładnie, że paleta poczuła się doceniona.",
- "{n} szukał swojego wózka, siedząc na nim.",
- "{n} ominął kałużę z taką gracją, że podłoga dostała kompleksów.",
- "{n} naciskał przycisk windy 14 razy. Winda nadal jedzie w swoim tempie.",
- "{n} zgłosił podejrzaną paletę. Po dochodzeniu potwierdzono: to paleta.",
- "{n} przyniósł własny kubek i został mianowany kierownikiem logistyki kawy.",
- "{n} przeprowadził kontrolę jakości własnego lunchu. Wynik: znakomity."
+"{n} ustanowił rekord prędkości w drodze do stołówki. Komisja nadal mierzy trasę.",
+"{n} po raz kolejny nie rozbił palety. Brawo! Dział jakości chce poznać sekret.",
+"{n} szukał skanera przez pięć minut. Skaner leżał w jego kieszeni.",
+"{n} twierdzi, że wózek sam skręcił. Wózek odmówił komentarza.",
+"{n} zaparkował tak precyzyjnie, że paleta poprosiła o autograf.",
+"{n} wygrał konkurs parkowania. Nagrodą jest parkowanie na końcu hali.",
+"{n} znalazł marker, którego szukano od zeszłego kwartału.",
+"{n} próbował zeskanować własną kanapkę. System zgłosił nieznany produkt.",
+"{n} sprawdził paletę tak dokładnie, że paleta poczuła się doceniona.",
+"{n} szukał swojego wózka, siedząc na nim.",
+"{n} ominął kałużę z taką gracją, że podłoga dostała kompleksów.",
+"{n} naciskał przycisk windy 14 razy. Winda nadal jedzie w swoim tempie.",
+"{n} zgłosił podejrzaną paletę. Po dochodzeniu potwierdzono: to paleta.",
+"{n} przyniósł własny kubek i został mianowany kierownikiem logistyki kawy.",
+"{n} przeprowadził kontrolę jakości własnego lunchu. Wynik: znakomity."
+];
+
+const COMPANIES=[
+ "Baltic Fresh Logistics","Domex AGD","MegaRetail Polska",
+ "SteelCore Components","NordBuild Materials","PortTech Heavy Industries",
+ "AeroParts Systems","Konstruktor Polska","PolTrans Distribution",
+ "Central Parts Group","EuroCargo Logistics","TechnoMetal"
 ];
 
 function fresh(){
  return {
-  name:"",
-  money:20000,
-  day:1,
-  warehouse:1,
-  shifts:1,
-  planning:0,
-  employees:[{
-   id:1,name:"Jan Kowalski",hours:180,
-   basic:false,crane:false,level:0
-  }],
-  nextId:2,
-  fleet:[{model:"rx18",condition:95}],
+  name:"",money:20000,day:1,warehouse:1,shifts:1,planning:0,
+  employees:[{id:1,name:"Jan Kowalski",hours:180,basic:false,crane:false,level:0}],
+  nextId:2,fleet:[{model:"rx18",condition:95}],
   social:{canteen:false,smoking:false,media:false,development:false},
   events:["Magazyn rozpoczyna działalność."],
-  rescueCount:0,
-  loan:0,
-  loanDue:0,
-  gameOver:false,
-  halfYearRevenue:0,
-  totalRevenue:0,
-  totalExpenses:0,
-  lastTaxDay:180
+  rescueCount:0,loan:0,loanDue:0,gameOver:false,
+  halfYearRevenue:0,totalRevenue:0,totalExpenses:0,lastTaxDay:180,
+  contracts:[],offers:[],nextContractId:1
  };
 }
 
@@ -228,55 +217,38 @@ function load(){
  try{
   let v=JSON.parse(localStorage.getItem(KEY));
   S=v?{...fresh(),...v}:fresh();
+  S.social={...fresh().social,...(S.social||{})};
+  S.contracts=S.contracts||[];
+  S.offers=S.offers||[];
+  S.nextContractId=S.nextContractId||1;
+  // Migracja starych nazw modeli do nowego systemu.
+  S.fleet.forEach(t=>{
+   if(t.model==="rx30"&&t.capacity===undefined)t.model="rx22";
+   if(t.model==="rx50")t.model="rx30";
+  });
  }catch(e){S=fresh()}
 }
 
-function save(){
- localStorage.setItem(KEY,JSON.stringify(S));
-}
-
-function fmt(n){
- return Math.round(n).toLocaleString("pl-PL")+" zł";
-}
-
-function model(id){
- return MODELS.find(x=>x.id===id);
-}
-
-function event(t){
- S.events.unshift(t);
- S.events=S.events.slice(0,10);
-}
-
-function randomName(){
- return FIRST[Math.floor(Math.random()*FIRST.length)]+" "+
- LAST[Math.floor(Math.random()*LAST.length)];
-}
+function save(){localStorage.setItem(KEY,JSON.stringify(S))}
+function fmt(n){return Math.round(n).toLocaleString("pl-PL")+" zł"}
+function model(id){return MODELS.find(x=>x.id===id)}
+function event(t){S.events.unshift(t);S.events=S.events.slice(0,10)}
+function randomName(){return FIRST[Math.floor(Math.random()*FIRST.length)]+" "+LAST[Math.floor(Math.random()*LAST.length)]}
 
 function modal(title,body,buttons){
  document.getElementById("modal").innerHTML=
- `<div class="overlay"><div class="modal">
- <h2>${title}</h2>${body}${buttons}
- </div></div>`;
+ `<div class="overlay"><div class="modal"><h2>${title}</h2>${body}${buttons}</div></div>`;
 }
-
-function closeModal(){
- document.getElementById("modal").innerHTML="";
-}
+function closeModal(){document.getElementById("modal").innerHTML=""}
 
 function startNamed(){
  let n=document.getElementById("newName").value.trim();
  if(!n)return alert("Wpisz nazwę magazynu.");
- S.name=n;
- event("Uroczyście otwarto magazyn „"+n+"”. Pierwsza zmiana melduje gotowość.");
- save();
- closeModal();
- render();
+ S.name=n;event("Uroczyście otwarto magazyn „"+n+"”. Pierwsza zmiana melduje gotowość.");
+ save();closeModal();render();
 }
 
-document.querySelectorAll(".tab").forEach(x=>{
- x.addEventListener("click",()=>showTab(x.dataset.tab));
-});
+document.querySelectorAll(".tab").forEach(x=>x.addEventListener("click",()=>showTab(x.dataset.tab)));
 
 function showTab(id){
  document.querySelectorAll(".view").forEach(x=>x.classList.toggle("hidden",x.id!==id));
@@ -286,9 +258,7 @@ function showTab(id){
 function renameWarehouse(){
  let n=document.getElementById("rename").value.trim();
  if(!n)return alert("Podaj nazwę.");
- S.name=n;
- save();
- render();
+ S.name=n;save();render();
 }
 
 function confirmReset(){
@@ -298,8 +268,7 @@ function confirmReset(){
 }
 
 function resetGame(){
- localStorage.removeItem(KEY);
- S=fresh();
+ localStorage.removeItem(KEY);S=fresh();
  modal("Nowa firma",
  '<p>Wybierz nazwę swojego magazynu.</p><input id="newName" maxlength="32" placeholder="Np. Magazyn Centralny">',
  '<button class="btn green" onclick="startNamed()">Rozpocznij</button>');
@@ -308,31 +277,21 @@ function resetGame(){
 
 function spend(n,why){
  if(S.money<n){
-  event("Brak środków na: "+why+".");
-  save();render();
-  return false;
+  event("Brak środków na: "+why+".");save();render();return false;
  }
- S.money-=n;
- S.totalExpenses+=n;
- return true;
+ S.money-=n;S.totalExpenses+=n;return true;
 }
 
 function credit(n,why){
- S.money+=n;
- S.halfYearRevenue+=n;
- S.totalRevenue+=n;
+ S.money+=n;S.halfYearRevenue+=n;S.totalRevenue+=n;
  event(why+": +"+fmt(n));
 }
 
 function hire(){
  if(!spend(2500,"rekrutacja"))return;
  let n=randomName();
- S.employees.push({
-  id:S.nextId++,name:n,hours:0,
-  basic:false,crane:false,level:0
- });
- event("Do zespołu dołącza "+n+".");
- save();render();
+ S.employees.push({id:S.nextId++,name:n,hours:0,basic:false,crane:false,level:0});
+ event("Do zespołu dołącza "+n+".");save();render();
 }
 
 function buyTruck(id){
@@ -347,49 +306,37 @@ function upgradeWarehouse(){
  if(S.warehouse>=5)return alert("Osiągnięto maksymalny poziom.");
  let cost=50000*S.warehouse;
  if(spend(cost,"rozbudowa magazynu")){
-  S.warehouse++;
-  event("Magazyn rozbudowano do poziomu "+S.warehouse+".");
-  save();render();
+  S.warehouse++;event("Magazyn rozbudowano do poziomu "+S.warehouse+".");save();render();
  }
 }
 
 function upgradePlanning(){
  if(S.planning>=2)return alert("Maksymalny poziom planowania.");
  if(spend(36000*(S.planning+1),"rozwój planowania")){
-  S.planning++;
-  event("Planowanie pracy osiągnęło poziom "+S.planning+".");
-  save();render();
+  S.planning++;event("Planowanie pracy osiągnęło poziom "+S.planning+".");save();render();
  }
 }
 
 function setShifts(n){
- if(n>1&&S.planning<n-1)
-  return alert("Rozwiń planowanie pracy do poziomu "+(n-1)+".");
- if(n>S.employees.length||n>S.fleet.length)
-  return alert("Potrzebujesz tylu pracowników i wózków, ile zmian.");
- S.shifts=n;
- event("Ustawiono "+n+" zmianę/zmiany.");
- save();render();
+ if(n>1&&S.planning<n-1)return alert("Rozwiń planowanie pracy do poziomu "+(n-1)+".");
+ if(n>S.employees.length||n>S.fleet.length)return alert("Potrzebujesz tylu pracowników i wózków, ile zmian.");
+ S.shifts=n;event("Ustawiono "+n+" zmianę/zmiany.");save();render();
 }
 
 function train(id,kind){
- let e=S.employees.find(x=>x.id===id);
- if(!e)return;
-
+ let e=S.employees.find(x=>x.id===id);if(!e)return;
  if(kind==="basic"){
   if(e.hours<200)return alert("Szkolenie podstawowe wymaga 200 przejechanych godzin.");
   if(e.basic)return;
   if(!spend(3600,"szkolenie podstawowe"))return;
-  e.basic=true;
-  e.level=1;
+  e.basic=true;e.level=1;
   event(e.name+" ukończył szkolenie podstawowe i awansował na pracownika transportu wewnętrznego.");
  }else{
   if(e.hours<400)return alert("Szkolenie z obsługi suwnic wymaga 400 przejechanych godzin.");
   if(!e.basic)return alert("Najpierw ukończ szkolenie podstawowe.");
   if(e.crane)return;
   if(!spend(7000,"szkolenie z obsługi suwnic"))return;
-  e.crane=true;
-  e.level=2;
+  e.crane=true;e.level=2;
   event(e.name+" ukończył szkolenie z obsługi suwnic i awansował na starszego pracownika transportu wewnętrznego.");
  }
  save();render();
@@ -406,9 +353,7 @@ function buildSocial(id){
  let s=SOCIAL.find(x=>x[0]===id);
  if(!s||S.social[id])return;
  if(spend(s[3],s[1])){
-  S.social[id]=true;
-  event("Otwarto: "+s[1]+".");
-  save();render();
+  S.social[id]=true;event("Otwarto: "+s[1]+".");save();render();
  }
 }
 
@@ -419,45 +364,165 @@ function funnyEvent(){
  event("😄 "+j.replace("{n}",e.name));
 }
 
+// Maksymalny udźwig dostępny w aktualnej, sprawnej flocie.
+function maxLoad(){
+ let working=S.fleet.filter(t=>t.condition>0);
+ if(!working.length)return 0;
+ return Math.max(...working.map(t=>model(t.model)?.capacity||0));
+}
+
+// Dobór zleceń do możliwości floty.
+function contractTiers(){
+ let load=maxLoad();
+ if(load>=5000)return [1200,1800,2400,3000,4000,5000];
+ if(load>=3000)return [1200,1800,2400,3000];
+ if(load>=2400)return [1200,1800,2400];
+ return [1200,1800];
+}
+
+function makeOffer(){
+ let tiers=contractTiers();
+ let load=tiers[Math.floor(Math.random()*tiers.length)];
+ let pallets=12+Math.floor(Math.random()*29);
+ let days=Math.max(5,Math.ceil(pallets/5)+Math.floor(Math.random()*5));
+ let storage=1+Math.floor(Math.random()*4);
+ let rate=load<=1800?95:load<=2400?125:load<=3000?155:195;
+ let value=pallets*rate;
+ let advance=Math.round(value*.25);
+ let reward=Math.round(value*.75);
+ let penalty=Math.round(value*.18);
+
+ return {
+  id:S.nextContractId++,
+  company:COMPANIES[Math.floor(Math.random()*COMPANIES.length)],
+  load,pallets,days,storage,advance,reward,penalty,
+  remaining:days,delivered:0,accepted:false
+ };
+}
+
+function ensureOffers(){
+ if(!S.offers.length){
+  for(let i=0;i<3;i++)S.offers.push(makeOffer());
+ }
+}
+
+function refreshOffers(){
+ if(S.offers.length>=3)return alert("Masz już trzy dostępne oferty.");
+ let count=3-S.offers.length;
+ for(let i=0;i<count;i++)S.offers.push(makeOffer());
+ save();render();
+}
+
+function activeContracts(){
+ return S.contracts.filter(c=>c.status==="active");
+}
+
+function acceptContract(id){
+ let o=S.offers.find(x=>Number(x.id)===Number(id));
+ if(!o)return alert("Ta oferta nie jest już dostępna.");
+
+ if(activeContracts().length>=3)return alert("Możesz mieć maksymalnie trzy aktywne kontrakty.");
+
+ let truck=S.fleet.some(t=>{
+  let m=model(t.model);
+  return m&&m.capacity>=o.load&&t.condition>0;
+ });
+ if(!truck)return alert("Brak sprawnego wózka o wymaganym udźwigu.");
+
+ if(o.pallets>S.warehouse*35)return alert("Kontrakt jest zbyt duży dla obecnego magazynu. Rozbuduj obiekt.");
+
+ S.contracts.push({
+  id:o.id,company:o.company,load:o.load,pallets:o.pallets,
+  days:o.days,remaining:o.days,storage:o.storage,
+  advance:o.advance,reward:o.reward,penalty:o.penalty,
+  delivered:0,status:"active"
+ });
+
+ credit(o.advance,"Zaliczka za kontrakt — "+o.company);
+ S.offers=S.offers.filter(x=>Number(x.id)!==Number(id));
+ event("Przyjęto kontrakt od firmy "+o.company+". Wymagany udźwig: "+o.load+" kg.");
+ ensureOffers();save();render();
+}
+
+function cancelContract(id){
+ let c=S.contracts.find(x=>x.id===id&&x.status==="active");
+ if(!c)return;
+ if(!confirm("Czy na pewno chcesz porzucić ten kontrakt? Naliczona zostanie kara."))return;
+ S.money-=c.penalty;S.totalExpenses+=c.penalty;
+ c.status="cancelled";
+ event("Porzucono kontrakt "+c.company+". Kara umowna: "+fmt(c.penalty)+".");
+ save();render();
+}
+
+function processContracts(output){
+ let active=activeContracts();
+ if(!active.length)return;
+
+ active.forEach(c=>{
+  if(c.status!=="active")return;
+
+  let suitable=S.fleet.some(t=>{
+   let m=model(t.model);
+   return m&&m.capacity>=c.load&&t.condition>0;
+  });
+
+  if(!suitable){
+   c.remaining--;
+   event("Brak sprawnego wózka do kontraktu "+c.company+". Termin nadal biegnie.");
+  }else{
+   let share=Math.max(1,Math.floor(output/active.length));
+   let amount=Math.min(c.pallets-c.delivered,share);
+   c.delivered+=amount;
+   c.remaining--;
+  }
+
+  if(c.delivered>=c.pallets){
+   c.status="completed";
+   credit(c.reward,"Premia za zakończenie kontraktu — "+c.company);
+   S.money+=Math.round(c.pallets*5);
+   event("Kontrakt "+c.company+" zakończony sukcesem. Dostarczono "+c.pallets+" palet.");
+  }else if(c.remaining<=0){
+   c.status="failed";
+   S.money-=c.penalty;
+   S.totalExpenses+=c.penalty;
+   event("Nie dotrzymano terminu kontraktu "+c.company+". Kara: "+fmt(c.penalty)+".");
+  }
+ });
+}
+
 function fixedMonthly(){
- let wages=S.employees.reduce((a,e)=>
-  a+(e.level===2?5900:e.level===1?4800:3800),0);
-
- let rent=S.fleet.reduce((a,t)=>a+model(t.model).rent,0);
-
- let energy=(650+S.fleet.reduce((a,t)=>
-  a+model(t.model).energy*8,0))*(1+.75*(S.shifts-1))*30;
-
+ let wages=S.employees.reduce((a,e)=>a+(e.level===2?5900:e.level===1?4800:3800),0);
+ let rent=S.fleet.reduce((a,t)=>a+(model(t.model)?.rent||0),0);
+ let energy=(650+S.fleet.reduce((a,t)=>a+(model(t.model)?.energy||0)*8,0))*(1+.75*(S.shifts-1))*30;
  let water=(250+S.employees.length*110)*(1+.5*(S.shifts-1))*30;
  let clothing=S.employees.length*180;
  let land=700+S.warehouse*850+S.warehouse*1000;
-
- let social=
-  (S.social.canteen?4500:0)+
-  (S.social.smoking?900:0)+
-  (S.social.media?1500:0)+
-  (S.social.development?2200:0);
-
+ let social=(S.social.canteen?4500:0)+(S.social.smoking?900:0)+(S.social.media?1500:0)+(S.social.development?2200:0);
  return wages+rent+energy+water+clothing+land+social;
 }
 
 function workDay(){
  if(S.gameOver)return;
 
- let trucks=S.fleet.reduce((a,t)=>a+model(t.model).capacity,0);
- let output=Math.max(1,Math.floor(
-  Math.min(S.employees.length,trucks)*S.warehouse*5*S.shifts
- ));
+ let trucks=S.fleet.reduce((a,t)=>a+(model(t.model)?.capacity||0)*(t.condition>0?1:0),0);
+ let output=Math.max(1,Math.floor(Math.min(S.employees.length,trucks/1000)*S.warehouse*5*S.shifts));
 
  credit(output*125,"Zrealizowano "+output+" palet");
-
  S.employees.forEach(e=>e.hours+=8*S.shifts);
 
- let daily=fixedMonthly()/30;
- S.money-=daily;
- S.totalExpenses+=daily;
- event("Koszty bieżącego dnia: "+fmt(daily)+".");
+ // Zużycie techniczne floty.
+ S.fleet.forEach(t=>{
+  if(t.condition>0){
+   t.condition=Math.max(0,t.condition-(0.3*S.shifts));
+   if(t.condition===0)event("Wózek "+model(t.model).name+" wymaga naprawy i został wyłączony z pracy.");
+  }
+ });
 
+ processContracts(output);
+
+ let daily=fixedMonthly()/30;
+ S.money-=daily;S.totalExpenses+=daily;
+ event("Koszty bieżącego dnia: "+fmt(daily)+".");
  S.day++;
 
  if(S.day%30===0)
@@ -465,98 +530,97 @@ function workDay(){
 
  if(S.day>=S.lastTaxDay){
   let tax=Math.round(S.halfYearRevenue*.08);
-  S.money-=tax;
-  S.totalExpenses+=tax;
+  S.money-=tax;S.totalExpenses+=tax;
   event("Półroczny podatek od przychodu (8%): "+fmt(tax)+".");
-  S.halfYearRevenue=0;
-  S.lastTaxDay+=180;
+  S.halfYearRevenue=0;S.lastTaxDay+=180;
  }
 
- if(Math.random()<.58)funnyEvent();
+ if(Math.random()<.12)funnyEvent();
 
  if(S.loan>0&&S.day>S.loanDue){
-  bankruptcy("Nie spłacono pożyczki bankowej w terminie 30 dni.");
-  return;
+  bankruptcy("Nie spłacono pożyczki bankowej w terminie 30 dni.");return;
  }
 
- if(S.money<0){
-  debtEvent();
-  if(S.gameOver)return;
- }
+ if(S.money<0){debtEvent();if(S.gameOver)return;}
 
+ ensureOffers();
  save();render();
 }
 
 function debtEvent(){
- if(S.rescueCount>=2){
-  bankruptcy("Firma po raz trzeci zeszła na minus. Następuje upadłość.");
-  return;
- }
+ if(S.rescueCount>=2){bankruptcy("Firma po raz trzeci zeszła na minus. Następuje upadłość.");return;}
 
  if(S.rescueCount===0){
   let debt=-S.money;
   modal("Oferta banku",
    '<p>Bank oferuje spłatę całego obecnego zadłużenia oraz dodatkowe 10 000 zł na ratowanie płynności.</p>'+
-   '<p>Pożyczkę w wysokości '+fmt(debt)+' musisz oddać w ciągu 30 dni. Jeśli nie spłacisz jej w terminie, firma upada.</p>'+
-   '<p><b>Zgadzasz się?</b></p>',
-   '<button class="btn green" onclick="acceptBank('+debt+')">Przyjmuję ofertę</button>'+
-   '<button class="btn red" onclick="refuseHelp()">Odrzucam</button>');
+   '<p>Pożyczkę w wysokości '+fmt(debt)+' musisz oddać w ciągu 30 dni. Jeśli nie spłacisz jej w terminie, firma upada.</p><p><b>Zgadzasz się?</b></p>',
+   '<button class="btn green" onclick="acceptBank('+debt+')">Przyjmuję ofertę</button><button class="btn red" onclick="refuseHelp()">Odrzucam</button>');
  }else{
   modal("Wujek ze Stanów",
-   '<p>Bogaty wujek ze Stanów chce pomóc Ci ostatni raz. Spłaci obecny minus i przekaże dodatkowe 10 000 zł.</p>'+
-   '<p>To ostatnia pomoc. Kolejne zejście na minus oznacza upadłość firmy.</p>'+
-   '<p><b>Zgadzasz się?</b></p>',
-   '<button class="btn green" onclick="acceptUncle()">Przyjmuję pomoc</button>'+
-   '<button class="btn red" onclick="refuseHelp()">Odrzucam</button>');
+   '<p>Bogaty wujek ze Stanów chce pomóc Ci ostatni raz. Spłaci obecny minus i przekaże dodatkowe 10 000 zł.</p><p>To ostatnia pomoc. Kolejne zejście na minus oznacza upadłość firmy.</p><p><b>Zgadzasz się?</b></p>',
+   '<button class="btn green" onclick="acceptUncle()">Przyjmuję pomoc</button><button class="btn red" onclick="refuseHelp()">Odrzucam</button>');
  }
 }
 
 function acceptBank(debt){
- S.money=10000;
- S.loan=debt;
- S.loanDue=S.day+30;
- S.rescueCount=1;
+ S.money=10000;S.loan=debt;S.loanDue=S.day+30;S.rescueCount=1;
  event("Bank spłacił debet i przekazał 10 000 zł. Pożyczka: "+fmt(debt)+". Termin spłaty: dzień "+S.loanDue+".");
  closeModal();save();render();
 }
-
 function acceptUncle(){
- S.money=10000;
- S.rescueCount=2;
+ S.money=10000;S.rescueCount=2;
  event("Wujek ze Stanów spłacił zadłużenie i przekazał 10 000 zł. To ostatnia pomoc.");
  closeModal();save();render();
 }
-
-function refuseHelp(){
- closeModal();
- bankruptcy("Odrzucono oferowaną pomoc finansową. Firma upada.");
-}
+function refuseHelp(){closeModal();bankruptcy("Odrzucono oferowaną pomoc finansową. Firma upada.")}
 
 function repayLoan(){
  if(!S.loan)return;
  if(S.money<S.loan)return alert("Nie masz wystarczających środków.");
- let n=S.loan;
- S.money-=n;
- S.totalExpenses+=n;
- S.loan=0;
- S.loanDue=0;
- event("Pożyczka bankowa została spłacona w całości.");
- save();render();
+ let n=S.loan;S.money-=n;S.totalExpenses+=n;S.loan=0;S.loanDue=0;
+ event("Pożyczka bankowa została spłacona w całości.");save();render();
 }
 
 function bankruptcy(reason){
- S.gameOver=true;
- save();
+ S.gameOver=true;save();
  modal("UPADŁOŚĆ FIRMY",
-  '<div class="big">📉</div>'+
-  '<p>'+reason+'</p>'+
-  '<p>Magazyn „'+S.name+'” zakończył działalność w dniu '+S.day+'.</p>'+
-  '<p>Łączne przychody: '+fmt(S.totalRevenue)+'<br>Łączne wydatki: '+fmt(S.totalExpenses)+'</p>',
-  '<button class="btn green" onclick="resetGame()">Załóż nową firmę</button>');
+ '<div class="big">📉</div><p>'+reason+'</p><p>Magazyn „'+S.name+'” zakończył działalność w dniu '+S.day+'.</p><p>Łączne przychody: '+fmt(S.totalRevenue)+'<br>Łączne wydatki: '+fmt(S.totalExpenses)+'</p>',
+ '<button class="btn green" onclick="resetGame()">Załóż nową firmę</button>');
+}
+
+function renderContracts(){
+ document.getElementById("offers").innerHTML=S.offers.length?S.offers.map(o=>`
+  <div class="contract">
+   <div class="row"><h3>${o.company}</h3><span class="pill">Oferta</span></div>
+   <div class="row"><span>Wymagany udźwig</span><b>${o.load.toLocaleString("pl-PL")} kg</b></div>
+   <div class="row"><span>Liczba palet</span><b>${o.pallets}</b></div>
+   <div class="row"><span>Termin realizacji</span><b>${o.days} dni</b></div>
+   <div class="row"><span>Zaliczka</span><b class="good">${fmt(o.advance)}</b></div>
+   <div class="row"><span>Premia za realizację</span><b>${fmt(o.reward)}</b></div>
+   <div class="row"><span>Kara za niewykonanie</span><b class="bad">${fmt(o.penalty)}</b></div>
+   <button class="btn green" onclick="acceptContract(${o.id})">Przyjmij kontrakt</button>
+  </div>`).join(""):'<p class="muted">Brak dostępnych ofert.</p>';
+
+ let active=S.contracts.filter(c=>c.status==="active");
+ let history=S.contracts.filter(c=>c.status!=="active").slice(-5).reverse();
+
+ document.getElementById("activeContracts").innerHTML=
+ (active.length?active.map(c=>`
+  <div class="contract">
+   <div class="row"><h3>${c.company}</h3><span class="pill">W realizacji</span></div>
+   <div class="row"><span>Wymagany udźwig</span><b>${c.load.toLocaleString("pl-PL")} kg</b></div>
+   <div class="row"><span>Postęp</span><b>${c.delivered}/${c.pallets} palet</b></div>
+   <div class="bar"><i style="width:${Math.min(100,c.delivered/c.pallets*100)}%"></i></div>
+   <div class="row"><span>Pozostały czas</span><b>${c.remaining} dni</b></div>
+   <button class="btn red" onclick="cancelContract(${c.id})">Porzuć kontrakt</button>
+  </div>`).join(""):'<p class="muted">Nie masz aktywnych kontraktów.</p>')+
+ (history.length?'<hr><h3>Ostatnie zakończone zlecenia</h3>'+history.map(c=>`
+  <div class="row"><span>${c.company}</span><b class="${c.status==="completed"?"good":"bad"}">${c.status==="completed"?"Zrealizowany":c.status==="failed"?"Nieudany":"Anulowany"}</b></div>`).join(""):"");
 }
 
 function render(){
- document.getElementById("brand").textContent=(S.name||"Idle Warehouse")+" • 3.7";
+ document.getElementById("brand").textContent=(S.name||"Idle Warehouse")+" • 3.8";
  document.getElementById("cash").textContent=fmt(S.money);
  document.getElementById("cash").className=S.money<0?"bad":"";
  document.getElementById("day").textContent=S.day;
@@ -568,73 +632,72 @@ function render(){
  document.getElementById("throughput").textContent=(S.warehouse*10*S.shifts)+" palet";
  document.getElementById("rename").value=S.name||"";
 
- document.getElementById("events").innerHTML=
-  S.events.map(x=>'<div class="event">'+x+'</div>').join("");
+ document.getElementById("events").innerHTML=S.events.map(x=>
+  x.includes("😄")?'<div class="joke">'+x+'</div>':'<div class="event">'+x+'</div>'
+ ).join("");
 
- document.getElementById("ownedFleet").innerHTML=
-  S.fleet.map(t=>{
-   let m=model(t.model);
-   return `<div class="panel">
-    <div class="truck">${m.art}</div>
-    <h3>${m.name}</h3>
-    <div class="row"><span>Stan techniczny</span><b>${t.condition}%</b></div>
-    <span class="muted">Udźwig: ${m.capacity}</span>
-   </div>`;
-  }).join("");
+ document.getElementById("ownedFleet").innerHTML=S.fleet.map((t,i)=>{
+  let m=model(t.model);
+  if(!m)return "";
+  return `<div class="panel">
+   <div class="truck">${m.art}</div><h3>${m.name}</h3>
+   <div class="row"><span>Stan techniczny</span><b>${Math.round(t.condition)}%</b></div>
+   <div class="row"><span>Udźwig</span><b>${m.capacity.toLocaleString("pl-PL")} kg</b></div>
+   <button class="btn" onclick="repairTruck(${i})">Serwisuj — ${fmt((100-t.condition)*120)}</button>
+  </div>`;
+ }).join("");
 
- document.getElementById("truckShop").innerHTML=
-  MODELS.filter(m=>m.price>0).map(m=>`
-   <div class="panel">
-    <div class="truck">${m.art}</div>
-    <h3>${m.name}</h3>
-    <p class="muted">Udźwig: ${m.capacity} • energia: ${m.energy}</p>
-    <b>${fmt(m.price)}</b><br>
-    <button class="btn" onclick="buyTruck('${m.id}')">Kup wózek</button>
-   </div>`).join("");
+ document.getElementById("truckShop").innerHTML=MODELS.filter(m=>m.price>0).map(m=>`
+  <div class="panel">
+   <div class="truck">${m.art}</div><h3>${m.name}</h3>
+   <p class="muted">Udźwig: ${m.capacity.toLocaleString("pl-PL")} kg • energia: ${m.energy}</p>
+   <p class="muted">Miesięczny wynajem: ${fmt(m.rent)}</p>
+   <b>${fmt(m.price)}</b><br>
+   <button class="btn" onclick="buyTruck('${m.id}')">Kup wózek</button>
+  </div>`).join("");
 
- document.getElementById("employees").innerHTML=
-  S.employees.map(e=>`
-   <div class="employee">
-    <div class="row">
-     <b>${e.name}</b>
-     <span class="pill">${e.level===0?"Magazynier":e.level===1?"Pracownik transportu wewnętrznego":"Starszy pracownik transportu wewnętrznego"}</span>
-    </div>
-    <div class="row"><span>Godziny jazdy</span><b>${e.hours} h</b></div>
-    <div class="bar"><i style="width:${Math.min(100,e.hours/4)}%"></i></div>
-    <p class="muted">Szkolenie podstawowe: ${e.basic?"ukończone":"nieukończone"}<br>
-    Obsługa suwnic: ${e.crane?"ukończona":"nieukończona"}</p>
-    <button class="btn" onclick="train(${e.id},'basic')" ${e.basic||e.hours<200?"disabled":""}>Szkolenie podstawowe</button>
-    <button class="btn" onclick="train(${e.id},'crane')" ${e.crane||e.hours<400||!e.basic?"disabled":""}>Szkolenie z obsługi suwnic</button>
-   </div>`).join("");
+ document.getElementById("employees").innerHTML=S.employees.map(e=>`
+  <div class="employee">
+   <div class="row"><b>${e.name}</b>
+   <span class="pill">${e.level===0?"Magazynier":e.level===1?"Pracownik transportu wewnętrznego":"Starszy pracownik transportu wewnętrznego"}</span></div>
+   <div class="row"><span>Godziny jazdy</span><b>${e.hours} h</b></div>
+   <div class="bar"><i style="width:${Math.min(100,e.hours/4)}%"></i></div>
+   <p class="muted">Szkolenie podstawowe: ${e.basic?"ukończone":"nieukończone"}<br>Obsługa suwnic: ${e.crane?"ukończona":"nieukończona"}</p>
+   <button class="btn" onclick="train(${e.id},'basic')" ${e.basic||e.hours<200?"disabled":""}>Szkolenie podstawowe</button>
+   <button class="btn" onclick="train(${e.id},'crane')" ${e.crane||e.hours<400||!e.basic?"disabled":""}>Szkolenie z obsługi suwnic</button>
+  </div>`).join("");
 
  document.getElementById("planningLevel").textContent="Aktualny poziom: "+S.planning+" / 2";
  document.getElementById("warehouseCost").textContent=fmt(50000*S.warehouse);
 
- document.getElementById("socialItems").innerHTML=
-  SOCIAL.map(s=>`
-   <div class="panel">
-    <div class="big">${s[4]}</div>
-    <h2>${s[1]}</h2>
-    <p class="muted">${s[2]}</p>
-    ${S.social[s[0]]?'<b class="good">Aktywne</b>':
-    `<b>${fmt(s[3])}</b><br><button class="btn" onclick="buildSocial('${s[0]}')">Zbuduj</button>`}
-   </div>`).join("");
+ document.getElementById("socialItems").innerHTML=SOCIAL.map(s=>`
+  <div class="panel">
+   <div class="big">${s[4]}</div><h2>${s[1]}</h2><p class="muted">${s[2]}</p>
+   ${S.social[s[0]]?'<b class="good">Aktywne</b>':`<b>${fmt(s[3])}</b><br><button class="btn" onclick="buildSocial('${s[0]}')">Zbuduj</button>`}
+  </div>`).join("");
 
  let forecast=fixedMonthly();
  document.getElementById("finance").innerHTML=`
   <div class="row"><span>Prognoza kosztów stałych na miesiąc</span><b>${fmt(forecast)}</b></div>
   <div class="row"><span>Gotówka</span><b>${fmt(S.money)}</b></div>
   <div class="row"><span>Pożyczka bankowa</span><b>${fmt(S.loan)}</b></div>
-  ${S.loan?`
-   <div class="row"><span>Termin spłaty</span><b class="bad">dzień ${S.loanDue}</b></div>
-   <button class="btn green" onclick="repayLoan()">Spłać pożyczkę</button>`:""}
+  ${S.loan?`<div class="row"><span>Termin spłaty</span><b class="bad">dzień ${S.loanDue}</b></div><button class="btn green" onclick="repayLoan()">Spłać pożyczkę</button>`:""}
   <p class="muted">Media zależą od liczby zmian. Podatek: 8% przychodu co 180 dni. Prognoza obejmuje wynagrodzenia, wynajem, prąd, wodę, odzież, teren i zaplecze.</p>`;
 
+ renderContracts();
  document.querySelector('button[onclick="workDay()"]').disabled=S.gameOver;
+}
+
+function repairTruck(i){
+ let t=S.fleet[i];if(!t)return;
+ let cost=Math.ceil((100-t.condition)*120);
+ if(t.condition>=100)return alert("Wózek jest w pełni sprawny.");
+ if(spend(cost,"serwis wózka")){t.condition=100;event("Przeprowadzono serwis wózka "+model(t.model).name+".");save();render();}
 }
 
 function boot(){
  load();
+ ensureOffers();
  render();
 
  if(!S.name){
@@ -642,10 +705,7 @@ function boot(){
    '<p>Najpierw nadaj nazwę swojemu magazynowi.</p><input id="newName" maxlength="32" placeholder="Np. Magazyn Centralny">',
    '<button class="btn green" onclick="startNamed()">Rozpocznij działalność</button>');
  }
-
- if(S.gameOver){
-  bankruptcy("Firma zakończyła działalność.");
- }
+ if(S.gameOver)bankruptcy("Firma zakończyła działalność.");
 }
 
 boot();

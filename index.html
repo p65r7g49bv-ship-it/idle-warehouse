@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Idle Warehouse 3.4</title>
+<title>Idle Warehouse 3.5</title>
 <style>
 :root{--bg:#101722;--panel:#192433;--panel2:#202e40;--line:#34465b;--text:#e8eef5;--muted:#9eafc2;--gold:#e8a83e;--green:#55c58a;--red:#e46c6c;--blue:#65a9e8}
 *{box-sizing:border-box}
@@ -61,7 +61,7 @@ footer{color:var(--muted);font-size:11px;text-align:center;padding:20px}
 <body>
 <div class="wrap">
 <header>
- <div><h1>🏭 IDLE WAREHOUSE</h1><div class="sub">Symulator zarządzania przedsiębiorstwem logistycznym · Wersja 3.4</div></div>
+ <div><h1>🏭 IDLE WAREHOUSE</h1><div class="sub">Symulator zarządzania przedsiębiorstwem logistycznym · Wersja 3.5</div></div>
  <button onclick="saveGame()">💾 Zapisz</button>
 </header>
 
@@ -96,7 +96,7 @@ footer{color:var(--muted);font-size:11px;text-align:center;padding:20px}
  <button onclick="tab('reports',this)">Raporty</button>
 </nav>
 <main id="content"></main>
-<footer>Idle Warehouse 3.4 · Zapis lokalny w przeglądarce.</footer>
+<footer>Idle Warehouse 3.5 · Zapis lokalny w przeglądarce.</footer>
 </div>
 
 <script>
@@ -187,6 +187,7 @@ let lastFrame=Date.now();
 
 function money(n){return Math.round(n).toLocaleString("pl-PL")+" zł";}
 function num(n){return Math.floor(n).toLocaleString("pl-PL");}
+function decimal(n){return Number(Number(n||0).toFixed(1)).toLocaleString("pl-PL",{minimumFractionDigits:0,maximumFractionDigits:1});}
 function log(t){S.log.unshift("Dzień "+S.day+": "+t);S.log=S.log.slice(0,100);}
 function saveGame(){S.lastSeen=Date.now();localStorage.setItem(KEY,JSON.stringify(S));}
 function level(k){return S.upgrades[k]||0;}
@@ -236,7 +237,7 @@ function shiftWorkFactor(){
 function renderTop(){
  document.getElementById("money").textContent=money(S.money);
  document.getElementById("rep").textContent=num(S.rep);
- document.getElementById("capacity").textContent=num(occupied())+" / "+S.warehouse.capacity;
+ document.getElementById("capacity").textContent=decimal(occupied())+" / "+S.warehouse.capacity;
  document.getElementById("day").textContent=S.day;
  document.getElementById("clockTime").textContent=currentClock();
  document.getElementById("shiftLabel").textContent=shiftName();
@@ -244,25 +245,27 @@ function renderTop(){
  document.getElementById("dayProgress").style.width=(S.dayHours/dayLength()*100)+"%";
  document.getElementById("statusLabel").textContent=S.pendingEvent?"Oczekiwanie na decyzję":onBreak()?"Przerwa pracowników":"Praca ciągła";
  document.getElementById("speedLabel").textContent="Online: 1 godzina = 10 sekund · Offline: 20 sekund";
- renderEvent();
 }
 function renderEvent(){
  let el=document.getElementById("eventArea");
+ if(!el)return;
  if(!S.pendingEvent){el.innerHTML="";return;}
  let e=S.pendingEvent;
  el.innerHTML=`<div class="event"><h3>⚠ ${e.title}</h3><p>${e.desc}</p>
- ${e.choices.map((c,i)=>`<button onclick="resolveEvent(${i})">${c.label}</button>`).join("")}
+ ${e.choices.map((c,i)=>`<button type="button" onclick="resolveEvent(${i})">${c.label}</button>`).join("")}
  <div class="muted">Zegar wznowi pracę po podjęciu decyzji.</div></div>`;
 }
 function setEvent(title,desc,choices){
  S.pendingEvent={title,desc,choices};
+ renderEvent();
 }
 function resolveEvent(i){
  let e=S.pendingEvent;if(!e)return;
  let choice=e.choices[i];if(!choice)return;
  applyEventChoice(e.type,i);
  log(e.title+" — "+choice.label);
- S.pendingEvent=null;render();
+ S.pendingEvent=null;
+ render();
 }
 function applyEventChoice(type,i){
  if(type==="pallet"){
@@ -290,7 +293,10 @@ function applyEventChoice(type,i){
   else if(v){v.broken=true;v.condition=Math.max(0,v.condition-20);}
  }
  if(type==="rack"){
-  if(i===0){if(charge(1500))S.warehouse.condition=Math.min(100,S.warehouse.condition+15);}
+  if(i===0){
+   if(charge(1500))S.warehouse.condition=Math.min(100,S.warehouse.condition+15);
+   else log("Brak środków na naprawę regału. Stan magazynu nie uległ zmianie.");
+  }
   else S.warehouse.condition=Math.max(0,S.warehouse.condition-8);
  }
  if(type==="delay"){
@@ -334,6 +340,7 @@ function randomEvent(){
  let e=events[Math.floor(Math.random()*events.length)];
  setEvent(e.title,e.desc,e.choices);
  S.pendingEvent.type=e.type;
+ renderEvent();
 }
 
 function hourlyTick(online){
@@ -448,6 +455,7 @@ function tab(name,b){
 }
 function render(){
  renderTop();
+ renderEvent();
  const views={company:companyView,warehouse:warehouseView,fleet:fleetView,staff:staffView,contracts:contractsView,development:developmentView,finance:financeView,reports:reportsView};
  document.getElementById("content").innerHTML=views[activeTab]();
 }
@@ -463,10 +471,10 @@ function companyView(){
  <div class="row"><span>Audytor BHP</span><b>${safety()?"Zatrudniony":"Brak"}</b></div>
  </div>
  <div class="card"><h3>📊 Operacje</h3>
- <div class="row"><span>Wydajność</span><b>${throughput().toFixed(2)} pal./h</b></div>
- <div class="row"><span>Stan magazynu</span><b>${S.warehouse.condition.toFixed(1)}%</b></div>
+ <div class="row"><span>Wydajność</span><b>${decimal(throughput())} pal./h</b></div>
+ <div class="row"><span>Stan magazynu</span><b>${decimal(S.warehouse.condition)}%</b></div>
  <div class="bar"><div style="width:${S.warehouse.condition}%"></div></div>
- <div class="row"><span>Wykorzystanie miejsc</span><b>${occupied()} / ${S.warehouse.capacity}</b></div>
+ <div class="row"><span>Wykorzystanie miejsc</span><b>${decimal(occupied())} / ${S.warehouse.capacity}</b></div>
  <div class="row"><span>Aktywne kontrakty</span><b>${activeContracts().length} / ${contractLimit()}</b></div>
  </div></div>
  <div class="card"><h3>📌 Ostatnie wydarzenia</h3>${S.log.slice(0,8).map(x=>`<p>• ${x}</p>`).join("")}</div>
@@ -495,12 +503,12 @@ function warehouseView(){
  <div class="grid">
  <div class="card"><h3>Powierzchnia</h3>
  <div class="row"><span>Pojemność</span><b>${w.capacity} palet</b></div>
- <div class="row"><span>Zajęte</span><b>${occupied()}</b></div>
- <div class="row"><span>Wolne</span><b>${freeSpace()}</b></div>
+ <div class="row"><span>Zajęte</span><b>${decimal(occupied())}</b></div>
+ <div class="row"><span>Wolne</span><b>${decimal(freeSpace())}</b></div>
  <div class="bar"><div style="width:${Math.min(100,occupied()/w.capacity*100)}%"></div></div>
  </div>
  <div class="card"><h3>🧱 Stan magazynu</h3>
- <div class="row"><span>Kondycja</span><b>${w.condition.toFixed(1)}%</b></div>
+ <div class="row"><span>Kondycja</span><b>${decimal(w.condition)}%</b></div>
  <div class="bar"><div style="width:${w.condition}%;background:${w.condition<35?'#e46c6c':'#55c58a'}"></div></div>
  <p>${w.condition<35?'<span class=red>Stan krytyczny!</span>':w.condition<70?'<span class=gold>Wymaga konserwacji.</span>':'Stan dobry.'}</p>
  <button class="good" onclick="serviceRacks()">Serwis regałów · ${money(2000+w.level*500)}</button>
@@ -512,7 +520,7 @@ function warehouseView(){
  <button class="primary" onclick="upgradeWarehouse()" ${w.level>=5?"disabled":""}>Rozbuduj · ${w.level>=5?"—":money(costs[w.level])}</button>
  </div>
  <div class="card"><h3>📦 Składowane towary</h3>
- ${S.contracts.filter(c=>c.batches?.length).map(c=>`<p>${c.company} — ${c.batches.reduce((a,b)=>a+b.qty,0)} palet · pozostało do wysyłki ${Math.max(0,c.batches[0].readyAt-S.gameHour)} h</p>`).join("")||'<p class=muted>Brak towarów.</p>'}
+ ${S.contracts.filter(c=>c.batches?.length).map(c=>`<p>${c.company} — ${decimal(c.batches.reduce((a,b)=>a+b.qty,0))} palet · pozostało do wysyłki ${decimal(Math.max(0,c.batches[0].readyAt-S.gameHour))} h</p>`).join("")||'<p class=muted>Brak towarów.</p>'}
  </div>
  <div class="card"><h3>☕ Zaplecze socjalne</h3>
  <p>Przerwy pracowników trwają 30 minut. Zaplecze poprawia regenerację i wydajność po odpoczynku.</p>
@@ -547,8 +555,8 @@ function fleetView(){
   let m=MODELS[v.model]||MODELS.RX18;
   html+=`<div class="card"><div class="vehicle">
   <img src="${m.image}" alt="${m.name}" onerror="this.onerror=null;this.src='${IMG.RX20}'">
-  <div class="info"><b>${m.name}</b><div class="muted">${(m.load/1000).toFixed(1)} t · ${v.rented?"Wynajem":"Własność"}</div>
-  <p>Stan: ${v.condition.toFixed(0)}% · Motogodziny: ${num(v.hours)}</p>
+  <div class="info"><b>${m.name}</b><div class="muted">${decimal(m.load/1000)} t · ${v.rented?"Wynajem":"Własność"}</div>
+  <p>Stan: ${decimal(v.condition)}% · Motogodziny: ${num(v.hours)}</p>
   <div class="bar"><div style="width:${v.condition}%"></div></div>
   <span class="tag">${v.broken?"AWARIA":"Sprawny"}</span></div></div>
   <div class="actions">${v.rented?'<span class=muted>Serwis po stronie dostawcy</span>':`<button onclick="repairVehicle(${v.id})">Naprawa · 2 500 zł</button>`}
@@ -558,7 +566,7 @@ function fleetView(){
  Object.keys(MODELS).forEach(k=>{
   let m=MODELS[k];
   html+=`<div class="row" style="padding:9px 0;border-bottom:1px solid var(--line)">
-  <div><b>${m.name}</b><div class="muted">${(m.load/1000).toFixed(1)} t · ${money(m.price)} · wynajem ${money(m.rent)}/mies.</div></div>
+  <div><b>${m.name}</b><div class="muted">${decimal(m.load/1000)} t · ${money(m.price)} · wynajem ${money(m.rent)}/mies.</div></div>
   <div class="actions"><button onclick="buyVehicle('${k}',false)" ${m.price===0?"disabled":""}>Kup</button><button onclick="buyVehicle('${k}',true)">Wynajmij</button></div>
   </div>`;
  });
@@ -592,7 +600,7 @@ function staffView(){
   html+=`<div class="card"><div class="row"><b>${e.name}</b><span class="tag">${e.role}</span></div>
   <div class="row"><span>Pensja miesięczna</span><b>${money(e.salary)}</b></div>
   <div class="row"><span>Doświadczenie</span><b>${num(e.hours)} h</b></div>
-  <div class="row"><span>Umiejętności</span><b>${e.skill.toFixed(1)} / 100</b></div>
+  <div class="row"><span>Umiejętności</span><b>${decimal(e.skill)} / 100</b></div>
   <div class="bar"><div style="width:${e.skill}%"></div></div>
   <button class="danger" onclick="fireEmployee(${e.id})">Zwolnij</button></div>`;
  });
@@ -676,9 +684,10 @@ function contractsView(){
  });
  html+=`<div class="card"><h3>📦 Realizowane kontrakty</h3>
  ${activeContracts().map(c=>`<div class=card><b>${c.company}</b>
- <div class=row><span>Palety</span><b>${c.delivered} / ${c.pallets}</b></div>
- <div class=row><span>Do rozładunku</span><b>${c.incoming}</b></div>
- <div class=row><span>Termin</span><b>${Math.max(0,c.deadlineHour-S.gameHour)} h gry</b></div>
+ <div class=row><span>Palety</span><b>${decimal(c.delivered)} / ${c.pallets}</b></div>
+ <div class=row><span>Do rozładunku</span><b>${decimal(c.incoming)}</b></div>
+ <div class=row><span>Miejsce zajęte w magazynie</span><b>${decimal(c.batches.reduce((a,b)=>a+b.qty,0))} palet</b></div>
+ <div class=row><span>Termin</span><b>${decimal(Math.max(0,c.deadlineHour-S.gameHour))} h gry</b></div>
  <div class=bar><div style="width:${c.delivered/c.pallets*100}%"></div></div></div>`).join("")||'<p class=muted>Brak aktywnych kontraktów.</p>'}
  </div>`;
  return html;
@@ -697,7 +706,7 @@ function acceptContract(id){
 function developmentView(){
  let html=`<div class=card><h3>📈 Rozwój przedsiębiorstwa</h3>
  <p>Inwestycje poprawiają wydajność, organizację pracy i bezpieczeństwo.</p>
- <div class=row><span>Wydajność magazynu</span><b>${throughput().toFixed(2)} pal./h</b></div>
+ <div class=row><span>Wydajność magazynu</span><b>${decimal(throughput())} pal./h</b></div>
  <div class=row><span>Poziom biurokracji</span><b>${level("bureaucracy")}/4</b></div>
  </div>`;
  Object.entries(UPGRADES).forEach(([k,u])=>{

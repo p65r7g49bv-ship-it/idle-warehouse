@@ -36,19 +36,6 @@ p{line-height:1.45}
 .progress div{height:100%;width:0;background:linear-gradient(90deg,#55c58a,#e8a83e);transition:width .2s}
 .event{margin:12px 0;border-color:#80602b;background:#342b1d;display:none}
 .event strong{color:var(--gold)}
-.journal{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:13px;margin:12px 0}
-.journal-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
-.journal-heading h3{margin:0}
-.chat-log{display:flex;flex-direction:column;gap:8px;max-height:250px;overflow-y:auto;padding:3px 5px 3px 0}
-.chat-message{display:flex;align-items:flex-start;gap:9px}
-.chat-avatar{flex:0 0 30px;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#29394c;border:1px solid #40536a;font-size:14px}
-.chat-bubble{min-width:0;max-width:90%;background:#202e40;border:1px solid #34465b;border-radius:4px 11px 11px 11px;padding:8px 11px}
-.chat-message.system .chat-avatar{background:#3b3020;border-color:#80602b}
-.chat-message.system .chat-bubble{background:#30291f;border-color:#66502e}
-.chat-meta{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:10px;color:var(--muted)}
-.chat-meta strong{color:var(--gold);font-weight:normal}
-.chat-text{font-size:13px;line-height:1.4;overflow-wrap:anywhere}
-.chat-empty{color:var(--muted);text-align:center;padding:15px;font-size:13px}
 nav{display:flex;gap:7px;overflow-x:auto;padding:8px 0 13px;margin-bottom:12px}
 nav button{white-space:nowrap}
 nav button.active{background:var(--gold);color:#171717;border-color:var(--gold);font-weight:bold}
@@ -76,11 +63,8 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .event-choice{margin-top:12px}
 .event-choice button{margin:4px}
-.cost-total{font-size:21px;color:var(--gold);font-weight:bold;margin:10px 0}
-.cost-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
-.cost-row:last-child{border-bottom:0}
-.cost-row span:last-child{text-align:right;font-weight:bold;white-space:nowrap}
-.cost-note{background:#202e40;border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:12px;font-size:12px;color:var(--muted)}
+.contract-progress{height:12px;background:#0c131d;border-radius:20px;overflow:hidden;margin:8px 0 12px}
+.contract-progress div{height:100%;background:linear-gradient(90deg,#55c58a,#65a9e8);transition:width .2s}
 @media(max-width:700px){
  .wrap{padding:10px}
  .stats{grid-template-columns:repeat(2,1fr)}
@@ -88,7 +72,6 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
  .stat strong{font-size:17px}
  .vehicle img{width:100px;height:75px}
  h1{font-size:21px}
- .chat-bubble{max-width:calc(100% - 39px)}
 }
 </style>
 </head>
@@ -114,31 +97,12 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
 
 <section class="clock">
  <div class="clocktop">
-  <div>
-   <div class="small">AKTUALNA ZMIANA</div>
-   <strong id="clockTime">00:00 / 08:00</strong>
-  </div>
-  <div style="text-align:right">
-   <div class="small">Do końca zmiany</div>
-   <strong id="remainingTime">08:00:00</strong>
-  </div>
-  <div>
-   <div class="small">Zmiana</div>
-   <strong id="shiftNumber">1 / 1</strong>
-  </div>
+  <div><div class="small">AKTUALNA ZMIANA</div><strong id="clockTime">00:00 / 08:00</strong></div>
+  <div style="text-align:right"><div class="small">Do końca zmiany</div><strong id="remainingTime">08:00:00</strong></div>
+  <div><div class="small">Zmiana</div><strong id="shiftNumber">1 / 1</strong></div>
  </div>
  <div class="progress"><div id="shiftProgress"></div></div>
  <div class="small" style="margin-top:7px">Czas gry płynie automatycznie. W trakcie zdarzeń operacyjnych zegar zostaje zatrzymany.</div>
-</section>
-
-<section class="journal">
- <div class="journal-heading">
-  <h3>💬 Dziennik wydarzeń</h3>
-  <span class="small">Komunikaty magazynu</span>
- </div>
- <div class="chat-log" id="journalMessages">
-  <div class="chat-empty">Oczekiwanie na wydarzenia...</div>
- </div>
 </section>
 
 <div class="event" id="eventArea"></div>
@@ -152,7 +116,6 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
  <button data-tab="finance">Finanse</button>
  <button data-tab="reports">Raporty</button>
 </nav>
-
 <main id="content"></main>
 <footer>Idle Warehouse · Zarządzaj logistyką, flotą i zespołem</footer>
 </div>
@@ -217,18 +180,13 @@ function fresh(){
   shiftCount:1,pendingEvent:null,lastSeen:Date.now(),taxCycleRevenue:0,
   warehouse:{level:1,capacity:30,condition:100,serviceCenter:false,canteen:false,smoking:false,multimedia:false,developmentDept:false},
   upgrades:{automation:0,planning:0,training:0,marketing:0,maintenance:0},
-  employees:[{
-   id:1,name:"Jan Kowalski",role:"Magazynier",salary:3800,hours:180,
-   skill:0,udt:true,promotionLevel:0,trainedBasic:false,trainedAdvanced:false
-  }],
-  fleet:[{
-   id:1,model:"RX18",rented:true,condition:92,hours:1250,broken:false
-  }],
+  employees:[{id:1,name:"Jan Kowalski",role:"Magazynier",salary:3800,hours:180,skill:0,udt:true,promotionLevel:0,trainedBasic:false,trainedAdvanced:false}],
+  fleet:[{id:1,model:"RX18",rented:true,condition:92,hours:1250,broken:false}],
   contracts:[],offers:[],nextId:2,
   finances:{income:0,cost:0,penalties:0,tax:0,history:[]},
   rescue:{used:0,bankDebt:0,bankDeadline:0,bankrupt:false},
   funny:{month:1,count:0},
-  logs:[{day:1,time:"06:00",text:"Rozpoczęto działalność magazynu. Pierwszy wózek jest gotowy do pracy."}]
+  logs:[{day:1,text:"Rozpoczęto działalność magazynu. Pierwszy wózek jest gotowy do pracy."}]
  };
 }
 
@@ -240,18 +198,14 @@ let saving=false;
 function loadGame(){
  try{
   let raw=localStorage.getItem(KEY);
-  if(!raw){
-   for(const k of OLD_KEYS){
-    raw=localStorage.getItem(k);
-    if(raw)break;
-   }
-  }
-  if(raw){
-   const parsed=JSON.parse(raw);
-   return migrate(parsed);
-  }
+  if(!raw){for(const k of OLD_KEYS){raw=localStorage.getItem(k);if(raw)break}}
+  if(raw)return migrate(JSON.parse(raw));
  }catch(e){console.warn("Nie udało się wczytać zapisu",e)}
  return fresh();
+}
+
+function contractTotal(c){
+ return Math.max(1,Math.round(Number(c.totalPallets)||Number(c.p||1)*8*Number(c.days||1)));
 }
 
 function migrate(data){
@@ -271,24 +225,33 @@ function migrate(data){
  merged.fleet.forEach(v=>{
   if(v.model==="RX60_30")v.model="RX22";
   if(v.model==="RX60_50")v.model="RX30";
-  v.condition??=90;
-  v.hours??=0;
-  v.broken??=false;
-  v.rented??=false;
+  v.condition??=90;v.hours??=0;v.broken??=false;v.rented??=false;
  });
  merged.employees.forEach(e=>{
   e.hours??=0;e.skill??=0;e.promotionLevel??=0;
-  e.trainedBasic??=false;e.trainedAdvanced??=false;
-  e.udt??=true;
+  e.trainedBasic??=false;e.trainedAdvanced??=false;e.udt??=true;
  });
- merged.warehouse.level=Math.max(1,Math.round(merged.warehouse.level||1));
- merged.warehouse.capacity=warehouseCapacity(merged.warehouse.level);
- merged.warehouse.condition=Math.round(merged.warehouse.condition||0);
- merged.fleet.forEach(v=>{v.condition=Math.round(v.condition||0);v.wearProgress??=0});
- merged.employees.forEach(e=>{e.skill=Math.round(e.skill||0)});
- merged.logs.forEach(l=>{
-  l.time??="--:--";
+
+ // Migracja kontraktów ze starego systemu godzinowego na palety.
+ merged.contracts.forEach(c=>{
+  const total=contractTotal(c);
+  if(c.totalPallets==null){
+   const oldDuration=Math.max(1,Number(c.days||1)*24);
+   const fraction=clamp((Number(c.progress)||0)/oldDuration,0,1);
+   const completed=Math.min(total,Math.round(total*fraction));
+   c.totalPallets=total;
+   c.receivedPallets=completed;
+   c.shippedPallets=completed;
+  }else{
+   c.totalPallets=total;
+   c.receivedPallets=clamp(Math.round(Number(c.receivedPallets)||0),0,total);
+   c.shippedPallets=clamp(Math.round(Number(c.shippedPallets)||0),0,c.receivedPallets);
+  }
+  c.receivedPallets??=0;
+  c.shippedPallets??=0;
+  c.done??=false;c.failed??=false;
  });
+
  merged.nextId=Math.max(merged.nextId||2,
   ...merged.employees.map(x=>x.id+1),
   ...merged.fleet.map(x=>x.id+1),2);
@@ -297,8 +260,7 @@ function migrate(data){
 
 function saveGame(){
  if(saving)return;
- saving=true;
- S.lastSeen=Date.now();
+ saving=true;S.lastSeen=Date.now();
  try{localStorage.setItem(KEY,JSON.stringify(S))}
  catch(e){console.warn("Błąd zapisu",e)}
  saving=false;
@@ -309,46 +271,19 @@ function money(n){return num(n)+" zł"}
 function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
 function pick(a){return a[Math.floor(Math.random()*a.length)]}
-
-function gameClock(){
- const hour=(6+(S.gameHour||0))%24;
- return String(hour).padStart(2,"0")+":00";
-}
-
 function log(text){
- S.logs.unshift({
-  day:S.day,
-  time:gameClock(),
-  text
- });
+ S.logs.unshift({day:S.day,text});
  if(S.logs.length>150)S.logs.length=150;
- updateJournal();
 }
-
 function activeContracts(){return S.contracts.filter(c=>!c.done&&!c.failed)}
-
-function warehouseCapacity(level){
- const caps=[0,30,60,100,250,1000];
- return level<=5?caps[level]:1000+(level-5)*50;
-}
-
-function contractLimit(){
- const tier=Math.min(S.shiftCount,S.warehouse.level,3);
- const base=[0,2,10,20][tier];
- return base+Math.max(0,S.warehouse.level-tier)*5;
-}
-
+function contractLimit(){return 2+S.upgrades.planning}
 function forklifts(){return S.fleet.filter(v=>!v.broken&&v.condition>0)}
-function maxLoad(){
- return forklifts().reduce((m,v)=>Math.max(m,MODELS[v.model]?.load||0),0);
-}
+function maxLoad(){return forklifts().reduce((m,v)=>Math.max(m,MODELS[v.model]?.load||0),0)}
 function operators(){return S.employees.length}
 function totalFleet(){return S.fleet.length}
 function shiftLength(){return 8}
 function shiftStartHour(){return 6}
-function getShift(){
- return Math.min(S.shiftCount,Math.floor(S.dayHours/8)+1);
-}
+function getShift(){return Math.min(S.shiftCount,Math.floor(S.dayHours/8)+1)}
 function getShiftHour(){return S.dayHours%8}
 function formatTime(hours){
  const total=Math.floor(hours*60);
@@ -356,9 +291,7 @@ function formatTime(hours){
 }
 function formatCountdown(hours){
  const seconds=Math.max(0,Math.floor(hours*3600));
- return String(Math.floor(seconds/3600)).padStart(2,"0")+":"+
- String(Math.floor(seconds%3600/60)).padStart(2,"0")+":"+
- String(seconds%60).padStart(2,"0");
+ return String(Math.floor(seconds/3600)).padStart(2,"0")+":"+String(Math.floor(seconds%3600/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
 }
 
 function askWarehouseName(){
@@ -367,285 +300,168 @@ function askWarehouseName(){
  else S.warehouseName="Centralny Magazyn";
  saveGame();updateHeading();
 }
-
 function updateHeading(){
- document.getElementById("warehouseHeading").textContent=
- S.warehouseName||"Nowe centrum logistyczne";
+ document.getElementById("warehouseHeading").textContent=S.warehouseName||"Nowe centrum logistyczne";
 }
-
 function updateTop(){
  document.getElementById("moneyStat").textContent=money(S.money);
  document.getElementById("repStat").textContent=num(S.rep);
  document.getElementById("capacityStat").textContent=num(S.warehouse.capacity)+" miejsc";
  document.getElementById("dayStat").textContent=S.day;
- document.getElementById("clockTime").textContent=
- formatTime(getShiftHour())+" / 08:00";
- document.getElementById("remainingTime").textContent=
- formatCountdown(8-getShiftHour());
- document.getElementById("shiftNumber").textContent=
- getShift()+" / "+S.shiftCount;
- document.getElementById("shiftProgress").style.width=
- (getShiftHour()/8*100)+"%";
+ document.getElementById("clockTime").textContent=formatTime(getShiftHour())+" / 08:00";
+ document.getElementById("remainingTime").textContent=formatCountdown(8-getShiftHour());
+ document.getElementById("shiftNumber").textContent=getShift()+" / "+S.shiftCount;
+ document.getElementById("shiftProgress").style.width=(getShiftHour()/8*100)+"%";
  updateEventArea();
- updateJournal();
 }
-
-function updateJournal(){
- const box=document.getElementById("journalMessages");
- if(!box)return;
-
- const latest=S.logs.slice(0,12);
- const signature=latest.map(l=>
-  `${l.day}|${l.time||"--:--"}|${l.text}`
- ).join("||");
-
- if(box.dataset.signature===signature)return;
- box.dataset.signature=signature;
-
- if(!latest.length){
-  box.innerHTML='<div class="chat-empty">Brak nowych wydarzeń.</div>';
-  return;
- }
-
- box.innerHTML=latest.map(l=>{
-  const text=escapeHTML(l.text);
-  const system=/💬|awari|zdarzen|bankructw|bank udzielił|wujek/i.test(l.text);
-  return `<div class="chat-message ${system?"system":""}">
-   <div class="chat-avatar">${system?"⚙️":"👷"}</div>
-   <div class="chat-bubble">
-    <div class="chat-meta">
-     <strong>${system?"System magazynowy":"Dziennik magazynu"}</strong>
-     <span>Dzień ${l.day}</span>
-     <span>${escapeHTML(l.time||"--:--")}</span>
-    </div>
-    <div class="chat-text">${text}</div>
-   </div>
-  </div>`;
- }).join("");
-}
-
 function updateEventArea(){
  const area=document.getElementById("eventArea");
  if(!S.pendingEvent){area.style.display="none";area.innerHTML="";return}
  area.style.display="block";
  const e=S.pendingEvent;
  area.innerHTML=`<strong>⚠ ZDARZENIE OPERACYJNE: ${e.title}</strong>
- <p>${e.description}</p><div class="event-choice">${e.choices.map((c,i)=>
- `<button onclick="resolveEvent(${i})">${c.label}</button>`).join("")}</div>
+ <p>${e.description}</p><div class="event-choice">${e.choices.map((c,i)=>`<button onclick="resolveEvent(${i})">${c.label}</button>`).join("")}</div>
  <div class="small">Zegar został zatrzymany do czasu podjęcia decyzji.</div>`;
 }
 
 function render(){
  updateTop();updateHeading();
- const views={
-  company:companyView,warehouse:warehouseView,fleet:fleetView,
-  staff:staffView,contracts:contractsView,development:developmentView,
-  finance:financeView,reports:reportsView
- };
- document.querySelectorAll("nav button").forEach(b=>
-  b.classList.toggle("active",b.dataset.tab===activeTab));
+ const views={company:companyView,warehouse:warehouseView,fleet:fleetView,staff:staffView,contracts:contractsView,development:developmentView,finance:financeView,reports:reportsView};
+ document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===activeTab));
  document.getElementById("content").innerHTML=views[activeTab]();
 }
-
 document.getElementById("navigation").addEventListener("click",e=>{
  const b=e.target.closest("button[data-tab]");
- if(!b)return;
- activeTab=b.dataset.tab;render();
+ if(!b)return;activeTab=b.dataset.tab;render();
 });
 
 function companyView(){
- const income=S.finances.income;
- const costs=S.finances.cost;
- const fleetLoad=maxLoad();
- return `<h2>🏢 Firma</h2>
- <div class="grid">
-  <div class="card">
-   <h3>Centrum logistyczne</h3>
-   <img class="hero-image" src="${IMG.WAREHOUSE}" onerror="this.style.display='none'">
-   <p><b>${escapeHTML(S.warehouseName||"Nowy magazyn")}</b></p>
-   <p class="muted">Dzień działalności: ${S.day}</p>
-   <p>Reputacja: <b>${S.rep}</b></p>
-   <p>Poziom magazynu: ${S.warehouse.level}</p>
-   <p>Stan techniczny: ${Math.round(S.warehouse.condition)}%</p>
-  </div>
-  <div class="card">
-   <h3>Podsumowanie operacyjne</h3>
-   <p>Pracownicy: <b>${operators()}</b></p>
-   <p>Wózki: <b>${totalFleet()}</b></p>
-   <p>Sprawne wózki: <b>${forklifts().length}</b></p>
-   <p>Największy udźwig: <b>${num(fleetLoad)} kg</b></p>
-   <p>Aktywne kontrakty: <b>${activeContracts().length}</b></p>
-   <p>Wykonane kontrakty: <b>${S.contracts.filter(c=>c.done).length}</b></p>
-  </div>
-  <div class="card">
-   <h3>Wyniki finansowe</h3>
-   <p>Przychody: <span class="good">${money(income)}</span></p>
-   <p>Koszty: <span class="bad">${money(costs)}</span></p>
-   <p>Kary: <span class="bad">${money(S.finances.penalties)}</span></p>
-   <p>Podatki: ${money(S.finances.tax)}</p>
-   <p>Bilans: <b>${money(income-costs-S.finances.penalties-S.finances.tax)}</b></p>
-  </div>
-  <div class="card">
-   <h3>Stan przedsiębiorstwa</h3>
-   <p>Zmiany dziennie: ${S.shiftCount}</p>
-   <p>Wykorzystanie floty: ${forklifts().length}/${S.fleet.length}</p>
-   <p>Limit kontraktów: ${contractLimit()}</p>
-   <p>Automatyzacja: poziom ${S.upgrades.automation}</p>
-   <p>Planowanie: poziom ${S.upgrades.planning}</p>
-  </div>
- </div>
- <div class="card" style="margin-top:12px">
-  <h3>Ustawienia przedsiębiorstwa</h3>
-  <p class="muted">Zmiana nazwy magazynu lub rozpoczęcie nowej rozgrywki.</p>
-  <div class="actions">
-   <button onclick="changeWarehouseName()">Zmień nazwę magazynu</button>
-   <button onclick="restartGame()" style="border-color:var(--red)">Zacznij od nowa</button>
-  </div>
- </div>`;
+ const income=S.finances.income,costs=S.finances.cost,fleetLoad=maxLoad();
+ return `<h2>🏢 Firma</h2><div class="grid">
+ <div class="card"><h3>Centrum logistyczne</h3><img class="hero-image" src="${IMG.WAREHOUSE}" onerror="this.style.display='none'">
+ <p><b>${escapeHTML(S.warehouseName||"Nowy magazyn")}</b></p><p class="muted">Dzień działalności: ${S.day}</p>
+ <p>Reputacja: <b>${S.rep}</b></p><p>Poziom magazynu: ${S.warehouse.level}</p><p>Stan techniczny: ${S.warehouse.condition}%</p></div>
+ <div class="card"><h3>Podsumowanie operacyjne</h3><p>Pracownicy: <b>${operators()}</b></p><p>Wózki: <b>${totalFleet()}</b></p>
+ <p>Sprawne wózki: <b>${forklifts().length}</b></p><p>Największy udźwig: <b>${num(fleetLoad)} kg</b></p>
+ <p>Aktywne kontrakty: <b>${activeContracts().length}</b></p><p>Wykonane kontrakty: <b>${S.contracts.filter(c=>c.done).length}</b></p></div>
+ <div class="card"><h3>Wyniki finansowe</h3><p>Przychody: <span class="good">${money(income)}</span></p>
+ <p>Koszty: <span class="bad">${money(costs)}</span></p><p>Kary: <span class="bad">${money(S.finances.penalties)}</span></p>
+ <p>Podatki: ${money(S.finances.tax)}</p><p>Bilans: <b>${money(income-costs-S.finances.penalties-S.finances.tax)}</b></p></div>
+ <div class="card"><h3>Stan przedsiębiorstwa</h3><p>Zmiany dziennie: ${S.shiftCount}</p>
+ <p>Wykorzystanie floty: ${forklifts().length}/${S.fleet.length}</p><p>Limit kontraktów: ${contractLimit()}</p>
+ <p>Automatyzacja: poziom ${S.upgrades.automation}</p><p>Planowanie: poziom ${S.upgrades.planning}</p></div></div>
+ <div class="card" style="margin-top:12px"><h3>📋 Dziennik firmy</h3>${renderLogs(8)}</div>
+ <div class="card" style="margin-top:12px"><h3>Ustawienia przedsiębiorstwa</h3>
+ <p class="muted">Zmiana nazwy magazynu lub rozpoczęcie nowej rozgrywki.</p>
+ <div class="actions"><button onclick="changeWarehouseName()">Zmień nazwę magazynu</button>
+ <button onclick="restartGame()" style="border-color:var(--red)">Zacznij od nowa</button></div></div>`;
 }
 
 function warehouseView(){
- const w=S.warehouse;
- const cost=80000*w.level;
- const capacity=warehouseCapacity(w.level);
- return `<h2>🏬 Magazyn</h2>
- <div class="grid">
-  <div class="card">
-   <img class="hero-image" src="${IMG.WAREHOUSE}" onerror="this.style.display='none'">
-   <h3>Infrastruktura</h3>
-   <p>Poziom: <b>${w.level}</b></p>
-   <p>Pojemność: <b>${capacity} miejsc paletowych</b></p>
-   <p>Stan techniczny: <b>${Math.round(w.condition)}%</b></p>
-   <p>Możliwości magazynu wpływają na wielkość dostępnych kontraktów.</p>
-   <button onclick="upgradeWarehouse()" ${S.money<cost?"disabled":""}>Rozbuduj magazyn · ${money(cost)}</button>
-  </div>
-  <div class="card">
-   <h3>Utrzymanie obiektu</h3>
-   <p>Stan techniczny: ${Math.round(w.condition)}%</p>
-   <div class="progress"><div style="width:${w.condition}%;background:${w.condition<40?"var(--red)":"var(--green)"}"></div></div>
-   <p class="muted">Zaniedbany magazyn obniża wydajność operacyjną.</p>
-   <button onclick="repairWarehouse()">Napraw magazyn · 3500 zł</button>
-  </div>
- </div>
- <h3 style="margin-top:18px">Zaplecze socjalne i techniczne</h3>
- <div class="grid">${facilityCard("serviceCenter","Serwis techniczny","Szybsze naprawy i niższe koszty awarii.",18000,450)}
+ const w=S.warehouse,cost=80000*w.level;
+ return `<h2>🏬 Magazyn</h2><div class="grid">
+ <div class="card"><img class="hero-image" src="${IMG.WAREHOUSE}" onerror="this.style.display='none'"><h3>Infrastruktura</h3>
+ <p>Poziom: <b>${w.level}</b></p><p>Pojemność: <b>${w.capacity} miejsc paletowych</b></p><p>Stan techniczny: <b>${w.condition}%</b></p>
+ <p>Możliwości magazynu wpływają na wielkość dostępnych kontraktów.</p>
+ <button onclick="upgradeWarehouse()" ${S.money<cost?"disabled":""}>Rozbuduj magazyn · ${money(cost)}</button></div>
+ <div class="card"><h3>Utrzymanie obiektu</h3><p>Stan techniczny: ${w.condition}%</p>
+ <div class="progress"><div style="width:${w.condition}%;background:${w.condition<40?"var(--red)":"var(--green)"}"></div></div>
+ <p class="muted">Zaniedbany magazyn obniża wydajność operacyjną.</p><button onclick="repairWarehouse()">Napraw magazyn · 3500 zł</button></div></div>
+ <h3 style="margin-top:18px">Zaplecze socjalne i techniczne</h3><div class="grid">
+ ${facilityCard("serviceCenter","Serwis techniczny","Szybsze naprawy i niższe koszty awarii.",18000,450)}
  ${facilityCard("canteen","Stołówka","Poprawia morale pracowników.",12000,350)}
  ${facilityCard("smoking","Palarnia","Zapewnia dodatkowe miejsce odpoczynku.",5000,120)}
  ${facilityCard("multimedia","Strefa multimedialna","Poprawia komfort zespołu.",14000,250)}
  ${facilityCard("developmentDept","Dział rozwoju i nierozwoju","Ułatwia szkolenie i rozwój pracowników.",26000,600)}</div>`;
 }
-
 function facilityCard(key,title,desc,cost,monthly){
  const built=S.warehouse[key];
- return `<div class="card">
- <h3>${title}</h3><p>${desc}</p>
- <p class="small">Koszt miesięczny: ${money(monthly)}</p>
+ return `<div class="card"><h3>${title}</h3><p>${desc}</p><p class="small">Koszt miesięczny: ${money(monthly)}</p>
  <p>${built?'<span class="good">✓ Obiekt dostępny</span>':'<span class="muted">Nie wybudowano</span>'}</p>
- <button onclick="buildFacility('${key}',${cost})" ${built||S.money<cost?"disabled":""}>
- ${built?"Wybudowano":"Zbuduj · "+money(cost)}</button></div>`;
+ <button onclick="buildFacility('${key}',${cost})" ${built||S.money<cost?"disabled":""}>${built?"Wybudowano":"Zbuduj · "+money(cost)}</button></div>`;
 }
 
 function fleetView(){
  const cards=S.fleet.map(v=>{
   const m=MODELS[v.model]||MODELS.RX18;
-  return `<div class="card">
-   <div class="vehicle">
-    <img src="${m.image}" alt="${m.name}" onerror="this.src='${IMG.RX20}'">
-    <div><h3>${m.name}</h3><div class="small">Udźwig ${num(m.load)} kg</div>
-    <span class="tag">${v.rented?"Wynajem":"Własny"}</span>
-    <span class="tag">${v.broken?"Awaria":Math.round(v.condition)+"% sprawności"}</span></div>
-   </div>
-   <p>Przepracowane godziny: ${num(v.hours)}</p>
-   <p>Wydajność: ${m.throughput} jednostek/h</p>
-   <p>Zużycie energii: ${m.energy} zł/h</p>
-   <p>Stan: ${v.broken?'<span class="bad">Uszkodzony</span>':v.condition<30?'<span class="bad">Wymaga serwisu</span>':'<span class="good">Gotowy do pracy</span>'}</p>
-   <div class="actions">
-    <button onclick="repairForklift(${v.id})">Napraw · ${money(Math.max(500,(100-v.condition)*100))}</button>
-    <button onclick="sellForklift(${v.id})">Sprzedaj</button>
-   </div>
-  </div>`;
+  return `<div class="card"><div class="vehicle"><img src="${m.image}" alt="${m.name}" onerror="this.src='${IMG.RX20}'">
+  <div><h3>${m.name}</h3><div class="small">Udźwig ${num(m.load)} kg</div><span class="tag">${v.rented?"Wynajem":"Własny"}</span>
+  <span class="tag">${v.broken?"Awaria":v.condition+"% sprawności"}</span></div></div>
+  <p>Przepracowane godziny: ${num(v.hours)}</p><p>Wydajność: ${m.throughput} jednostek/h</p>
+  <p>Zużycie energii: ${m.energy} zł/h</p><p>Stan: ${v.broken?'<span class="bad">Uszkodzony</span>':v.condition<30?'<span class="bad">Wymaga serwisu</span>':'<span class="good">Gotowy do pracy</span>'}</p>
+  <div class="actions"><button onclick="repairForklift(${v.id})">Napraw · ${money(Math.max(500,(100-v.condition)*100))}</button>
+  <button onclick="sellForklift(${v.id})">Sprzedaj</button></div></div>`;
  }).join("");
  const shop=Object.entries(MODELS).filter(([id])=>id!=="RX18").map(([id,m])=>
- `<div class="card">
-  <div class="vehicle"><img src="${m.image}" alt="${m.name}" onerror="this.src='${IMG.RX20}'">
-  <div><h3>${m.name}</h3><span class="tag">Udźwig ${num(m.load)} kg</span></div></div>
-  <p>Cena zakupu: <b class="price">${money(m.price)}</b></p>
-  <p>Wynajem miesięczny: ${money(m.rent)}</p>
-  <p>Zużycie energii: ${m.energy} zł/h</p>
-  <p>Przepustowość: ${m.throughput}</p>
-  <div class="actions">
-   <button onclick="buyForklift('${id}')" ${S.money<m.price?"disabled":""}>Kup</button>
-   <button onclick="rentForklift('${id}')">Wynajmij</button>
-  </div>
- </div>`).join("");
- return `<h2>🚜 Flota wózków</h2>
- <p class="muted">Wydajność magazynu zależy od liczby sprawnych wózków, ich udźwigu i dostępnych operatorów.</p>
+ `<div class="card"><div class="vehicle"><img src="${m.image}" alt="${m.name}" onerror="this.src='${IMG.RX20}'">
+ <div><h3>${m.name}</h3><span class="tag">Udźwig ${num(m.load)} kg</span></div></div>
+ <p>Cena zakupu: <b class="price">${money(m.price)}</b></p><p>Wynajem miesięczny: ${money(m.rent)}</p>
+ <p>Zużycie energii: ${m.energy} zł/h</p><p>Przepustowość: ${m.throughput}</p>
+ <div class="actions"><button onclick="buyForklift('${id}')" ${S.money<m.price?"disabled":""}>Kup</button>
+ <button onclick="rentForklift('${id}')">Wynajmij</button></div></div>`).join("");
+ return `<h2>🚜 Flota wózków</h2><p class="muted">Wydajność magazynu zależy od liczby sprawnych wózków, ich udźwigu i dostępnych operatorów.</p>
  <div class="grid">${cards||'<div class="empty">Brak wózków we flocie.</div>'}</div>
- <h2 style="margin-top:22px">Oferta zakupu i wynajmu</h2>
- <div class="grid">${shop}</div>`;
+ <h2 style="margin-top:22px">Oferta zakupu i wynajmu</h2><div class="grid">${shop}</div>`;
 }
 
 function staffView(){
- return `<h2>👷 Pracownicy</h2>
- <div class="card">
-  <h3>Zespół magazynu</h3>
-  <p>Łączna liczba pracowników: <b>${S.employees.length}</b></p>
-  <p class="muted">Do obsługi każdej zmiany potrzebny jest odpowiedni zespół operatorów.</p>
-  <button onclick="hireEmployee()">Zatrudnij pracownika · 1600 zł</button>
- </div>
+ return `<h2>👷 Pracownicy</h2><div class="card"><h3>Zespół magazynu</h3>
+ <p>Łączna liczba pracowników: <b>${S.employees.length}</b></p>
+ <p class="muted">Do obsługi każdej zmiany potrzebny jest odpowiedni zespół operatorów.</p>
+ <button onclick="hireEmployee()">Zatrudnij pracownika · 1500 zł</button></div>
  <div class="grid" style="margin-top:12px">${S.employees.map(e=>`
- <div class="card">
-  <div class="vehicle">
-   <img class="worker-image" src="${IMG.WORKER}" alt="Pracownik">
-   <div><h3>${escapeHTML(e.name)}</h3><div class="small">${escapeHTML(e.role)}</div></div>
-  </div>
-  <p>Staż na wózkach: <b>${num(e.hours)} h</b></p>
-  <p>Umiejętności: ${Math.round(e.skill)}/100</p>
-  <p>Wynagrodzenie: ${money(e.salary)}/mies.</p>
-  <p>Uprawnienia UDT: ${e.udt?'<span class="good">Tak</span>':'<span class="bad">Nie</span>'}</p>
-  <p>Szkolenie podstawowe: ${e.trainedBasic?"ukończone":"brak"}</p>
-  <p>Szkolenie zaawansowane: ${e.trainedAdvanced?"ukończone":"brak"}</p>
-  <div class="actions">
-   <button onclick="trainEmployee(${e.id},'basic')">Szkolenie podstawowe · 1800 zł</button>
-   <button onclick="trainEmployee(${e.id},'advanced')">Zaawansowane · 3200 zł</button>
-   <button onclick="promoteEmployee(${e.id})">Awans</button>
-  </div>
- </div>`).join("")}</div>`;
+ <div class="card"><div class="vehicle"><img class="worker-image" src="${IMG.WORKER}" alt="Pracownik">
+ <div><h3>${escapeHTML(e.name)}</h3><div class="small">${escapeHTML(e.role)}</div></div></div>
+ <p>Staż na wózkach: <b>${num(e.hours)} h</b></p><p>Umiejętności: ${e.skill}/100</p>
+ <p>Wynagrodzenie: ${money(e.salary)}/mies.</p><p>Uprawnienia UDT: ${e.udt?'<span class="good">Tak</span>':'<span class="bad">Nie</span>'}</p>
+ <p>Szkolenie podstawowe: ${e.trainedBasic?"ukończone":"brak"}</p><p>Szkolenie zaawansowane: ${e.trainedAdvanced?"ukończone":"brak"}</p>
+ <div class="actions"><button onclick="trainEmployee(${e.id},'basic')">Szkolenie podstawowe · 1800 zł</button>
+ <button onclick="trainEmployee(${e.id},'advanced')">Zaawansowane · 3200 zł</button><button onclick="promoteEmployee(${e.id})">Awans</button></div></div>`).join("")}</div>`;
 }
+
+/* KONTRAKTY — NOWY SYSTEM PALETOWY */
 
 function contractsView(){
  return `<h2>📦 Kontrakty logistyczne</h2>
- <div class="card">
-  <h3>Możliwości operacyjne</h3>
-  <p>Maksymalny udźwig sprawnych wózków: <b>${num(maxLoad())} kg</b></p>
-  <p>Pojemność magazynu: <b>${S.warehouse.capacity} miejsc</b></p>
-  <p>Aktywne kontrakty: ${activeContracts().length}/${contractLimit()}</p>
-  <p class="small">Oferty są dobierane do udźwigu sprawnych wózków i poziomu magazynu.</p>
-  <button onclick="generateOffers();render()">Odśwież oferty</button>
- </div>
+ <div class="card"><h3>Możliwości operacyjne</h3>
+ <p>Maksymalny udźwig sprawnych wózków: <b>${num(maxLoad())} kg</b></p>
+ <p>Pojemność magazynu: <b>${S.warehouse.capacity} miejsc</b></p>
+ <p>Aktywne kontrakty: ${activeContracts().length}/${contractLimit()}</p>
+ <p class="small">Kontrakt obejmuje przyjęcie towaru do magazynu i jego późniejszy wywóz. Postęp jest liczony na podstawie palet, a nie godzin.</p>
+ <button onclick="generateOffers();render()">Odśwież oferty</button></div>
  <h3 style="margin-top:18px">Dostępne oferty</h3>
- <div class="grid">${S.offers.map(o=>`
- <div class="card">
-  <h3>${escapeHTML(o.company)}</h3>
-  <p class="muted">${escapeHTML(o.desc)}</p>
+ <div class="grid">${S.offers.map(o=>{
+  const total=contractTotal(o);
+  return `<div class="card"><h3>${escapeHTML(o.company)}</h3><p class="muted">${escapeHTML(o.desc)}</p>
   <p>Wielkość zlecenia: <b>${o.p} palet/h</b></p>
+  <p>Łączna liczba palet: <b>${num(total)} palet</b></p>
   <p>Wymagany udźwig wózka: <b>${num(o.load)} kg</b></p>
-  <p>Zajętość magazynu: ${o.storage} miejsc</p>
-  <p>Czas realizacji: ${o.days} dni</p>
+  <p>Zajętość magazynu: ${o.storage} miejsc</p><p>Czas realizacji: ${o.days} dni</p>
   <p>Zaliczka: <span class="good">${money(o.advance)}</span></p>
   <p>Kara za niewykonanie: <span class="bad">${money(o.penalty)}</span></p>
   <p>Reputacja po wykonaniu: +${o.rep}</p>
-  <button onclick="acceptContract(${o.id})" ${activeContracts().length>=contractLimit()?"disabled":""}>Przyjmij kontrakt</button>
- </div>`).join("")||'<div class="empty">Brak dostępnych ofert. Rozbuduj flotę lub magazyn.</div>'}</div>
+  <button onclick="acceptContract(${o.id})" ${activeContracts().length>=contractLimit()?"disabled":""}>Przyjmij kontrakt</button></div>`;
+ }).join("")||'<div class="empty">Brak dostępnych ofert. Rozbuduj flotę lub magazyn.</div>'}</div>
  <h3 style="margin-top:20px">Realizowane i zakończone kontrakty</h3>
- <div class="grid">${S.contracts.map(c=>`
- <div class="card">
-  <h3>${escapeHTML(c.company)}</h3>
+ <div class="grid">${S.contracts.map(c=>{
+  const total=contractTotal(c);
+  const received=clamp(Number(c.receivedPallets)||0,0,total);
+  const shipped=clamp(Number(c.shippedPallets)||0,0,received);
+  const waiting=received-shipped;
+  const remaining=Math.max(0,total-shipped);
+  const percent=c.done?100:Math.min(100,shipped/total*100);
+  return `<div class="card"><h3>${escapeHTML(c.company)}</h3>
   <p>Wymagany udźwig: ${num(c.load)} kg</p>
-  <p>Postęp: ${c.progress}/${c.days*24} godzin</p>
-  <p>Status: ${c.done?'<span class="good">Zakończony</span>':c.failed?'<span class="bad">Niepowodzenie</span>':'Aktywny'}</p>
-  <p>Wartość kontraktu: ${money(c.value)}</p>
- </div>`).join("")||'<div class="empty">Nie masz jeszcze historii kontraktów.</div>'}</div>`;
+  <p>Łączna liczba palet w kontrakcie: <b>${num(total)}</b></p>
+  <p>Palety przyjęte do magazynu: <b class="good">${num(received)} / ${num(total)}</b></p>
+  <p>Palety oczekujące na wywóz: <b class="blue">${num(waiting)}</b></p>
+  <p>Palety pozostałe do wywiezienia: <b>${num(remaining)}</b></p>
+  <p>Palety wywiezione: <b>${num(shipped)} / ${num(total)}</b></p>
+  <div class="contract-progress"><div style="width:${percent}%"></div></div>
+  <p class="small">Postęp realizacji: ${percent.toFixed(1).replace(".",",")}%</p>
+  <p>Status: ${c.done?'<span class="good">Zakończony</span>':c.failed?'<span class="bad">Niepowodzenie</span>':'<span class="blue">W realizacji</span>'}</p>
+  <p>Wartość kontraktu: ${money(c.value)}</p></div>`;
+ }).join("")||'<div class="empty">Nie masz jeszcze historii kontraktów.</div>'}</div>`;
 }
 
 function developmentView(){
@@ -656,55 +472,198 @@ function developmentView(){
   ["marketing","Marketing","Zwiększa reputację i jakość ofert.",11000],
   ["maintenance","Utrzymanie floty","Zmniejsza zużycie wózków.",14000]
  ];
- return `<h2>📈 Rozwój przedsiębiorstwa</h2>
- <div class="card">
-  <h3>Organizacja pracy</h3>
-  <p>Aktualna liczba zmian: <b>${S.shiftCount}</b></p>
-  <p>Poziom planowania: ${S.upgrades.planning}</p>
-  <p class="muted">Dodatkowe zmiany wymagają odpowiedniej liczby pracowników i wózków.</p>
-  <button onclick="setShifts(2)" ${S.upgrades.planning<1?"disabled":""}>Uruchom 2 zmiany</button>
-  <button onclick="setShifts(3)" ${S.upgrades.planning<2?"disabled":""}>Uruchom 3 zmiany</button>
-  <button onclick="setShifts(1)">Powróć do 1 zmiany</button>
- </div>
+ return `<h2>📈 Rozwój przedsiębiorstwa</h2><div class="card"><h3>Organizacja pracy</h3>
+ <p>Aktualna liczba zmian: <b>${S.shiftCount}</b></p><p>Poziom planowania: ${S.upgrades.planning}</p>
+ <p class="muted">Dodatkowe zmiany wymagają odpowiedniej liczby pracowników i wózków.</p>
+ <button onclick="setShifts(2)" ${S.upgrades.planning<1?"disabled":""}>Uruchom 2 zmiany</button>
+ <button onclick="setShifts(3)" ${S.upgrades.planning<2?"disabled":""}>Uruchom 3 zmiany</button>
+ <button onclick="setShifts(1)">Powróć do 1 zmiany</button></div>
  <div class="grid" style="margin-top:12px">${items.map(([key,title,desc,base])=>{
  const level=S.upgrades[key],cost=base*(level+1);
- return `<div class="card"><h3>${title}</h3><p>${desc}</p>
- <p>Poziom: <b>${level}</b></p><p class="price">Koszt kolejnego poziomu: ${money(cost)}</p>
+ return `<div class="card"><h3>${title}</h3><p>${desc}</p><p>Poziom: <b>${level}</b></p>
+ <p class="price">Koszt kolejnego poziomu: ${money(cost)}</p>
  <button onclick="upgradeResearch('${key}',${base})" ${S.money<cost?"disabled":""}>Rozwijaj</button></div>`;
  }).join("")}</div>`;
 }
 
-/* PROGNOZA MIESIĘCZNYCH WYDATKÓW */
-function monthlyCostBreakdown(){
- const wages=S.employees.reduce((a,e)=>a+e.salary,0);
- const rent=S.fleet.filter(v=>v.rented).reduce((a,v)=>
-  a+(MODELS[v.model]?.rent||0),0);
- const electricity=S.fleet.reduce((a,v)=>
-  a+(MODELS[v.model]?.energy||0)*8*22,0);
- const water=250+S.employees.length*55;
- const clothing=S.employees.length*20;
- const land=2000;
- const maintenance=800+S.fleet.length*350;
- const social=monthlyFacilityCosts();
-
- const items=[
-  {name:"Wynagrodzenia pracowników",value:wages},
-  {name:"Wynajem wózków widłowych",value:rent},
-  {name:"Energia elektryczna floty",value:electricity},
-  {name:"Woda i zaplecze sanitarne",value:water},
-  {name:"Odzież robocza",value:clothing},
-  {name:"Dzierżawa terenu i obiektu",value:land},
-  {name:"Konserwacja i utrzymanie floty",value:maintenance},
-  {name:"Infrastruktura i media",value:social}
- ];
-
- const gross=items.reduce((a,x)=>a+x.value,0);
- const discount=Math.round(gross*S.upgrades.automation*.04);
- const total=Math.max(0,gross-discount);
-
- return {items,gross,discount,total};
+function financeView(){
+ const f=S.finances;
+ return `<h2>💰 Finanse</h2><div class="grid">
+ <div class="card"><h3>Kapitał</h3><p style="font-size:25px" class="price">${money(S.money)}</p>
+ <p>Przychody łącznie: ${money(f.income)}</p><p>Koszty łącznie: ${money(f.cost)}</p></div>
+ <div class="card"><h3>Rozliczenia</h3><p>Kary: ${money(f.penalties)}</p><p>Podatki: ${money(f.tax)}</p>
+ <p>Podatek okresowy: 8% przychodów.</p><p>Rozliczenie co 180 dni.</p></div>
+ <div class="card"><h3>Ratunek finansowy</h3><p>Wykorzystana pomoc: ${S.rescue.used}/2</p>
+ <p>Zadłużenie: ${money(S.rescue.bankDebt)}</p><p>Termin spłaty: ${S.rescue.bankDeadline?S.rescue.bankDeadline+" dzień":"brak"}</p>
+ ${S.rescue.bankDebt>0?`<button onclick="repayDebt()">Spłać zadłużenie</button>`:""}</div>
+ <div class="card"><h3>Szacowane koszty miesięczne</h3>
+ <p>Wynagrodzenia: ${money(S.employees.reduce((a,e)=>a+e.salary,0))}</p>
+ <p>Wynajem floty: ${money(S.fleet.filter(v=>v.rented).reduce((a,v)=>a+MODELS[v.model].rent,0))}</p>
+ <p>Infrastruktura i media: ${money(monthlyFacilityCosts())}</p></div></div>
+ <h3 style="margin-top:20px">Historia rozliczeń</h3><div class="card"><table><thead><tr><th>Dzień</th><th>Przychód</th><th>Koszty</th><th>Bilans</th></tr></thead>
+ <tbody>${f.history.slice(-20).reverse().map(h=>`<tr><td>${h.day}</td><td>${money(h.income)}</td><td>${money(h.cost)}</td><td>${money(h.income-h.cost)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
+function reportsView(){
+ return `<h2>📊 Raporty i statystyki</h2><div class="grid">
+ <div class="card"><h3>Operacje</h3><p>Dzień: ${S.day}</p><p>Łączny czas pracy: ${num(S.fleet.reduce((a,v)=>a+v.hours,0))} h</p>
+ <p>Pracownicy: ${S.employees.length}</p><p>Wózki: ${S.fleet.length}</p></div>
+ <div class="card"><h3>Kontrakty</h3><p>Aktywne: ${activeContracts().length}</p>
+ <p>Zakończone: ${S.contracts.filter(c=>c.done).length}</p><p>Nieudane: ${S.contracts.filter(c=>c.failed).length}</p></div>
+ <div class="card"><h3>Flota</h3>${S.fleet.map(v=>`<p>${MODELS[v.model].name}: ${num(v.hours)} h / ${v.condition}%</p>`).join("")}</div>
+ <div class="card"><h3>Reputacja i rozwój</h3><p>Reputacja: ${S.rep}</p><p>Poziom magazynu: ${S.warehouse.level}</p><p>Zmiany: ${S.shiftCount}</p></div></div>
+ <div class="card" style="margin-top:12px"><h3>Pełny dziennik zdarzeń</h3>${renderLogs(100)}</div>`;
+}
+
+function renderLogs(count){
+ return `<div class="logbox">${S.logs.slice(0,count).map(l=>`<p><span class="small">Dzień ${l.day}</span><br>${escapeHTML(l.text)}</p>`).join("")}</div>`;
+}
+function escapeHTML(s){
+ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* FLOTА */
+function buyForklift(model){
+ const m=MODELS[model];if(!m||S.money<m.price)return;
+ if(S.fleet.length>=S.warehouse.level*3+2){alert("Brak miejsca na kolejne wózki.");return}
+ S.money-=m.price;S.finances.cost+=m.price;
+ S.fleet.push({id:S.nextId++,model,rented:false,condition:100,hours:0,broken:false});
+ log("Zakupiono wózek "+m.name+".");saveGame();render();
+}
+function rentForklift(model){
+ const m=MODELS[model];if(!m)return;
+ S.fleet.push({id:S.nextId++,model,rented:true,condition:100,hours:0,broken:false});
+ log("Wynajęto wózek "+m.name+".");saveGame();render();
+}
+function sellForklift(id){
+ const v=S.fleet.find(x=>x.id===id);if(!v)return;
+ if(S.fleet.length<=1){alert("Firma musi posiadać przynajmniej jeden wózek.");return}
+ if(activeContracts().some(c=>c.load>(maxLoad()))){alert("Najpierw zabezpiecz obsługę aktywnych kontraktów.");return}
+ const value=v.rented?0:Math.round(MODELS[v.model].price*.45*(v.condition/100));
+ S.money+=value;S.fleet=S.fleet.filter(x=>x.id!==id);
+ log("Sprzedano wózek "+MODELS[v.model].name+" za "+money(value)+".");saveGame();render();
+}
+function repairForklift(id){
+ const v=S.fleet.find(x=>x.id===id);if(!v)return;
+ const cost=Math.max(500,Math.round((100-v.condition)*100));
+ if(S.money<cost){alert("Za mało środków.");return}
+ S.money-=cost;S.finances.cost+=cost;v.condition=100;v.broken=false;
+ log("Przeprowadzono serwis wózka "+MODELS[v.model].name+".");saveGame();render();
+}
+
+/* PRACOWNICY */
+function hireEmployee(){
+ if(S.money<1500){alert("Za mało środków.");return}
+ if(S.employees.length>=S.shiftCount*3+3){alert("Najpierw zwiększ możliwości organizacyjne firmy.");return}
+ S.money-=1500;S.finances.cost+=1500;
+ const name=pick(FIRST_NAMES)+" "+pick(LAST_NAMES);
+ S.employees.push({id:S.nextId++,name,role:"Magazynier",salary:3800,hours:0,skill:rand(0,10),udt:true,promotionLevel:0,trainedBasic:false,trainedAdvanced:false});
+ log("Zatrudniono nowego pracownika: "+name+".");saveGame();render();
+}
+function trainEmployee(id,type){
+ const e=S.employees.find(x=>x.id===id);if(!e)return;
+ const cost=type==="basic"?1800:3200;
+ if(S.money<cost){alert("Za mało środków.");return}
+ if(type==="advanced"&&!e.trainedBasic){alert("Najpierw ukończ szkolenie podstawowe.");return}
+ if(type==="basic"&&e.trainedBasic){alert("To szkolenie jest już ukończone.");return}
+ if(type==="advanced"&&e.trainedAdvanced){alert("To szkolenie jest już ukończone.");return}
+ S.money-=cost;S.finances.cost+=cost;
+ if(type==="basic")e.trainedBasic=true;else e.trainedAdvanced=true;
+ e.skill=clamp(e.skill+15,0,100);
+ log(e.name+" ukończył szkolenie "+(type==="basic"?"podstawowe":"zaawansowane")+".");saveGame();render();
+}
+function promoteEmployee(id){
+ const e=S.employees.find(x=>x.id===id);if(!e)return;
+ if(e.role==="Magazynier"&&e.hours>=200&&e.trainedBasic){e.role="Pracownik transportu wewnętrznego";e.salary=4600;e.promotionLevel=1}
+ else if(e.role==="Pracownik transportu wewnętrznego"&&e.hours>=400&&e.trainedAdvanced){e.role="Starszy pracownik transportu wewnętrznego";e.salary=5200;e.promotionLevel=2}
+ else{alert("Brak wymaganych godzin stażu lub szkoleń.");return}
+ log("Awans pracownika "+e.name+": "+e.role+".");saveGame();render();
+}
+
+/* KONTRAKTY */
+function generateOffers(){
+ S.offers=[];
+ let active=activeContracts().length;
+ let count=Math.min(3,contractLimit()-active);
+ if(count<=0)return;
+ const max=maxLoad();if(max===0)return;
+ let base=[
+  {p:8,storage:3,days:3,advance:2500,penalty:1000,load:1800,rep:1,value:8000},
+  {p:12,storage:4,days:3,advance:4500,penalty:1800,load:1800,rep:2,value:12000}
+ ];
+ if(max>=2400)base.push(
+  {p:14,storage:5,days:4,advance:6000,penalty:2000,load:2400,rep:3,value:18000},
+  {p:18,storage:8,days:4,advance:8500,penalty:2800,load:2400,rep:3,value:24000}
+ );
+ if(max>=3000&&S.warehouse.level>=2)base.push(
+  {p:22,storage:10,days:5,advance:12000,penalty:4000,load:3000,rep:4,value:34000},
+  {p:28,storage:14,days:6,advance:16000,penalty:5500,load:3000,rep:5,value:46000}
+ );
+ if(max>=5000&&S.warehouse.level>=3)base.push(
+  {p:35,storage:18,days:7,advance:24000,penalty:8000,load:5000,rep:7,value:70000},
+  {p:45,storage:24,days:9,advance:32000,penalty:12000,load:5000,rep:9,value:95000}
+ );
+ base=base.filter(o=>o.load<=max&&o.storage<=S.warehouse.capacity*2);
+ for(let i=0;i<count&&base.length;i++){
+  const b=pick(base),co=pick(COMPANIES);
+  S.offers.push({...b,totalPallets:Math.max(1,b.p*8*b.days),id:S.nextId++,company:co[0],desc:co[1]});
+ }
+}
+
+function acceptContract(id){
+ const o=S.offers.find(x=>x.id===id);if(!o)return;
+ if(activeContracts().length>=contractLimit()){alert("Osiągnięto limit kontraktów.");return}
+ if(!S.fleet.some(v=>(MODELS[v.model]?.load||0)>=o.load&&!v.broken&&v.condition>0)){
+  alert("Brak sprawnego wózka o wymaganym udźwigu.");return;
+ }
+ if(o.storage>S.warehouse.capacity*2){alert("Magazyn ma zbyt małą pojemność.");return}
+ const total=contractTotal(o);
+ S.money+=o.advance;S.finances.income+=o.advance;
+ S.contracts.push({
+  ...o,totalPallets:total,receivedPallets:0,shippedPallets:0,
+  progress:0,done:false,failed:false,value:o.value||o.advance*3
+ });
+ S.offers=S.offers.filter(x=>x.id!==id);
+ log("Przyjęto kontrakt firmy "+o.company+". Do obsłużenia: "+num(total)+" palet. Wymagany udźwig: "+o.load+" kg.");
+ if(S.offers.length===0)generateOffers();
+ saveGame();render();
+}
+
+/* ROZWÓJ */
+function upgradeWarehouse(){
+ const cost=80000*S.warehouse.level;if(S.money<cost)return;
+ S.money-=cost;S.finances.cost+=cost;S.warehouse.level++;S.warehouse.capacity+=30;S.warehouse.condition=100;
+ log("Rozbudowano magazyn do poziomu "+S.warehouse.level+".");generateOffers();saveGame();render();
+}
+function repairWarehouse(){
+ if(S.money<3500)return;
+ S.money-=3500;S.finances.cost+=3500;S.warehouse.condition=100;
+ log("Przeprowadzono konserwację magazynu.");saveGame();render();
+}
+function buildFacility(key,cost){
+ if(S.warehouse[key]||S.money<cost)return;
+ S.money-=cost;S.finances.cost+=cost;S.warehouse[key]=true;
+ log("Uruchomiono nowy obiekt zaplecza: "+key+".");saveGame();render();
+}
+function upgradeResearch(key,base){
+ const level=S.upgrades[key],cost=base*(level+1);if(S.money<cost)return;
+ S.money-=cost;S.finances.cost+=cost;S.upgrades[key]++;
+ log("Rozwinięto obszar: "+key+" do poziomu "+S.upgrades[key]+".");
+ if(key==="planning"){
+  if(S.upgrades.planning>=1)S.shiftCount=Math.min(S.shiftCount,2);
+  if(S.upgrades.planning>=2)S.shiftCount=Math.min(S.shiftCount,3);
+ }
+ generateOffers();saveGame();render();
+}
+function setShifts(n){
+ if(n===2&&S.upgrades.planning<1){alert("Wymagany 1 poziom planowania.");return}
+ if(n===3&&S.upgrades.planning<2){alert("Wymagany 2 poziom planowania.");return}
+ if(n>S.employees.length){alert("Za mało pracowników do obsługi zmian.");return}
+ if(n>S.fleet.length){alert("Za mało wózków do obsługi zmian.");return}
+ S.shiftCount=n;log("Zmieniono organizację pracy. Liczba zmian: "+n+".");saveGame();render();
+}
+
+/* EKONOMIA */
 function monthlyFacilityCosts(){
  let n=0;
  if(S.warehouse.canteen)n+=350;
@@ -714,416 +673,114 @@ function monthlyFacilityCosts(){
  if(S.warehouse.serviceCenter)n+=450;
  return n+1200+S.employees.length*120;
 }
-
 function monthlyCosts(){
- return monthlyCostBreakdown().total;
+ const wages=S.employees.reduce((a,e)=>a+e.salary,0);
+ const rent=S.fleet.filter(v=>v.rented).reduce((a,v)=>a+MODELS[v.model].rent,0);
+ const electricity=S.fleet.reduce((a,v)=>a+MODELS[v.model].energy*8*22,0);
+ const water=250+S.employees.length*55,clothing=S.employees.length*90;
+ const land=1500*S.warehouse.level,maintenance=800+S.fleet.length*350,social=monthlyFacilityCosts();
+ const gross=wages+rent+electricity+water+clothing+land+maintenance+social;
+ return Math.round(gross*(1-S.upgrades.automation*.04));
 }
-
-function financeView(){
- const f=S.finances;
- return `<h2>💰 Finanse</h2>
- <div class="grid">
-  <div class="card"><h3>Kapitał</h3><p style="font-size:25px" class="price">${money(S.money)}</p>
-  <p>Przychody łącznie: ${money(f.income)}</p><p>Koszty łącznie: ${money(f.cost)}</p></div>
-  <div class="card"><h3>Rozliczenia</h3><p>Kary: ${money(f.penalties)}</p>
-  <p>Podatki: ${money(f.tax)}</p><p>Podatek okresowy: 8% przychodów.</p>
-  <p>Rozliczenie co 180 dni.</p></div>
-  <div class="card"><h3>Ratunek finansowy</h3>
-   <p>Wykorzystana pomoc: ${S.rescue.used}/2</p>
-   <p>Zadłużenie: ${money(S.rescue.bankDebt)}</p>
-   <p>Termin spłaty: ${S.rescue.bankDeadline?S.rescue.bankDeadline+" dzień":"brak"}</p>
-   ${S.rescue.bankDebt>0?`<button onclick="repayDebt()">Spłać zadłużenie</button>`:""}
-  </div>
-  <div class="card"><h3>Szacowane koszty miesięczne</h3>
-   <p>Wynagrodzenia: ${money(S.employees.reduce((a,e)=>a+e.salary,0))}</p>
-   <p>Wynajem floty: ${money(S.fleet.filter(v=>v.rented).reduce((a,v)=>a+(MODELS[v.model]?.rent||0),0))}</p>
-   <p>Infrastruktura i media: ${money(monthlyFacilityCosts())}</p>
-   <p><b>Łącznie: ${money(monthlyCosts())}</b></p>
-  </div>
- </div>
- <h3 style="margin-top:20px">Historia rozliczeń</h3>
- <div class="card"><table><thead><tr><th>Dzień</th><th>Przychód</th><th>Koszty</th><th>Bilans</th></tr></thead>
- <tbody>${f.history.slice(-20).reverse().map(h=>`<tr><td>${h.day}</td><td>${money(h.income)}</td><td>${money(h.cost)}</td><td>${money(h.income-h.cost)}</td></tr>`).join("")}</tbody></table></div>`;
-}
-
-function reportsView(){
- const forecast=monthlyCostBreakdown();
- const daysLeft=30-((S.day-1)%30);
- return `<h2>📊 Raporty i statystyki</h2>
- <div class="grid">
-  <div class="card"><h3>Operacje</h3>
-   <p>Dzień: ${S.day}</p><p>Łączny czas pracy: ${num(S.fleet.reduce((a,v)=>a+v.hours,0))} h</p>
-   <p>Pracownicy: ${S.employees.length}</p><p>Wózki: ${S.fleet.length}</p>
-  </div>
-  <div class="card"><h3>Kontrakty</h3>
-   <p>Aktywne: ${activeContracts().length}</p>
-   <p>Zakończone: ${S.contracts.filter(c=>c.done).length}</p>
-   <p>Nieudane: ${S.contracts.filter(c=>c.failed).length}</p>
-  </div>
-  <div class="card"><h3>Flota</h3>
-   ${S.fleet.map(v=>`<p>${MODELS[v.model]?.name||v.model}: ${num(v.hours)} h / ${Math.round(v.condition)}%</p>`).join("")}
-  </div>
-  <div class="card"><h3>Reputacja i rozwój</h3>
-   <p>Reputacja: ${S.rep}</p><p>Poziom magazynu: ${S.warehouse.level}</p>
-   <p>Zmiany: ${S.shiftCount}</p>
-  </div>
- </div>
-
- <div class="card" style="margin-top:12px">
-  <h3>💸 Prognoza wydatków na koniec miesiąca</h3>
-  <p class="muted">Szacowane koszty kolejnego miesięcznego rozliczenia na podstawie aktualnego stanu firmy.</p>
-  <div class="cost-total">${money(forecast.total)}</div>
-  <p class="small">Przewidywany termin rozliczenia: za ${daysLeft} dni (koniec bieżącego cyklu).</p>
-  ${forecast.items.map(item=>`
-   <div class="cost-row">
-    <span>${item.name}</span>
-    <span>${money(item.value)}</span>
-   </div>
-  `).join("")}
-  ${forecast.discount>0?`
-   <div class="cost-row">
-    <span class="good">Oszczędność dzięki automatyzacji</span>
-    <span class="good">−${money(forecast.discount)}</span>
-   </div>`:""}
-  <div class="cost-row" style="font-size:15px;border-top:1px solid var(--gold);margin-top:5px;padding-top:12px">
-   <strong>Prognozowany wydatek łącznie</strong>
-   <strong class="price">${money(forecast.total)}</strong>
-  </div>
-  <div class="cost-note">
-   Prognoza uwzględnia obecne wynagrodzenia, wynajem floty, energię, wodę, odzież roboczą, utrzymanie obiektu, konserwację oraz zaplecze socjalne. Kwota może się zmienić, jeśli zatrudnisz pracowników, kupisz lub wynajmiesz wózki albo rozbudujesz magazyn.
-  </div>
- </div>
-
- <div class="card" style="margin-top:12px">
-  <h3>Pełny dziennik zdarzeń</h3>${renderLogs(100)}
- </div>`;
-}
-
-function renderLogs(count){
- return `<div class="logbox">${S.logs.slice(0,count).map(l=>
- `<p><span class="small">Dzień ${l.day} · ${escapeHTML(l.time||"--:--")}</span><br>${escapeHTML(l.text)}</p>`).join("")}</div>`;
-}
-
-function escapeHTML(s){
- return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
-
-/* FLOTА */
-
-function buyForklift(model){
- const m=MODELS[model];
- if(!m||S.money<m.price)return;
- if(S.fleet.length>=S.warehouse.level*3+2){alert("Brak miejsca na kolejne wózki.");return}
- S.money-=m.price;S.finances.cost+=m.price;
- S.fleet.push({id:S.nextId++,model,rented:false,condition:100,hours:0,broken:false,wearProgress:0});
- log("Zakupiono wózek "+m.name+".");
- saveGame();render();
-}
-
-function rentForklift(model){
- const m=MODELS[model];
- if(!m)return;
- S.fleet.push({id:S.nextId++,model,rented:true,condition:100,hours:0,broken:false,wearProgress:0});
- log("Wynajęto wózek "+m.name+".");
- saveGame();render();
-}
-
-function sellForklift(id){
- const v=S.fleet.find(x=>x.id===id);
- if(!v)return;
- if(S.fleet.length<=1){alert("Firma musi posiadać przynajmniej jeden wózek.");return}
- if(activeContracts().some(c=>c.load>(maxLoad()))){alert("Najpierw zabezpiecz obsługę aktywnych kontraktów.");return}
- const value=v.rented?0:Math.round(MODELS[v.model].price*.45*(v.condition/100));
- S.money+=value;
- S.fleet=S.fleet.filter(x=>x.id!==id);
- log("Sprzedano wózek "+MODELS[v.model].name+" za "+money(value)+".");
- saveGame();render();
-}
-
-function repairForklift(id){
- const v=S.fleet.find(x=>x.id===id);
- if(!v)return;
- const cost=Math.max(500,Math.round((100-v.condition)*100));
- if(S.money<cost){alert("Za mało środków.");return}
- S.money-=cost;S.finances.cost+=cost;
- v.condition=100;v.broken=false;v.wearProgress=0;
- log("Przeprowadzono serwis wózka "+MODELS[v.model].name+".");
- saveGame();render();
-}
-
-/* PRACOWNICY */
-
-function hireEmployee(){
- if(S.money<1600){alert("Za mało środków na zatrudnienie i odzież roboczą (1600 zł).");return}
- if(S.employees.length>=S.shiftCount*3+3){alert("Najpierw zwiększ możliwości organizacyjne firmy.");return}
- S.money-=1600;S.finances.cost+=1600;
- const name=pick(FIRST_NAMES)+" "+pick(LAST_NAMES);
- S.employees.push({
-  id:S.nextId++,name,role:"Magazynier",salary:3800,hours:0,
-  skill:rand(0,10),udt:true,promotionLevel:0,
-  trainedBasic:false,trainedAdvanced:false
- });
- log("Zatrudniono nowego pracownika: "+name+". Koszt odzieży roboczej: 100 zł.");
- saveGame();render();
-}
-
-function trainEmployee(id,type){
- const e=S.employees.find(x=>x.id===id);
- if(!e)return;
- const cost=type==="basic"?1800:3200;
- if(S.money<cost){alert("Za mało środków.");return}
- if(type==="advanced"&&!e.trainedBasic){alert("Najpierw ukończ szkolenie podstawowe.");return}
- if(type==="basic"&&e.trainedBasic){alert("To szkolenie jest już ukończone.");return}
- if(type==="advanced"&&e.trainedAdvanced){alert("To szkolenie jest już ukończone.");return}
- S.money-=cost;S.finances.cost+=cost;
- if(type==="basic")e.trainedBasic=true;
- else e.trainedAdvanced=true;
- e.skill=clamp(Math.round(e.skill)+15,0,100);
- log(e.name+" ukończył szkolenie "+(type==="basic"?"podstawowe":"zaawansowane")+".");
- saveGame();render();
-}
-
-function promoteEmployee(id){
- const e=S.employees.find(x=>x.id===id);
- if(!e)return;
- if(e.role==="Magazynier"&&e.hours>=200&&e.trainedBasic){
-  e.role="Pracownik transportu wewnętrznego";e.salary=4600;e.promotionLevel=1;
- }else if(e.role==="Pracownik transportu wewnętrznego"&&e.hours>=400&&e.trainedAdvanced){
-  e.role="Starszy pracownik transportu wewnętrznego";e.salary=5200;e.promotionLevel=2;
- }else{
-  alert("Brak wymaganych godzin stażu lub szkoleń.");return;
- }
- log("Awans pracownika "+e.name+": "+e.role+".");
- saveGame();render();
-}
-
-/* KONTRAKTY */
-
-function generateOffers(){
- S.offers=[];
- let active=activeContracts().length;
- let count=Math.min(3,contractLimit()-active);
- if(count<=0)return;
- const max=maxLoad();
- if(max===0)return;
-
- let base=[
-  {p:8,storage:3,days:3,advance:2500,penalty:1000,load:1800,rep:1,value:8000},
-  {p:12,storage:4,days:3,advance:4500,penalty:1800,load:1800,rep:2,value:12000}
- ];
- if(max>=2400){
-  base.push(
-   {p:14,storage:5,days:4,advance:6000,penalty:2000,load:2400,rep:3,value:18000},
-   {p:18,storage:8,days:4,advance:8500,penalty:2800,load:2400,rep:3,value:24000}
-  );
- }
- if(max>=3000&&S.warehouse.level>=2){
-  base.push(
-   {p:22,storage:10,days:5,advance:12000,penalty:4000,load:3000,rep:4,value:34000},
-   {p:28,storage:14,days:6,advance:16000,penalty:5500,load:3000,rep:5,value:46000}
-  );
- }
- if(max>=5000&&S.warehouse.level>=3){
-  base.push(
-   {p:35,storage:18,days:7,advance:24000,penalty:8000,load:5000,rep:7,value:70000},
-   {p:45,storage:24,days:9,advance:32000,penalty:12000,load:5000,rep:9,value:95000}
-  );
- }
- base=base.filter(o=>o.load<=max&&o.storage<=S.warehouse.capacity*2);
- for(let i=0;i<count&&base.length;i++){
-  const b=pick(base),co=pick(COMPANIES);
-  S.offers.push({...b,id:S.nextId++,company:co[0],desc:co[1]});
- }
-}
-
-function acceptContract(id){
- const o=S.offers.find(x=>x.id===id);
- if(!o)return;
- if(activeContracts().length>=contractLimit()){alert("Osiągnięto limit kontraktów.");return}
- if(!S.fleet.some(v=>
-  (MODELS[v.model]?.load||0)>=o.load&&
-  !v.broken&&v.condition>0
- )){
-  alert("Brak sprawnego wózka o wymaganym udźwigu.");return;
- }
- if(o.storage>S.warehouse.capacity*2){alert("Magazyn ma zbyt małą pojemność.");return}
- S.money+=o.advance;
- S.finances.income+=o.advance;
- S.contracts.push({
-  ...o,progress:0,done:false,failed:false,
-  value:o.value||o.advance*3
- });
- S.offers=S.offers.filter(x=>x.id!==id);
- log("Przyjęto kontrakt firmy "+o.company+". Wymagany udźwig: "+o.load+" kg.");
- if(S.offers.length===0)generateOffers();
- saveGame();render();
-}
-
-/* ROZWÓJ */
-
-function upgradeWarehouse(){
- const cost=80000*S.warehouse.level;
- if(S.money<cost)return;
- S.money-=cost;S.finances.cost+=cost;
- S.warehouse.level++;
- S.warehouse.capacity=warehouseCapacity(S.warehouse.level);
- S.warehouse.condition=100;
- log("Rozbudowano magazyn do poziomu "+S.warehouse.level+".");
- generateOffers();saveGame();render();
-}
-
-function repairWarehouse(){
- if(S.money<3500)return;
- S.money-=3500;S.finances.cost+=3500;
- S.warehouse.condition=100;
- log("Przeprowadzono konserwację magazynu.");
- saveGame();render();
-}
-
-function buildFacility(key,cost){
- if(S.warehouse[key]||S.money<cost)return;
- S.money-=cost;S.finances.cost+=cost;
- S.warehouse[key]=true;
- log("Uruchomiono nowy obiekt zaplecza: "+key+".");
- saveGame();render();
-}
-
-function upgradeResearch(key,base){
- const level=S.upgrades[key],cost=base*(level+1);
- if(S.money<cost)return;
- S.money-=cost;S.finances.cost+=cost;
- S.upgrades[key]++;
- log("Rozwinięto obszar: "+key+" do poziomu "+S.upgrades[key]+".");
- if(key==="planning"){
-  if(S.upgrades.planning>=1)S.shiftCount=Math.min(S.shiftCount,2);
-  if(S.upgrades.planning>=2)S.shiftCount=Math.min(S.shiftCount,3);
- }
- generateOffers();saveGame();render();
-}
-
-function setShifts(n){
- if(n===2&&S.upgrades.planning<1){alert("Wymagany 1 poziom planowania.");return}
- if(n===3&&S.upgrades.planning<2){alert("Wymagany 2 poziom planowania.");return}
- if(n>S.employees.length){alert("Za mało pracowników do obsługi zmian.");return}
- if(n>S.fleet.length){alert("Za mało wózków do obsługi zmian.");return}
- S.shiftCount=n;
- log("Zmieniono organizację pracy. Liczba zmian: "+n+".");
- saveGame();render();
-}
-
-/* EKONOMIA */
-
 function settleMonth(){
- const cost=monthlyCosts();
- S.money-=cost;S.finances.cost+=cost;
+ const cost=monthlyCosts();S.money-=cost;S.finances.cost+=cost;
  S.finances.history.push({day:S.day,income:0,cost});
  log("Rozliczenie miesięczne. Koszty utrzymania: "+money(cost)+".");
  if(S.money<0)financialRescue();
 }
-
 function financialRescue(){
  if(S.rescue.used===0){
-  S.rescue.used=1;
-  S.rescue.bankDebt=Math.abs(S.money)+10000;
-  S.money=10000;
-  S.rescue.bankDeadline=S.day+30;
+  S.rescue.used=1;S.rescue.bankDebt=Math.abs(S.money)+10000;S.money=10000;S.rescue.bankDeadline=S.day+30;
   log("Bank udzielił firmie awaryjnego finansowania. Termin spłaty: 30 dni.");
  }else if(S.rescue.used===1){
-  S.rescue.used=2;
-  const debt=S.rescue.bankDebt;
-  S.rescue.bankDebt=0;S.rescue.bankDeadline=0;
-  S.money+=Math.abs(S.money)+10000;
-  log("Wujek z USA uratował firmę po raz ostatni. Dług został pokryty.");
+  S.rescue.used=2;S.rescue.bankDebt=0;S.rescue.bankDeadline=0;
+  S.money+=Math.abs(S.money)+10000;log("Wujek z USA uratował firmę po raz ostatni. Dług został pokryty.");
  }else{
-  S.rescue.bankrupt=true;
-  log("Firma ogłosiła bankructwo.");
+  S.rescue.bankrupt=true;log("Firma ogłosiła bankructwo.");
   alert("BANKRUCTWO. Działalność przedsiębiorstwa została zakończona.");
  }
 }
-
 function repayDebt(){
- const debt=S.rescue.bankDebt;
- if(debt<=0)return;
+ const debt=S.rescue.bankDebt;if(debt<=0)return;
  if(S.money<debt){alert("Nie masz wystarczających środków.");return}
  S.money-=debt;S.rescue.bankDebt=0;S.rescue.bankDeadline=0;
- log("Spłacono awaryjne finansowanie.");
- saveGame();render();
+ log("Spłacono awaryjne finansowanie.");saveGame();render();
 }
 
 /* CZAS I SYMULACJA */
-
 function tickFrame(now){
- const delta=Math.min((now-lastFrame)/1000,.25);
- lastFrame=now;
+ const delta=Math.min((now-lastFrame)/1000,.25);lastFrame=now;
  if(!S.pendingEvent&&!S.rescue.bankrupt){
   S.hourProgress+=delta/HOUR_ONLINE;
   while(S.hourProgress>=1){
-   S.hourProgress-=1;
-   hourlyTick();
+   S.hourProgress-=1;hourlyTick();
    if(S.pendingEvent||S.rescue.bankrupt)break;
   }
  }
- updateTop();
- requestAnimationFrame(tickFrame);
+ updateTop();requestAnimationFrame(tickFrame);
 }
 
 function hourlyTick(){
  if(S.rescue.bankrupt)return;
- S.gameHour++;
- S.dayHours++;
+ S.gameHour++;S.dayHours++;
 
- const active=activeContracts();
- active.forEach(c=>{
-  const capable=S.fleet.some(v=>
-   !v.broken&&v.condition>0&&MODELS[v.model].load>=c.load
-  );
-  if(capable){
-   const output=Math.max(1,Math.round(c.p*(1+S.upgrades.automation*.08)));
-   c.progress+=1;
-   const revenue=Math.round(output*35);
-   S.money+=revenue;
-   S.finances.income+=revenue;
-   S.taxCycleRevenue+=revenue;
+ // Kontrakty: przyjęcie palet, magazynowanie i wysyłka.
+ activeContracts().forEach(c=>{
+  const capable=S.fleet.some(v=>!v.broken&&v.condition>0&&(MODELS[v.model]?.load||0)>=c.load);
+  if(!capable)return;
+
+  const total=contractTotal(c);
+  c.totalPallets=total;
+  c.receivedPallets=clamp(Math.round(Number(c.receivedPallets)||0),0,total);
+  c.shippedPallets=clamp(Math.round(Number(c.shippedPallets)||0),0,c.receivedPallets);
+
+  const multiplier=1+S.upgrades.automation*.08;
+
+  // Przyjęcie: 1,5 raza szybciej niż tempo wysyłki.
+  const receiveRate=Math.max(1,Math.round(c.p*1.5*multiplier));
+  const receivedNow=Math.min(receiveRate,total-c.receivedPallets);
+  c.receivedPallets+=receivedNow;
+
+  // Wysyłka nie może przekroczyć liczby przyjętych palet.
+  const shipRate=Math.max(1,Math.round(c.p*multiplier));
+  const available=c.receivedPallets-c.shippedPallets;
+  const shippedNow=Math.min(shipRate,available,total-c.shippedPallets);
+  c.shippedPallets+=shippedNow;
+
+  // Wynagrodzenie za kontrakt naliczane jest za faktycznie wywiezione palety.
+  if(shippedNow>0){
+   const revenue=Math.round(shippedNow*35);
+   S.money+=revenue;S.finances.income+=revenue;S.taxCycleRevenue+=revenue;
   }
-  if(c.progress>=c.days*24){
+
+  // Zakończenie dopiero po wywiezieniu całego zamówienia.
+  if(c.shippedPallets>=total&&!c.done){
+   c.shippedPallets=total;c.receivedPallets=total;
    c.done=true;S.rep+=c.rep;
    const bonus=Math.round(c.value*.35);
-   S.money+=bonus;S.finances.income+=bonus;
-   S.taxCycleRevenue+=bonus;
-   log("Zakończono kontrakt firmy "+c.company+". Premia: "+money(bonus)+".");
+   S.money+=bonus;S.finances.income+=bonus;S.taxCycleRevenue+=bonus;
+   log("Zakończono kontrakt firmy "+c.company+". Wywieziono "+num(total)+" palet. Premia: "+money(bonus)+".");
   }
  });
 
- const workers=S.employees;
- const usable=forklifts();
+ const workers=S.employees,usable=forklifts();
  const operatorCount=Math.min(workers.length,usable.length);
- const avgSkill=workers.length?workers.reduce((a,e)=>a+Math.round(e.skill||0),0)/workers.length:0;
+ const avgSkill=workers.length?workers.reduce((a,e)=>a+e.skill,0)/workers.length:0;
  const base=usable.reduce((a,v)=>a+(MODELS[v.model]?.throughput||0),0);
- const efficiencyPercent=Math.round(100+avgSkill*.4+S.upgrades.training*8);
- const efficiency=efficiencyPercent/100;
- const warehouseFactor=Math.round(S.warehouse.condition)/100;
+ const efficiency=1+avgSkill/250+S.upgrades.training*.08;
+ const warehouseFactor=S.warehouse.condition/100;
  const output=base*efficiency*warehouseFactor;
-
  if(operatorCount>0){
   const income=Math.round(output*45*operatorCount);
   S.money+=income;S.finances.income+=income;S.taxCycleRevenue+=income;
-  workers.slice(0,operatorCount).forEach(e=>{
-   e.hours++;e.skill=clamp(Math.round(e.skill)+(Math.random()<.04?1:0),0,100);
-  });
+  workers.slice(0,operatorCount).forEach(e=>{e.hours++;e.skill=clamp(e.skill+(Math.random()<.04?1:0),0,100)});
   usable.slice(0,operatorCount).forEach(v=>{
-   v.hours++;
-   const wear=Math.max(.015,.035-S.upgrades.maintenance*.004);
-   v.wearProgress=(v.wearProgress||0)+wear;
-   if(v.wearProgress>=1){
-    const loss=Math.floor(v.wearProgress);
-    v.wearProgress-=loss;
-    v.condition=clamp(Math.round(v.condition)-loss,0,100);
-   }
+   v.hours++;const wear=Math.max(.015,.035-S.upgrades.maintenance*.004);
+   v.condition=clamp(v.condition-wear,0,100);
    if(v.condition<=0){v.broken=true;log("Awaria wózka "+MODELS[v.model].name+".")}
   });
  }
-
- if(S.warehouse.condition>0&&Math.random()<.002)S.warehouse.condition=Math.max(0,Math.round(S.warehouse.condition)-1);
+ if(S.warehouse.condition>0&&Math.random()<.002)S.warehouse.condition--;
  if(S.gameHour%24===0)funnyEvent();
  if(S.gameHour%8===0)checkRandomEvent();
  if(S.dayHours>=8*S.shiftCount)endDay();
@@ -1141,8 +798,8 @@ function checkRandomEvent(){
    {label:"Wstrzymaj wysyłkę",effect:()=>{S.rep++;log("Wstrzymano wysyłkę i uniknięto pomyłki.");}}
   ]},
   {title:"Awaria wózka",description:"Jeden z operatorów zgłasza niepokojące dźwięki dochodzące z układu napędowego.",choices:[
-   {label:"Wezwij serwis · 900 zł",effect:()=>{S.money-=900;let v=pick(S.fleet);if(v){v.condition=100;v.broken=false;v.wearProgress=0}log("Serwis usunął problem techniczny.");}},
-   {label:"Kontynuuj pracę",effect:()=>{let v=pick(S.fleet);if(v)v.condition=clamp(Math.round(v.condition)-15,0,100);log("Zignorowano niepokojące objawy wózka.");}}
+   {label:"Wezwij serwis · 900 zł",effect:()=>{S.money-=900;let v=pick(S.fleet);if(v)v.condition=100;log("Serwis usunął problem techniczny.");}},
+   {label:"Kontynuuj pracę",effect:()=>{let v=pick(S.fleet);if(v)v.condition=clamp(v.condition-15,0,100);log("Zignorowano niepokojące objawy wózka.");}}
   ]},
   {title:"Opóźniona dostawa",description:"Dostawca informuje o opóźnieniu transportu.",choices:[
    {label:"Zorganizuj transport zastępczy · 700 zł",effect:()=>{S.money-=700;S.rep++;log("Transport zastępczy dotarł na czas.");}},
@@ -1155,30 +812,21 @@ function checkRandomEvent(){
  ];
  const e=pick(events);
  S.pendingEvent={...e,choices:e.choices.map(c=>({label:c.label,effectName:c.label}))};
- window.currentEventEffects=e.choices.map(c=>c.effect);
- updateEventArea();
+ window.currentEventEffects=e.choices.map(c=>c.effect);updateEventArea();
 }
-
 function resolveEvent(index){
  if(!S.pendingEvent)return;
- const effect=window.currentEventEffects?.[index];
- if(effect)effect();
- S.pendingEvent=null;window.currentEventEffects=null;
- saveGame();render();
+ const effect=window.currentEventEffects?.[index];if(effect)effect();
+ S.pendingEvent=null;window.currentEventEffects=null;saveGame();render();
 }
-
 function funnyEvent(){
  if(S.funny.count>=3)return;
  if(Math.random()>.003)return;
- S.funny.count++;
- log("💬 "+pick(FUNNY));
+ S.funny.count++;log("💬 "+pick(FUNNY));
 }
-
 function endDay(){
- S.dayHours=0;
- S.day++;
- S.funny.month=Math.floor((S.day-1)/30)+1;
- S.funny.count=0;
+ S.dayHours=0;S.day++;
+ S.funny.month=Math.floor((S.day-1)/30)+1;S.funny.count=0;
  if(S.day%30===0)settleMonth();
  if(S.day%180===0){
   const tax=Math.round(S.taxCycleRevenue*TAX_RATE);
@@ -1186,18 +834,15 @@ function endDay(){
   log("Pobrano podatek okresowy 8%: "+money(tax)+".");
  }
  if(S.rescue.bankDebt>0&&S.day>S.rescue.bankDeadline){
-  S.rescue.bankrupt=true;
-  log("Nie spłacono długu w terminie. Firma ogłosiła bankructwo.");
+  S.rescue.bankrupt=true;log("Nie spłacono długu w terminie. Firma ogłosiła bankructwo.");
  }
  S.employees.forEach(e=>{
   if(e.role==="Magazynier"&&e.hours>=200&&e.trainedBasic)promotionCheck(e);
   if(e.role==="Pracownik transportu wewnętrznego"&&e.hours>=400&&e.trainedAdvanced)promotionCheck(e);
  });
  if(S.day%3===0)generateOffers();
- log("Rozpoczęto dzień "+S.day+". Nowy dzień pracy.");
- saveGame();
+ log("Rozpoczęto dzień "+S.day+". Nowy dzień pracy.");saveGame();
 }
-
 function promotionCheck(e){
  if(e.role==="Magazynier"){
   e.role="Pracownik transportu wewnętrznego";e.salary=4600;e.promotionLevel=1;
@@ -1207,7 +852,6 @@ function promotionCheck(e){
   log("Automatyczny awans: "+e.name+" został starszym pracownikiem transportu wewnętrznego.");
  }
 }
-
 function applyOffline(){
  const now=Date.now();
  const elapsed=Math.max(0,(now-(S.lastSeen||now))/1000);
@@ -1217,42 +861,27 @@ function applyOffline(){
  for(let i=0;i<whole;i++){
   if(S.rescue.bankrupt)break;
   hourlyTick();
-  if(S.pendingEvent){
-   S.pendingEvent=null;
-   window.currentEventEffects=null;
-  }
+  if(S.pendingEvent){S.pendingEvent=null;window.currentEventEffects=null}
  }
  S.hourProgress+=hours-whole;
- if(S.hourProgress>=1){
-  S.hourProgress-=1;
-  hourlyTick();
- }
+ if(S.hourProgress>=1){S.hourProgress-=1;hourlyTick()}
  if(whole>0)log("Symulacja offline: naliczono "+whole+" godzin pracy.");
  S.lastSeen=now;
 }
-
 function changeWarehouseName(){
  const name=prompt("Nowa nazwa magazynu:",S.warehouseName);
  if(name&&name.trim()){
   S.warehouseName=name.trim().slice(0,35);
-  log("Zmieniono nazwę magazynu na: "+S.warehouseName+".");
-  saveGame();render();
+  log("Zmieniono nazwę magazynu na: "+S.warehouseName+".");saveGame();render();
  }
 }
-
 function restartGame(){
  if(!confirm("Czy na pewno chcesz rozpocząć nową grę? Cały dotychczasowy postęp zostanie usunięty."))return;
- localStorage.removeItem(KEY);
- OLD_KEYS.forEach(k=>localStorage.removeItem(k));
- S=fresh();
- askWarehouseName();
- generateOffers();
- activeTab="company";
- saveGame();render();
+ localStorage.removeItem(KEY);OLD_KEYS.forEach(k=>localStorage.removeItem(k));
+ S=fresh();askWarehouseName();generateOffers();activeTab="company";saveGame();render();
 }
 
 /* START */
-
 if(!S.warehouseName)askWarehouseName();
 updateHeading();
 if(!S.offers.length)generateOffers();
@@ -1261,7 +890,6 @@ render();
 requestAnimationFrame(tickFrame);
 setInterval(saveGame,5000);
 window.addEventListener("beforeunload",saveGame);
-
 </script>
 </body>
 </html>

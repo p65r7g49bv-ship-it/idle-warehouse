@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Idle Warehouse 3.9</title>
+<title>Idle Warehouse 4.0</title>
 <style>
 :root{
  --bg:#101722;--panel:#192433;--panel2:#202e40;--line:#34465b;
@@ -65,6 +65,30 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
 .event-choice button{margin:4px}
 .contract-progress{height:12px;background:#0c131d;border-radius:20px;overflow:hidden;margin:8px 0 12px}
 .contract-progress div{height:100%;background:linear-gradient(90deg,#55c58a,#65a9e8);transition:width .2s}
+
+/* Zmniejszona czcionka w zakładkach o 4 px */
+#content{font-size:12px}
+#content h2{font-size:17px}
+#content h3{font-size:12px}
+#content p{line-height:1.4}
+#content button,#content input,#content select{font-size:12px}
+#content table{font-size:9px}
+#content td,#content th{padding:7px}
+
+/* Pasek doświadczenia pracownika */
+.experience-progress{
+ height:10px;
+ margin:6px 0 5px;
+ background:#0c131d;
+ border:1px solid var(--line);
+ border-radius:20px;
+ overflow:hidden;
+}
+.experience-progress div{
+ height:100%;
+ background:linear-gradient(90deg,#398cbd,#65a9e8);
+ transition:width .3s;
+}
 
 /* Dziennik w formie czatu */
 .chat-journal{
@@ -142,6 +166,22 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
  line-height:1.35;
  min-height:28px;
 }
+
+/* Zestawienie kosztów */
+.finance-table td:last-child,
+.finance-table th:last-child{
+ text-align:right;
+ white-space:nowrap;
+}
+.finance-total td{
+ font-weight:bold;
+ border-top:1px solid var(--gold);
+}
+.finance-section td{
+ color:var(--gold);
+ font-weight:bold;
+ padding-top:13px;
+}
 @media(max-width:700px){
  .wrap{padding:10px}
  .stats{grid-template-columns:repeat(2,1fr)}
@@ -150,6 +190,8 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
  .vehicle img{width:100px;height:75px}
  h1{font-size:21px}
  .chat-message{max-width:96%}
+ #content table{font-size:9px}
+ #content td,#content th{padding:6px 4px}
 }
 </style>
 </head>
@@ -162,7 +204,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
  </div>
  <div class="row">
   <button onclick="saveGame()">💾 Zapisz</button>
-  <span class="tag">Wersja 3.9</span>
+  <span class="tag">Wersja 4.0</span>
  </div>
 </header>
 
@@ -320,7 +362,6 @@ function migrate(data){
   e.trainedBasic??=false;e.trainedAdvanced??=false;e.udt??=true;
  });
 
- // Migracja kontraktów ze starego systemu godzinowego na palety.
  merged.contracts.forEach(c=>{
   const total=contractTotal(c);
   if(c.totalPallets==null){
@@ -381,6 +422,21 @@ function formatTime(hours){
 function formatCountdown(hours){
  const seconds=Math.max(0,Math.floor(hours*3600));
  return String(Math.floor(seconds/3600)).padStart(2,"0")+":"+String(Math.floor(seconds%3600/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
+}
+
+/* Bonusy doświadczenia z zaplecza */
+function employeeExperienceMultiplier(){
+ let bonus=0;
+ if(S.warehouse.serviceCenter)bonus+=.05;
+ if(S.warehouse.canteen)bonus+=.10;
+ if(S.warehouse.smoking)bonus+=.05;
+ if(S.warehouse.multimedia)bonus+=.10;
+ if(S.warehouse.developmentDept)bonus+=.20;
+ bonus+=S.upgrades.training*.08;
+ return 1+bonus;
+}
+function employeeExperienceBonusText(){
+ return Math.round((employeeExperienceMultiplier()-1)*100);
 }
 
 function updateChat(){
@@ -467,12 +523,17 @@ function warehouseView(){
  <div class="card"><h3>Utrzymanie obiektu</h3><p>Stan techniczny: ${num(w.condition)}%</p>
  <div class="progress"><div style="width:${w.condition}%;background:${w.condition<40?"var(--red)":"var(--green)"}"></div></div>
  <p class="muted">Zaniedbany magazyn obniża wydajność operacyjną.</p><button onclick="repairWarehouse()">Napraw magazyn · 3500 zł</button></div></div>
- <h3 style="margin-top:18px">Zaplecze socjalne i techniczne</h3><div class="grid">
- ${facilityCard("serviceCenter","Serwis techniczny","Szybsze naprawy i niższe koszty awarii.",18000,450)}
- ${facilityCard("canteen","Stołówka","Poprawia morale pracowników.",12000,350)}
- ${facilityCard("smoking","Palarnia","Zapewnia dodatkowe miejsce odpoczynku.",5000,120)}
- ${facilityCard("multimedia","Strefa multimedialna","Poprawia komfort zespołu.",14000,250)}
- ${facilityCard("developmentDept","Dział rozwoju i nierozwoju","Ułatwia szkolenie i rozwój pracowników.",26000,600)}</div>`;
+ <h3 style="margin-top:18px">Zaplecze socjalne i techniczne</h3>
+ <p class="muted">Obiekty zwiększają tempo zdobywania doświadczenia przez pracowników. Bonusy sumują się.</p>
+ <div class="grid">
+ ${facilityCard("serviceCenter","Serwis techniczny","Szybsze naprawy i niższe koszty awarii. Bonus doświadczenia: +5%.",18000,450)}
+ ${facilityCard("canteen","Stołówka","Poprawia morale pracowników i zapewnia lepsze warunki regeneracji. Bonus doświadczenia: +10%.",12000,350)}
+ ${facilityCard("smoking","Palarnia","Zapewnia dodatkowe miejsce odpoczynku. Bonus doświadczenia: +5%.",5000,120)}
+ ${facilityCard("multimedia","Strefa multimedialna","Poprawia komfort zespołu i ułatwia wymianę wiedzy. Bonus doświadczenia: +10%.",14000,250)}
+ ${facilityCard("developmentDept","Dział rozwoju i nierozwoju","Ułatwia szkolenie i rozwój pracowników. Bonus doświadczenia: +20%.",26000,600)}</div>
+ <div class="card" style="margin-top:12px"><h3>Łączny bonus doświadczenia</h3>
+ <p>Zaplecze i rozwój szkoleń zapewniają obecnie: <b class="good">+${employeeExperienceBonusText()}%</b> do szansy zdobycia punktu doświadczenia podczas pracy.</p>
+ <p class="small">Bonusy z obiektów oraz poziomów badań „Szkolenia” sumują się.</p></div>`;
 }
 function facilityCard(key,title,desc,cost,monthly){
  const built=S.warehouse[key];
@@ -508,6 +569,7 @@ function staffView(){
  return `<h2>👷 Pracownicy</h2><div class="card"><h3>Zespół magazynu</h3>
  <p>Łączna liczba pracowników: <b>${S.employees.length}</b></p>
  <p class="muted">Do obsługi każdej zmiany potrzebny jest odpowiedni zespół operatorów.</p>
+ <p>Bonus do zdobywania doświadczenia: <b class="good">+${employeeExperienceBonusText()}%</b></p>
  <button onclick="hireEmployee()">Zatrudnij pracownika · 1500 zł</button></div>
  <div class="grid" style="margin-top:12px">${S.employees.map(e=>{
   const basicReady=!e.trainedBasic&&S.money>=1800;
@@ -524,9 +586,13 @@ function staffView(){
   }else{
    promotionText="Osiągnięto najwyższy poziom stanowiska";
   }
+  const skill=clamp(Number(e.skill)||0,0,100);
   return `<div class="card"><div class="vehicle"><img class="worker-image" src="${IMG.WORKER}" alt="Pracownik">
  <div><h3>${escapeHTML(e.name)}</h3><div class="small">${escapeHTML(e.role)}</div></div></div>
- <p>Staż na wózkach: <b>${num(e.hours)} h</b></p><p>Umiejętności: ${num(e.skill)}/100</p>
+ <p>Staż na wózkach: <b>${num(e.hours)} h</b></p>
+ <p>Doświadczenie: <b>${num(skill)} / 100 pkt</b></p>
+ <div class="experience-progress"><div style="width:${skill}%"></div></div>
+ <p class="small">${skill>=100?"Maksymalny poziom doświadczenia": "Do maksymalnego poziomu pozostało: "+num(100-skill)+" pkt"}</p>
  <p>Wynagrodzenie: ${money(e.salary)}/mies.</p><p>Uprawnienia UDT: ${e.udt?'<span class="good">Tak</span>':'<span class="bad">Nie</span>'}</p>
  <p>Szkolenie podstawowe: ${e.trainedBasic?"ukończone":"brak"}</p><p>Szkolenie zaawansowane: ${e.trainedAdvanced?"ukończone":"brak"}</p>
  <div class="actions">
@@ -595,7 +661,7 @@ function developmentView(){
  const items=[
   ["automation","Automatyzacja","Zmniejsza część kosztów administracyjnych.",12000],
   ["planning","Planowanie logistyki","Zwiększa limit aktywnych kontraktów. Poziom 1 odblokowuje 2 zmiany, poziom 2 odblokowuje 3 zmiany.",18000],
-  ["training","Szkolenia","Zwiększa efektywność pracowników.",9000],
+  ["training","Szkolenia","Zwiększa efektywność pracowników oraz tempo zdobywania doświadczenia.",9000],
   ["marketing","Marketing","Zwiększa reputację i jakość ofert.",11000],
   ["maintenance","Utrzymanie floty","Zmniejsza zużycie wózków.",14000]
  ];
@@ -608,13 +674,68 @@ function developmentView(){
  <div class="grid" style="margin-top:12px">${items.map(([key,title,desc,base])=>{
  const level=S.upgrades[key],cost=base*(level+1);
  return `<div class="card"><h3>${title}</h3><p>${desc}</p><p>Poziom: <b>${level}</b></p>
+ ${key==="training"?`<p class="good">Bonus do doświadczenia: +${level*8}%</p>`:""}
  <p class="price">Koszt kolejnego poziomu: ${money(cost)}</p>
  <button onclick="upgradeResearch('${key}',${base})" ${S.money<cost?"disabled":""}>Rozwijaj</button></div>`;
  }).join("")}</div>`;
 }
 
+/* SZCZEGÓŁOWY ROZKŁAD KOSZTÓW MIESIĘCZNYCH */
+function monthlyCostBreakdown(){
+ const wages=S.employees.reduce((a,e)=>a+e.salary,0);
+ const rent=S.fleet.filter(v=>v.rented).reduce((a,v)=>a+(MODELS[v.model]?.rent||0),0);
+ const electricity=S.fleet.reduce((a,v)=>a+(MODELS[v.model]?.energy||0)*8*22,0);
+ const water=250+S.employees.length*55;
+ const clothing=S.employees.length*90;
+ const land=1500*S.warehouse.level;
+ const maintenance=800+S.fleet.length*350;
+
+ const facilities=
+  (S.warehouse.canteen?350:0)+
+  (S.warehouse.smoking?120:0)+
+  (S.warehouse.multimedia?250:0)+
+  (S.warehouse.developmentDept?600:0)+
+  (S.warehouse.serviceCenter?450:0);
+
+ const administration=1200+S.employees.length*120;
+ const gross=wages+rent+electricity+water+clothing+land+maintenance+facilities+administration;
+ const discount=gross*S.upgrades.automation*.04;
+ const total=Math.round(gross-discount);
+
+ return {
+  wages,rent,electricity,water,clothing,land,maintenance,
+  facilities,administration,gross,discount,total
+ };
+}
+
+function monthlyFacilityCosts(){
+ let n=0;
+ if(S.warehouse.canteen)n+=350;
+ if(S.warehouse.smoking)n+=120;
+ if(S.warehouse.multimedia)n+=250;
+ if(S.warehouse.developmentDept)n+=600;
+ if(S.warehouse.serviceCenter)n+=450;
+ return n+1200+S.employees.length*120;
+}
+
+function monthlyCosts(){
+ return monthlyCostBreakdown().total;
+}
+
 function financeView(){
  const f=S.finances;
+ const c=monthlyCostBreakdown();
+ const rows=[
+  ["Wynagrodzenia pracowników",c.wages],
+  ["Wynajem wózków",c.rent],
+  ["Energia elektryczna floty",c.electricity],
+  ["Woda i media socjalne",c.water],
+  ["Odzież robocza",c.clothing],
+  ["Utrzymanie terenu i powierzchni",c.land],
+  ["Konserwacja i utrzymanie floty",c.maintenance],
+  ["Zaplecze socjalne i techniczne",c.facilities],
+  ["Administracja i koszty stałe",c.administration]
+ ];
  return `<h2>💰 Finanse</h2><div class="grid">
  <div class="card"><h3>Kapitał</h3><p style="font-size:25px" class="price">${money(S.money)}</p>
  <p>Przychody łącznie: ${money(f.income)}</p><p>Koszty łącznie: ${money(f.cost)}</p></div>
@@ -623,10 +744,26 @@ function financeView(){
  <div class="card"><h3>Ratunek finansowy</h3><p>Wykorzystana pomoc: ${S.rescue.used}/2</p>
  <p>Zadłużenie: ${money(S.rescue.bankDebt)}</p><p>Termin spłaty: ${S.rescue.bankDeadline?S.rescue.bankDeadline+" dzień":"brak"}</p>
  ${S.rescue.bankDebt>0?`<button onclick="repayDebt()">Spłać zadłużenie</button>`:""}</div>
- <div class="card"><h3>Szacowane koszty miesięczne</h3>
- <p>Wynagrodzenia: ${money(S.employees.reduce((a,e)=>a+e.salary,0))}</p>
- <p>Wynajem floty: ${money(S.fleet.filter(v=>v.rented).reduce((a,v)=>a+MODELS[v.model].rent,0))}</p>
- <p>Infrastruktura i media: ${money(monthlyFacilityCosts())}</p></div></div>
+ <div class="card"><h3>Prognoza miesięczna</h3>
+ <p>Przychody i koszty są rozliczane zgodnie z aktualnym stanem firmy.</p>
+ <p>Poziom automatyzacji: ${S.upgrades.automation}</p>
+ <p>Redukcja kosztów: <b class="good">${num(S.upgrades.automation*4)}%</b></p>
+ <p>Szacowany koszt po rabacie: <b class="price">${money(c.total)}</b></p></div></div>
+
+ <h3 style="margin-top:20px">Szczegółowy miesięczny rozkład kosztów</h3>
+ <div class="card">
+ <p class="muted">Prognoza na podstawie obecnej liczby pracowników, floty, poziomu magazynu i wybudowanych obiektów.</p>
+ <table class="finance-table">
+ <thead><tr><th>Kategoria wydatku</th><th>Miesięcznie</th></tr></thead>
+ <tbody>
+ ${rows.map(([label,value])=>`<tr><td>${label}</td><td>${money(value)}</td></tr>`).join("")}
+ <tr class="finance-total"><td>Łączne koszty przed automatyzacją</td><td>${money(c.gross)}</td></tr>
+ <tr><td>Rabat z automatyzacji (${num(S.upgrades.automation*4)}%)</td><td class="good">−${money(c.discount)}</td></tr>
+ <tr class="finance-total"><td>RAZEM DO ZAPŁATY</td><td class="price">${money(c.total)}</td></tr>
+ </tbody></table>
+ <p class="small">Koszty są pobierane automatycznie co 30 dni. Rozwój automatyzacji zmniejsza końcową kwotę rozliczenia.</p>
+ </div>
+
  <h3 style="margin-top:20px">Historia rozliczeń</h3><div class="card"><table><thead><tr><th>Dzień</th><th>Przychód</th><th>Koszty</th><th>Bilans</th></tr></thead>
  <tbody>${f.history.slice(-20).reverse().map(h=>`<tr><td>${h.day}</td><td>${money(h.income)}</td><td>${money(h.cost)}</td><td>${money(h.income-h.cost)}</td></tr>`).join("")}</tbody></table></div>`;
 }
@@ -715,7 +852,6 @@ function generateOffers(){
  if(count<=0)return;
  const max=maxLoad();if(max===0)return;
 
- // Początkowe kontrakty są małe. Ich wielkość rośnie wraz z rozwojem magazynu.
  let base=[
   {p:1,storage:3,days:1,advance:500,penalty:250,load:1800,rep:1,value:1800},
   {p:1,storage:4,days:2,advance:800,penalty:350,load:1800,rep:1,value:2800}
@@ -797,24 +933,6 @@ function setShifts(n){
 }
 
 /* EKONOMIA */
-function monthlyFacilityCosts(){
- let n=0;
- if(S.warehouse.canteen)n+=350;
- if(S.warehouse.smoking)n+=120;
- if(S.warehouse.multimedia)n+=250;
- if(S.warehouse.developmentDept)n+=600;
- if(S.warehouse.serviceCenter)n+=450;
- return n+1200+S.employees.length*120;
-}
-function monthlyCosts(){
- const wages=S.employees.reduce((a,e)=>a+e.salary,0);
- const rent=S.fleet.filter(v=>v.rented).reduce((a,v)=>a+MODELS[v.model].rent,0);
- const electricity=S.fleet.reduce((a,v)=>a+MODELS[v.model].energy*8*22,0);
- const water=250+S.employees.length*55,clothing=S.employees.length*90;
- const land=1500*S.warehouse.level,maintenance=800+S.fleet.length*350,social=monthlyFacilityCosts();
- const gross=wages+rent+electricity+water+clothing+land+maintenance+social;
- return Math.round(gross*(1-S.upgrades.automation*.04));
-}
 function settleMonth(){
  const cost=monthlyCosts();S.money-=cost;S.finances.cost+=cost;
  S.finances.history.push({day:S.day,income:0,cost});
@@ -857,7 +975,6 @@ function hourlyTick(){
  if(S.rescue.bankrupt)return;
  S.gameHour++;S.dayHours++;
 
- // Kontrakty: przyjęcie palet, magazynowanie i wysyłka.
  activeContracts().forEach(c=>{
   const capable=S.fleet.some(v=>!v.broken&&v.condition>0&&(MODELS[v.model]?.load||0)>=c.load);
   if(!capable)return;
@@ -868,25 +985,20 @@ function hourlyTick(){
   c.shippedPallets=clamp(Math.round(Number(c.shippedPallets)||0),0,c.receivedPallets);
 
   const multiplier=1+S.upgrades.automation*.08;
-
-  // Przyjęcie: 1,5 raza szybciej niż tempo wysyłki.
   const receiveRate=Math.max(1,Math.round(c.p*1.5*multiplier));
   const receivedNow=Math.min(receiveRate,total-c.receivedPallets);
   c.receivedPallets+=receivedNow;
 
-  // Wysyłka nie może przekroczyć liczby przyjętych palet.
   const shipRate=Math.max(1,Math.round(c.p*multiplier));
   const available=c.receivedPallets-c.shippedPallets;
   const shippedNow=Math.min(shipRate,available,total-c.shippedPallets);
   c.shippedPallets+=shippedNow;
 
-  // Wynagrodzenie za kontrakt naliczane jest za faktycznie wywiezione palety.
   if(shippedNow>0){
    const revenue=Math.round(shippedNow*35);
    S.money+=revenue;S.finances.income+=revenue;S.taxCycleRevenue+=revenue;
   }
 
-  // Zakończenie dopiero po wywiezieniu całego zamówienia.
   if(c.shippedPallets>=total&&!c.done){
    c.shippedPallets=total;c.receivedPallets=total;
    c.done=true;S.rep+=c.rep;
@@ -906,7 +1018,14 @@ function hourlyTick(){
  if(operatorCount>0){
   const income=Math.round(output*45*operatorCount);
   S.money+=income;S.finances.income+=income;S.taxCycleRevenue+=income;
-  workers.slice(0,operatorCount).forEach(e=>{e.hours++;e.skill=clamp(e.skill+(Math.random()<.04?1:0),0,100)});
+
+  /* Bonus zwiększa dotychczasową szansę 4% na zdobycie punktu doświadczenia. */
+  const experienceChance=Math.min(1,.04*employeeExperienceMultiplier());
+  workers.slice(0,operatorCount).forEach(e=>{
+   e.hours++;
+   if(Math.random()<experienceChance)e.skill=clamp(e.skill+1,0,100);
+  });
+
   usable.slice(0,operatorCount).forEach(v=>{
    v.hours++;const wear=Math.max(.015,.035-S.upgrades.maintenance*.004);
    v.condition=clamp(v.condition-wear,0,100);
@@ -915,7 +1034,6 @@ function hourlyTick(){
  }
  if(S.warehouse.condition>0&&Math.random()<.002)S.warehouse.condition--;
 
- // Zdarzenia humorystyczne pojawiają się częściej wraz ze wzrostem zespołu.
  if(S.gameHour%2===0)funnyEvent();
  if(S.gameHour%8===0)checkRandomEvent();
  if(S.dayHours>=8*S.shiftCount)endDay();
@@ -959,7 +1077,6 @@ function funnyEvent(){
  const dailyLimit=clamp(Math.ceil(employeeCount*.7),2,12);
  if(S.funny.count>=dailyLimit)return;
 
- // Szansa rośnie wraz z liczbą zatrudnionych osób.
  const chance=Math.min(.7,.08+employeeCount*.035);
  if(Math.random()>chance)return;
 

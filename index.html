@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -37,88 +36,19 @@ p{line-height:1.45}
 .progress div{height:100%;width:0;background:linear-gradient(90deg,#55c58a,#e8a83e);transition:width .2s}
 .event{margin:12px 0;border-color:#80602b;background:#342b1d;display:none}
 .event strong{color:var(--gold)}
-
-/* DZIENNIK W FORMIE CZATU */
-.journal{
- background:var(--panel);
- border:1px solid var(--line);
- border-radius:11px;
- padding:13px;
- margin:12px 0;
-}
-.journal-heading{
- display:flex;
- justify-content:space-between;
- align-items:center;
- gap:10px;
- margin-bottom:10px;
-}
+.journal{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:13px;margin:12px 0}
+.journal-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
 .journal-heading h3{margin:0}
-.chat-log{
- display:flex;
- flex-direction:column;
- gap:8px;
- max-height:250px;
- overflow-y:auto;
- padding:3px 5px 3px 0;
-}
-.chat-message{
- display:flex;
- align-items:flex-start;
- gap:9px;
-}
-.chat-avatar{
- flex:0 0 30px;
- width:30px;
- height:30px;
- border-radius:50%;
- display:flex;
- align-items:center;
- justify-content:center;
- background:#29394c;
- border:1px solid #40536a;
- font-size:14px;
-}
-.chat-bubble{
- min-width:0;
- max-width:90%;
- background:#202e40;
- border:1px solid #34465b;
- border-radius:4px 11px 11px 11px;
- padding:8px 11px;
-}
-.chat-message.system .chat-avatar{
- background:#3b3020;
- border-color:#80602b;
-}
-.chat-message.system .chat-bubble{
- background:#30291f;
- border-color:#66502e;
-}
-.chat-meta{
- display:flex;
- align-items:center;
- gap:8px;
- margin-bottom:4px;
- font-size:10px;
- color:var(--muted);
-}
-.chat-meta strong{
- color:var(--gold);
- font-weight:normal;
-}
-.chat-text{
- font-size:13px;
- line-height:1.4;
- overflow-wrap:anywhere;
-}
-.chat-empty{
- color:var(--muted);
- text-align:center;
- padding:15px;
- font-size:13px;
-}
-
+.chat-log{display:flex;flex-direction:column;gap:8px;max-height:250px;overflow-y:auto;padding:3px 5px 3px 0}
+.chat-message{display:flex;align-items:flex-start;gap:9px}
+.chat-avatar{flex:0 0 30px;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#29394c;border:1px solid #40536a;font-size:14px}
+.chat-bubble{min-width:0;max-width:90%;background:#202e40;border:1px solid #34465b;border-radius:4px 11px 11px 11px;padding:8px 11px}
+.chat-message.system .chat-avatar{background:#3b3020;border-color:#80602b}
+.chat-message.system .chat-bubble{background:#30291f;border-color:#66502e}
+.chat-meta{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:10px;color:var(--muted)}
+.chat-meta strong{color:var(--gold);font-weight:normal}
+.chat-text{font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+.chat-empty{color:var(--muted);text-align:center;padding:15px;font-size:13px}
 nav{display:flex;gap:7px;overflow-x:auto;padding:8px 0 13px;margin-bottom:12px}
 nav button{white-space:nowrap}
 nav button.active{background:var(--gold);color:#171717;border-color:var(--gold);font-weight:bold}
@@ -146,35 +76,11 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
 .empty{padding:25px;text-align:center;color:var(--muted)}
 .event-choice{margin-top:12px}
 .event-choice button{margin:4px}
-.cost-total{
- font-size:21px;
- color:var(--gold);
- font-weight:bold;
- margin:10px 0;
-}
-.cost-row{
- display:flex;
- justify-content:space-between;
- gap:12px;
- padding:9px 0;
- border-bottom:1px solid var(--line);
- font-size:13px;
-}
+.cost-total{font-size:21px;color:var(--gold);font-weight:bold;margin:10px 0}
+.cost-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
 .cost-row:last-child{border-bottom:0}
-.cost-row span:last-child{
- text-align:right;
- font-weight:bold;
- white-space:nowrap;
-}
-.cost-note{
- background:#202e40;
- border:1px solid var(--line);
- border-radius:8px;
- padding:10px;
- margin-top:12px;
- font-size:12px;
- color:var(--muted);
-}
+.cost-row span:last-child{text-align:right;font-weight:bold;white-space:nowrap}
+.cost-note{background:#202e40;border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:12px;font-size:12px;color:var(--muted)}
 @media(max-width:700px){
  .wrap{padding:10px}
  .stats{grid-template-columns:repeat(2,1fr)}
@@ -225,7 +131,6 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
  <div class="small" style="margin-top:7px">Czas gry płynie automatycznie. W trakcie zdarzeń operacyjnych zegar zostaje zatrzymany.</div>
 </section>
 
-<!-- DZIENNIK PRZENIESIONY POD ZEGAR -->
 <section class="journal">
  <div class="journal-heading">
   <h3>💬 Dziennik wydarzeń</h3>
@@ -376,6 +281,11 @@ function migrate(data){
   e.trainedBasic??=false;e.trainedAdvanced??=false;
   e.udt??=true;
  });
+ merged.warehouse.level=Math.max(1,Math.round(merged.warehouse.level||1));
+ merged.warehouse.capacity=warehouseCapacity(merged.warehouse.level);
+ merged.warehouse.condition=Math.round(merged.warehouse.condition||0);
+ merged.fleet.forEach(v=>{v.condition=Math.round(v.condition||0);v.wearProgress??=0});
+ merged.employees.forEach(e=>{e.skill=Math.round(e.skill||0)});
  merged.logs.forEach(l=>{
   l.time??="--:--";
  });
@@ -416,7 +326,18 @@ function log(text){
 }
 
 function activeContracts(){return S.contracts.filter(c=>!c.done&&!c.failed)}
-function contractLimit(){return 2+S.upgrades.planning}
+
+function warehouseCapacity(level){
+ const caps=[0,30,60,100,250,1000];
+ return level<=5?caps[level]:1000+(level-5)*50;
+}
+
+function contractLimit(){
+ const tier=Math.min(S.shiftCount,S.warehouse.level,3);
+ const base=[0,2,10,20][tier];
+ return base+Math.max(0,S.warehouse.level-tier)*5;
+}
+
 function forklifts(){return S.fleet.filter(v=>!v.broken&&v.condition>0)}
 function maxLoad(){
  return forklifts().reduce((m,v)=>Math.max(m,MODELS[v.model]?.load||0),0);
@@ -545,7 +466,7 @@ function companyView(){
    <p class="muted">Dzień działalności: ${S.day}</p>
    <p>Reputacja: <b>${S.rep}</b></p>
    <p>Poziom magazynu: ${S.warehouse.level}</p>
-   <p>Stan techniczny: ${S.warehouse.condition}%</p>
+   <p>Stan techniczny: ${Math.round(S.warehouse.condition)}%</p>
   </div>
   <div class="card">
    <h3>Podsumowanie operacyjne</h3>
@@ -586,21 +507,21 @@ function companyView(){
 function warehouseView(){
  const w=S.warehouse;
  const cost=80000*w.level;
- const capacity=30*w.level;
+ const capacity=warehouseCapacity(w.level);
  return `<h2>🏬 Magazyn</h2>
  <div class="grid">
   <div class="card">
    <img class="hero-image" src="${IMG.WAREHOUSE}" onerror="this.style.display='none'">
    <h3>Infrastruktura</h3>
    <p>Poziom: <b>${w.level}</b></p>
-   <p>Pojemność: <b>${w.capacity} miejsc paletowych</b></p>
-   <p>Stan techniczny: <b>${w.condition}%</b></p>
+   <p>Pojemność: <b>${capacity} miejsc paletowych</b></p>
+   <p>Stan techniczny: <b>${Math.round(w.condition)}%</b></p>
    <p>Możliwości magazynu wpływają na wielkość dostępnych kontraktów.</p>
    <button onclick="upgradeWarehouse()" ${S.money<cost?"disabled":""}>Rozbuduj magazyn · ${money(cost)}</button>
   </div>
   <div class="card">
    <h3>Utrzymanie obiektu</h3>
-   <p>Stan techniczny: ${w.condition}%</p>
+   <p>Stan techniczny: ${Math.round(w.condition)}%</p>
    <div class="progress"><div style="width:${w.condition}%;background:${w.condition<40?"var(--red)":"var(--green)"}"></div></div>
    <p class="muted">Zaniedbany magazyn obniża wydajność operacyjną.</p>
    <button onclick="repairWarehouse()">Napraw magazyn · 3500 zł</button>
@@ -632,7 +553,7 @@ function fleetView(){
     <img src="${m.image}" alt="${m.name}" onerror="this.src='${IMG.RX20}'">
     <div><h3>${m.name}</h3><div class="small">Udźwig ${num(m.load)} kg</div>
     <span class="tag">${v.rented?"Wynajem":"Własny"}</span>
-    <span class="tag">${v.broken?"Awaria":v.condition+"% sprawności"}</span></div>
+    <span class="tag">${v.broken?"Awaria":Math.round(v.condition)+"% sprawności"}</span></div>
    </div>
    <p>Przepracowane godziny: ${num(v.hours)}</p>
    <p>Wydajność: ${m.throughput} jednostek/h</p>
@@ -670,7 +591,7 @@ function staffView(){
   <h3>Zespół magazynu</h3>
   <p>Łączna liczba pracowników: <b>${S.employees.length}</b></p>
   <p class="muted">Do obsługi każdej zmiany potrzebny jest odpowiedni zespół operatorów.</p>
-  <button onclick="hireEmployee()">Zatrudnij pracownika · 1500 zł</button>
+  <button onclick="hireEmployee()">Zatrudnij pracownika · 1600 zł</button>
  </div>
  <div class="grid" style="margin-top:12px">${S.employees.map(e=>`
  <div class="card">
@@ -679,7 +600,7 @@ function staffView(){
    <div><h3>${escapeHTML(e.name)}</h3><div class="small">${escapeHTML(e.role)}</div></div>
   </div>
   <p>Staż na wózkach: <b>${num(e.hours)} h</b></p>
-  <p>Umiejętności: ${e.skill}/100</p>
+  <p>Umiejętności: ${Math.round(e.skill)}/100</p>
   <p>Wynagrodzenie: ${money(e.salary)}/mies.</p>
   <p>Uprawnienia UDT: ${e.udt?'<span class="good">Tak</span>':'<span class="bad">Nie</span>'}</p>
   <p>Szkolenie podstawowe: ${e.trainedBasic?"ukończone":"brak"}</p>
@@ -761,8 +682,8 @@ function monthlyCostBreakdown(){
  const electricity=S.fleet.reduce((a,v)=>
   a+(MODELS[v.model]?.energy||0)*8*22,0);
  const water=250+S.employees.length*55;
- const clothing=S.employees.length*90;
- const land=1500*S.warehouse.level;
+ const clothing=S.employees.length*20;
+ const land=2000;
  const maintenance=800+S.fleet.length*350;
  const social=monthlyFacilityCosts();
 
@@ -840,7 +761,7 @@ function reportsView(){
    <p>Nieudane: ${S.contracts.filter(c=>c.failed).length}</p>
   </div>
   <div class="card"><h3>Flota</h3>
-   ${S.fleet.map(v=>`<p>${MODELS[v.model]?.name||v.model}: ${num(v.hours)} h / ${v.condition}%</p>`).join("")}
+   ${S.fleet.map(v=>`<p>${MODELS[v.model]?.name||v.model}: ${num(v.hours)} h / ${Math.round(v.condition)}%</p>`).join("")}
   </div>
   <div class="card"><h3>Reputacja i rozwój</h3>
    <p>Reputacja: ${S.rep}</p><p>Poziom magazynu: ${S.warehouse.level}</p>
@@ -894,7 +815,7 @@ function buyForklift(model){
  if(!m||S.money<m.price)return;
  if(S.fleet.length>=S.warehouse.level*3+2){alert("Brak miejsca na kolejne wózki.");return}
  S.money-=m.price;S.finances.cost+=m.price;
- S.fleet.push({id:S.nextId++,model,rented:false,condition:100,hours:0,broken:false});
+ S.fleet.push({id:S.nextId++,model,rented:false,condition:100,hours:0,broken:false,wearProgress:0});
  log("Zakupiono wózek "+m.name+".");
  saveGame();render();
 }
@@ -902,7 +823,7 @@ function buyForklift(model){
 function rentForklift(model){
  const m=MODELS[model];
  if(!m)return;
- S.fleet.push({id:S.nextId++,model,rented:true,condition:100,hours:0,broken:false});
+ S.fleet.push({id:S.nextId++,model,rented:true,condition:100,hours:0,broken:false,wearProgress:0});
  log("Wynajęto wózek "+m.name+".");
  saveGame();render();
 }
@@ -925,7 +846,7 @@ function repairForklift(id){
  const cost=Math.max(500,Math.round((100-v.condition)*100));
  if(S.money<cost){alert("Za mało środków.");return}
  S.money-=cost;S.finances.cost+=cost;
- v.condition=100;v.broken=false;
+ v.condition=100;v.broken=false;v.wearProgress=0;
  log("Przeprowadzono serwis wózka "+MODELS[v.model].name+".");
  saveGame();render();
 }
@@ -933,16 +854,16 @@ function repairForklift(id){
 /* PRACOWNICY */
 
 function hireEmployee(){
- if(S.money<1500){alert("Za mało środków.");return}
+ if(S.money<1600){alert("Za mało środków na zatrudnienie i odzież roboczą (1600 zł).");return}
  if(S.employees.length>=S.shiftCount*3+3){alert("Najpierw zwiększ możliwości organizacyjne firmy.");return}
- S.money-=1500;S.finances.cost+=1500;
+ S.money-=1600;S.finances.cost+=1600;
  const name=pick(FIRST_NAMES)+" "+pick(LAST_NAMES);
  S.employees.push({
   id:S.nextId++,name,role:"Magazynier",salary:3800,hours:0,
   skill:rand(0,10),udt:true,promotionLevel:0,
   trainedBasic:false,trainedAdvanced:false
  });
- log("Zatrudniono nowego pracownika: "+name+".");
+ log("Zatrudniono nowego pracownika: "+name+". Koszt odzieży roboczej: 100 zł.");
  saveGame();render();
 }
 
@@ -957,7 +878,7 @@ function trainEmployee(id,type){
  S.money-=cost;S.finances.cost+=cost;
  if(type==="basic")e.trainedBasic=true;
  else e.trainedAdvanced=true;
- e.skill=clamp(e.skill+15,0,100);
+ e.skill=clamp(Math.round(e.skill)+15,0,100);
  log(e.name+" ukończył szkolenie "+(type==="basic"?"podstawowe":"zaawansowane")+".");
  saveGame();render();
 }
@@ -1045,7 +966,7 @@ function upgradeWarehouse(){
  if(S.money<cost)return;
  S.money-=cost;S.finances.cost+=cost;
  S.warehouse.level++;
- S.warehouse.capacity+=30;
+ S.warehouse.capacity=warehouseCapacity(S.warehouse.level);
  S.warehouse.condition=100;
  log("Rozbudowano magazyn do poziomu "+S.warehouse.level+".");
  generateOffers();saveGame();render();
@@ -1176,26 +1097,33 @@ function hourlyTick(){
  const workers=S.employees;
  const usable=forklifts();
  const operatorCount=Math.min(workers.length,usable.length);
- const avgSkill=workers.length?workers.reduce((a,e)=>a+e.skill,0)/workers.length:0;
+ const avgSkill=workers.length?workers.reduce((a,e)=>a+Math.round(e.skill||0),0)/workers.length:0;
  const base=usable.reduce((a,v)=>a+(MODELS[v.model]?.throughput||0),0);
- const efficiency=1+avgSkill/250+S.upgrades.training*.08;
- const warehouseFactor=S.warehouse.condition/100;
+ const efficiencyPercent=Math.round(100+avgSkill*.4+S.upgrades.training*8);
+ const efficiency=efficiencyPercent/100;
+ const warehouseFactor=Math.round(S.warehouse.condition)/100;
  const output=base*efficiency*warehouseFactor;
+
  if(operatorCount>0){
   const income=Math.round(output*45*operatorCount);
   S.money+=income;S.finances.income+=income;S.taxCycleRevenue+=income;
   workers.slice(0,operatorCount).forEach(e=>{
-   e.hours++;e.skill=clamp(e.skill+(Math.random()<.04?1:0),0,100);
+   e.hours++;e.skill=clamp(Math.round(e.skill)+(Math.random()<.04?1:0),0,100);
   });
   usable.slice(0,operatorCount).forEach(v=>{
    v.hours++;
    const wear=Math.max(.015,.035-S.upgrades.maintenance*.004);
-   v.condition=clamp(v.condition-wear,0,100);
+   v.wearProgress=(v.wearProgress||0)+wear;
+   if(v.wearProgress>=1){
+    const loss=Math.floor(v.wearProgress);
+    v.wearProgress-=loss;
+    v.condition=clamp(Math.round(v.condition)-loss,0,100);
+   }
    if(v.condition<=0){v.broken=true;log("Awaria wózka "+MODELS[v.model].name+".")}
   });
  }
 
- if(S.warehouse.condition>0&&Math.random()<.002)S.warehouse.condition--;
+ if(S.warehouse.condition>0&&Math.random()<.002)S.warehouse.condition=Math.max(0,Math.round(S.warehouse.condition)-1);
  if(S.gameHour%24===0)funnyEvent();
  if(S.gameHour%8===0)checkRandomEvent();
  if(S.dayHours>=8*S.shiftCount)endDay();
@@ -1213,8 +1141,8 @@ function checkRandomEvent(){
    {label:"Wstrzymaj wysyłkę",effect:()=>{S.rep++;log("Wstrzymano wysyłkę i uniknięto pomyłki.");}}
   ]},
   {title:"Awaria wózka",description:"Jeden z operatorów zgłasza niepokojące dźwięki dochodzące z układu napędowego.",choices:[
-   {label:"Wezwij serwis · 900 zł",effect:()=>{S.money-=900;let v=pick(S.fleet);if(v)v.condition=100;log("Serwis usunął problem techniczny.");}},
-   {label:"Kontynuuj pracę",effect:()=>{let v=pick(S.fleet);if(v)v.condition=clamp(v.condition-15,0,100);log("Zignorowano niepokojące objawy wózka.");}}
+   {label:"Wezwij serwis · 900 zł",effect:()=>{S.money-=900;let v=pick(S.fleet);if(v){v.condition=100;v.broken=false;v.wearProgress=0}log("Serwis usunął problem techniczny.");}},
+   {label:"Kontynuuj pracę",effect:()=>{let v=pick(S.fleet);if(v)v.condition=clamp(Math.round(v.condition)-15,0,100);log("Zignorowano niepokojące objawy wózka.");}}
   ]},
   {title:"Opóźniona dostawa",description:"Dostawca informuje o opóźnieniu transportu.",choices:[
    {label:"Zorganizuj transport zastępczy · 700 zł",effect:()=>{S.money-=700;S.rep++;log("Transport zastępczy dotarł na czas.");}},

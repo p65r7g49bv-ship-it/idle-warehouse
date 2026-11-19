@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Idle Warehouse 3.5</title>
+<title>Idle Warehouse 3.6</title>
 <style>
 :root{--bg:#101722;--panel:#192433;--panel2:#202e40;--line:#34465b;--text:#e8eef5;--muted:#9eafc2;--gold:#e8a83e;--green:#55c58a;--red:#e46c6c;--blue:#65a9e8}
 *{box-sizing:border-box}
@@ -61,7 +61,7 @@ footer{color:var(--muted);font-size:11px;text-align:center;padding:20px}
 <body>
 <div class="wrap">
 <header>
- <div><h1>🏭 IDLE WAREHOUSE</h1><div class="sub">Symulator zarządzania przedsiębiorstwem logistycznym · Wersja 3.5</div></div>
+ <div><h1>🏭 IDLE WAREHOUSE</h1><div class="sub">Symulator zarządzania przedsiębiorstwem logistycznym · Wersja 3.6</div></div>
  <button onclick="saveGame()">💾 Zapisz</button>
 </header>
 
@@ -96,7 +96,7 @@ footer{color:var(--muted);font-size:11px;text-align:center;padding:20px}
  <button onclick="tab('reports',this)">Raporty</button>
 </nav>
 <main id="content"></main>
-<footer>Idle Warehouse 3.5 · Zapis lokalny w przeglądarce.</footer>
+<footer>Idle Warehouse 3.6 · Zapis lokalny w przeglądarce.</footer>
 </div>
 
 <script>
@@ -106,6 +106,7 @@ const KEY="idleWarehouse_34";
 const HOUR_ONLINE=10;
 const HOUR_OFFLINE=20;
 const MAX_OFFLINE=168;
+const TAX_RATE=.08;
 
 const IMG={
  RX18:"https://data.still.de/assets/products/Vehicles/Electric_Forklift_Trucks/RX_20_14-20/images/2020/STILL_RX20_2018_USP_Umschlagsleistung.jpg?fit=max&fm=webp&s=01b75d7b314d5fd27807548082c8df17&w=1920",
@@ -117,9 +118,9 @@ const IMG={
 
 const MODELS={
  RX18:{name:"STILL RX18",load:1800,price:0,rent:1250,energy:32,throughput:2,image:IMG.RX18},
- RX20:{name:"STILL RX20",load:2000,price:48000,rent:2100,energy:38,throughput:2.3,image:IMG.RX20},
- RX60_30:{name:"STILL RX60-30",load:3000,price:92000,rent:4300,energy:53,throughput:2.5,image:IMG.RX60},
- RX60_50:{name:"STILL RX60-50",load:5000,price:148000,rent:6800,energy:72,throughput:2.7,image:IMG.RX60}
+ RX20:{name:"STILL RX20",load:2000,price:96000,rent:2100,energy:38,throughput:2.3,image:IMG.RX20},
+ RX60_30:{name:"STILL RX60-30",load:3000,price:184000,rent:4300,energy:53,throughput:2.5,image:IMG.RX60},
+ RX60_50:{name:"STILL RX60-50",load:5000,price:296000,rent:6800,energy:72,throughput:2.7,image:IMG.RX60}
 };
 
 const COMPANIES=[
@@ -133,28 +134,34 @@ const COMPANIES=[
  ["Konstruktor Polska","Maszyny i części."]
 ];
 
+const FIRST_NAMES=["Adam","Michał","Paweł","Tomasz","Krzysztof","Piotr","Marcin","Łukasz","Mateusz","Jakub","Kamil","Rafał","Bartosz","Dawid","Wojciech","Daniel","Robert","Grzegorz","Filip","Maciej","Artur","Sebastian","Damian","Przemysław","Norbert","Patryk","Andrzej","Jan","Szymon","Oskar"];
+const LAST_NAMES=["Nowak","Kowalski","Wiśniewski","Wójcik","Kamiński","Lewandowski","Zieliński","Szymański","Woźniak","Dąbrowski","Kozłowski","Jankowski","Mazur","Krawczyk","Piotrowski","Grabowski","Pawłowski","Michalski","Król","Wieczorek","Jabłoński","Wróbel","Nowicki","Majewski","Olszewski","Stępień","Malinowski","Adamczyk","Dudek","Górski"];
+
 const UPGRADES={
- receiving:{name:"Optymalizacja przyjęć",desc:"Lepsza awizacja, kontrola dostaw i rozładunek.",cost:[9000,20000,42000],effect:"+12% wydajności przyjęć na poziom"},
- picking:{name:"Optymalizacja kompletacji",desc:"Lepsze trasy operatorów i kolejność wysyłek.",cost:[11000,24000,50000],effect:"+12% wydajności wysyłek na poziom"},
- training:{name:"Szkolenia pracowników",desc:"Program rozwoju kompetencji operatorów.",cost:[8000,18000,35000],effect:"+25% przyrostu umiejętności na poziom"},
- wms:{name:"System WMS",desc:"Cyfrowa ewidencja lokalizacji i partii.",cost:[16000,35000,70000],effect:"+8% ogólnej wydajności na poziom"},
- automation:{name:"Automatyzacja dokumentacji",desc:"Mniej pracy administracyjnej i błędów.",cost:[12000,28000,55000],effect:"-8% kosztów administracyjnych na poziom"},
- planning:{name:"Planowanie zmian",desc:"Lepsze przydzielanie pracy do ludzi i sprzętu.",cost:[12000,26000,52000],effect:"+10% wykorzystania zasobów na poziom"},
- bureaucracy:{name:"Optymalizacja biurokracji",desc:"Procedury, obsługa dokumentów i sprawniejsza administracja kontraktami.",cost:[10000,25000,55000,95000],effect:"Odblokowuje większą liczbę kontraktów"}
+ receiving:{name:"Optymalizacja przyjęć",desc:"Wprowadzenie harmonogramów awizacji, przydzielanie ramp do konkretnych dostaw, kontrola dokumentów przed przyjazdem pojazdu i lepsza organizacja rozładunku. Skraca postoje samochodów i ogranicza przestoje operatorów.",cost:[18000,40000,84000],effect:"+12% wydajności przyjęć na poziom"},
+ picking:{name:"Optymalizacja kompletacji",desc:"Zmiana kolejności pobierania towaru, grupowanie zleceń i planowanie tras kompletacyjnych. Operatorzy rzadziej wracają do tych samych alejek, a wysyłki są przygotowywane sprawniej.",cost:[22000,48000,100000],effect:"+12% wydajności wysyłek na poziom"},
+ training:{name:"Program rozwoju kompetencji",desc:"Wdrożenie matrycy kompetencji, okresowych ocen umiejętności i planów szkoleniowych. Pracownicy szybciej zdobywają doświadczenie podczas pracy.",cost:[16000,36000,70000],effect:"+25% przyrostu umiejętności na poziom"},
+ wms:{name:"System WMS",desc:"Cyfrowa ewidencja lokalizacji, partii, numerów paletowych i stanów magazynowych. System ogranicza pomyłki oraz ułatwia kontrolę przepływu towaru.",cost:[32000,70000,140000],effect:"+8% ogólnej wydajności na poziom"},
+ automation:{name:"Automatyzacja dokumentacji",desc:"Elektroniczny obieg dokumentów, automatyczne raporty, szablony przyjęć i wydań oraz ograniczenie ręcznego przepisywania danych.",cost:[24000,56000,110000],effect:"-8% kosztów administracyjnych na poziom"},
+ planning:{name:"Planowanie pracy zmianowej",desc:"Wdrożenie harmonogramów pracy, planowania obsady, przydziału operatorów i koordynacji floty. Poziom 1 odblokowuje drugą zmianę, poziom 2 – trzecią zmianę.",cost:[24000,52000,104000],effect:"Odblokowuje kolejne zmiany i poprawia wykorzystanie zasobów"},
+ bureaucracy:{name:"Optymalizacja biurokracji",desc:"Standaryzacja dokumentacji, procedur, obsługi kontraktów i kontroli administracyjnej. Pozwala obsługiwać większą liczbę zleceń.",cost:[20000,50000,110000,190000],effect:"Zwiększa limit aktywnych kontraktów o 2 na poziom"},
+ iml:{name:"Wdrożenie IML – inteligentne zarządzanie przepływem",desc:"Wdrożenie zintegrowanego systemu zarządzania lokalizacjami i przepływem materiałów. IML analizuje kolejność zamówień, priorytety przyjęć i wydań oraz dostępność operatorów. Ogranicza zbędne przejazdy i poprawia płynność realizacji zamówień.",cost:[50000,110000,220000],effect:"+10% ogólnej wydajności na poziom"},
+ slotting:{name:"Udrożnienie miejsc paletowych",desc:"Przebudowa rozmieszczenia towarów, przeniesienie szybko rotujących produktów bliżej stref wydań, uporządkowanie alejek i eliminacja punktów kolizyjnych. Operatorzy pokonują krótsze trasy, a dostęp do lokalizacji jest szybszy.",cost:[42000,95000,190000],effect:"+12% wydajności operacyjnej na poziom"}
 };
 
 function fresh(){
  return {
   money:20000,rep:0,day:1,gameHour:0,hourProgress:0,dayHours:0,
   shiftCount:1,pendingEvent:null,lastSeen:Date.now(),
+  taxCycleRevenue:0,
   warehouse:{level:1,capacity:30,condition:100,serviceCenter:false,canteen:false,smoking:false},
-  upgrades:{receiving:0,picking:0,training:0,wms:0,automation:0,planning:0,bureaucracy:0},
+  upgrades:{receiving:0,picking:0,training:0,wms:0,automation:0,planning:0,bureaucracy:0,iml:0,slotting:0},
   employees:[
-   {id:1,name:"Jan Kowalski",role:"Magazynier",salary:3800,hours:180,skill:0,udt:true}
+   {id:1,name:"Jan Kowalski",role:"Magazynier",salary:3800,hours:180,skill:0,udt:true,promotionLevel:0,trainedBasic:false,trainedAdvanced:false}
   ],
   fleet:[{id:1,model:"RX18",rented:true,condition:92,hours:1250,broken:false}],
   contracts:[],offers:[],nextId:2,
-  finances:{income:0,cost:0,penalties:0},
+  finances:{income:0,cost:0,penalties:0,tax:0},
   log:["Rozpoczęto działalność. Kapitał początkowy: 20 000 zł."]
  };
 }
@@ -175,9 +182,15 @@ function migrate(){
  S.offers=S.offers||[];
  S.log=S.log||[];
  S.finances=S.finances||{income:0,cost:0,penalties:0};
+ S.finances.income??=0;S.finances.cost??=0;S.finances.penalties??=0;S.finances.tax??=0;
+ S.taxCycleRevenue??=0;
  S.day??=1;S.gameHour??=0;S.hourProgress??=0;S.dayHours??=0;
  S.shiftCount??=1;S.rep??=0;S.nextId??=2;S.lastSeen??=Date.now();
- S.employees.forEach(e=>{e.hours??=0;e.skill??=0;e.udt??=true;});
+ S.employees.forEach(e=>{
+  e.hours??=0;e.skill??=0;e.udt??=true;
+  e.promotionLevel??=0;e.trainedBasic??=false;e.trainedAdvanced??=false;
+  if(!e.name||/^Nowy (magazynier|operator|pracownik)$/i.test(e.name))e.name=generateName();
+ });
  S.fleet.forEach(v=>{v.condition??=90;v.hours??=0;v.broken??=false;});
 }
 migrate();
@@ -196,7 +209,8 @@ function activeContracts(){return S.contracts.filter(c=>!c.completed&&!c.failed)
 function contractLimit(){return [0,2,5,20][S.shiftCount]+level("bureaucracy")*2;}
 function occupied(){return S.contracts.reduce((a,c)=>a+(c.batches||[]).reduce((b,x)=>b+x.qty,0),0);}
 function freeSpace(){return Math.max(0,S.warehouse.capacity-occupied());}
-function operators(){return S.employees.filter(e=>["Magazynier","Pracownik transportu wewnętrznego","Starszy pracownik transportu wewnętrznego"].includes(e.role)).length;}
+function operatorRoles(){return ["Magazynier","Starszy magazynier","Koordynator magazynu","Starszy koordynator magazynu","Pracownik transportu wewnętrznego","Starszy pracownik transportu wewnętrznego","Lider operatorów","Starszy operator"];}
+function operators(){return S.employees.filter(e=>operatorRoles().includes(e.role)).length;}
 function manager(){return S.employees.find(e=>e.role==="Kierownik transportu");}
 function safety(){return S.employees.find(e=>e.role==="Audytor BHP");}
 function forklifts(){return S.fleet.filter(v=>!v.broken&&v.condition>0);}
@@ -210,7 +224,12 @@ function currentCountdown(){
  return [Math.floor(n/3600),Math.floor(n%3600/60),Math.floor(n%60)].map(x=>String(x).padStart(2,"0")).join(":");
 }
 function charge(n){if(S.money<n)return false;S.money-=n;S.finances.cost+=n;return true;}
-function credit(n){S.money+=n;S.finances.income+=n;}
+function credit(n){S.money+=n;S.finances.income+=n;S.taxCycleRevenue=(S.taxCycleRevenue||0)+n;}
+function generateName(){
+ let first=FIRST_NAMES[Math.floor(Math.random()*FIRST_NAMES.length)];
+ let last=LAST_NAMES[Math.floor(Math.random()*LAST_NAMES.length)];
+ return first+" "+last;
+}
 
 function throughput(){
  let staff=operators(),trucks=forklifts();
@@ -218,9 +237,10 @@ function throughput(){
  let machine=trucks.reduce((a,v)=>a+(MODELS[v.model]?.throughput||1),0);
  let base=Math.min(staff*2.2,machine);
  base*=mult("receiving",.12)*mult("picking",.12)*mult("wms",.08)*mult("planning",.10);
+ base*=mult("iml",.10)*mult("slotting",.12);
  let mgr=manager();
  if(mgr)base*=1.15+Math.min(0.15,mgr.skill/500);
- let avg=S.employees.filter(e=>operators()&&e.role!=="Mechanik").reduce((a,e)=>a+e.skill,0)/Math.max(1,operators());
+ let avg=S.employees.filter(e=>operators()&&operatorRoles().includes(e.role)).reduce((a,e)=>a+e.skill,0)/Math.max(1,operators());
  base*=1+avg/250;
  if(S.warehouse.condition<70)base*=.7;
  if(S.warehouse.condition<40)base*=.5;
@@ -230,8 +250,24 @@ function onBreak(){
  let within=S.dayHours%8;
  return within>=3.5&&within<4;
 }
-function shiftWorkFactor(){
- return onBreak()?0:1;
+function shiftWorkFactor(){return onBreak()?0:1;}
+
+function promotionCheck(e){
+ let next=e.promotionLevel||0;
+ while(next<3&&e.hours>=[200,400,600][next]){
+  next++;
+  e.promotionLevel=next;
+  if(e.role==="Magazynier"||e.role==="Starszy magazynier"||e.role==="Koordynator magazynu"){
+   if(next===1){e.role="Starszy magazynier";e.salary=4300;}
+   if(next===2){e.role="Koordynator magazynu";e.salary=4900;}
+   if(next===3){e.role="Starszy koordynator magazynu";e.salary=5600;}
+  }else if(e.role==="Pracownik transportu wewnętrznego"||e.role==="Starszy pracownik transportu wewnętrznego"||e.role==="Lider operatorów"){
+   if(next===1){e.role="Starszy pracownik transportu wewnętrznego";e.salary=5200;}
+   if(next===2){e.role="Lider operatorów";e.salary=5900;}
+   if(next===3){e.role="Starszy operator";e.salary=6700;}
+  }
+  log("Awans pracownika "+e.name+" – "+e.role+". Nowe wynagrodzenie: "+money(e.salary)+".");
+ }
 }
 
 function renderTop(){
@@ -270,7 +306,7 @@ function resolveEvent(i){
 function applyEventChoice(type,i){
  if(type==="pallet"){
   let c=activeContracts()[0];
-  if(i===0){if(charge(500)){if(c)c.batches.forEach(b=>b.qty=Math.max(0,b.qty-1));log("Przepakowano uszkodzoną paletę.");}else S.rep=Math.max(0,S.rep-1);}
+  if(i===0){if(charge(500)){if(c&&c.batches.length)c.batches[0].qty=Math.max(0,c.batches[0].qty-1);log("Przepakowano uszkodzoną paletę.");}else S.rep=Math.max(0,S.rep-1);}
   else if(i===1){
    if(Math.random()<(safety()?.skill?0.12:0.3)){S.warehouse.condition=Math.max(0,S.warehouse.condition-12);S.rep=Math.max(0,S.rep-2);log("Doszło do wypadku podczas obsługi uszkodzonej palety.");}
    else log("Paletę zabezpieczono bez dalszych konsekwencji.");
@@ -371,12 +407,11 @@ function hourlyTick(online){
    if(e.role==="Mechanik")return;
    e.hours++;
    e.skill=Math.min(100,e.skill+(e.role==="Magazynier"?.035:.055)*mult("training",.25));
+   promotionCheck(e);
   });
  }
  S.fleet.forEach(v=>{
   if(v.broken)return;
-  let m=MODELS[v.model]||MODELS.RX18;
-  S.money-=m.energy;S.finances.cost+=m.energy;
   v.hours++;
   if(!v.rented){
    let managerReduction=manager()?.skill?Math.min(.5,manager().skill/200):0;
@@ -406,16 +441,59 @@ function hourlyTick(online){
  if(S.dayHours>=dayLength())endDay();
 }
 
+/* MIESIĘCZNE KOSZTY I PODATKI */
+
+function monthlyCosts(){
+ let wages=S.employees.reduce((a,e)=>a+e.salary,0);
+ let rent=S.fleet.filter(v=>v.rented).reduce((a,v)=>a+(MODELS[v.model]?.rent||0),0);
+ let shiftFactor=1+(S.shiftCount-1)*.75;
+ let electricity=(500+S.fleet.reduce((a,v)=>a+(MODELS[v.model]?.energy||0)*8*30,0))*shiftFactor;
+ let water=(250+S.employees.length*110)*shiftFactor;
+ let clothing=S.employees.length*180;
+ let land=700+S.warehouse.level*850+S.warehouse.capacity*12;
+ let maintenance=250+S.warehouse.level*100;
+ let social=(S.warehouse.canteen?4500:0)+(S.warehouse.smoking?900:0);
+ let administration=0;
+ let total=wages+rent+electricity+water+clothing+land+maintenance+social+administration;
+ total*=Math.max(.5,1-level("automation")*.08);
+ return {wages,rent,electricity,water,clothing,land,maintenance,social,total};
+}
+
+function daysToMonthEnd(){
+ return 30-(S.day%30);
+}
+function taxDueAtNextSettlement(){
+ return (S.day+daysToMonthEnd())%180===0;
+}
+function estimatedTax(){
+ return taxDueAtNextSettlement()?(S.taxCycleRevenue||0)*TAX_RATE:0;
+}
+function nextSettlementForecast(){
+ let costs=monthlyCosts();
+ let tax=estimatedTax();
+ return {...costs,tax,grand:costs.total+tax,days:daysToMonthEnd()};
+}
+function monthlySettlement(){
+ let costs=monthlyCosts();
+ let total=costs.total;
+ S.money-=total;
+ S.finances.cost+=total;
+ log("Rozliczenie miesięczne. Koszty utrzymania firmy: "+money(total)+".");
+ if(S.day%180===0){
+  let revenue=S.taxCycleRevenue||0;
+  let tax=revenue*TAX_RATE;
+  S.money-=tax;
+  S.finances.cost+=tax;
+  S.finances.tax=(S.finances.tax||0)+tax;
+  S.taxCycleRevenue=0;
+  log("Półroczny podatek od przychodu (8%): "+money(tax)+". Przychód w okresie: "+money(revenue)+".");
+ }
+}
+
 function endDay(){
- S.dayHours=0;S.day++;
- let wages=S.employees.reduce((a,e)=>a+e.salary,0)/30;
- let rent=S.fleet.filter(v=>v.rented).reduce((a,v)=>a+(MODELS[v.model]?.rent||0),0)/30;
- let upkeep=250+S.warehouse.level*100;
- let social=S.warehouse.canteen?150:0;
- let cost=wages+rent+upkeep+social;
- cost*=1-level("automation")*.08;
- S.money-=cost;S.finances.cost+=cost;
- log("Koszty dzienne: "+money(cost)+".");
+ S.dayHours=0;
+ S.day++;
+ if(S.day%30===0)monthlySettlement();
  generateOffers();
 }
 
@@ -461,6 +539,8 @@ function render(){
 }
 
 function companyView(){
+ let required2=level("planning")>=1;
+ let required3=level("planning")>=2;
  return `<div class="grid">
  <div class="card"><h3>🏢 Przedsiębiorstwo</h3>
  <p>Kapitał początkowy: 20 000 zł.</p>
@@ -480,25 +560,29 @@ function companyView(){
  <div class="card"><h3>📌 Ostatnie wydarzenia</h3>${S.log.slice(0,8).map(x=>`<p>• ${x}</p>`).join("")}</div>
  <div class="card"><h3>System zmianowy</h3>
  <p>1 zmiana: 08:00–16:00. 2 zmiany: 06:00–22:00. 3 zmiany: 06:00–06:00 następnego dnia.</p>
- <p class="muted">Każda zmiana trwa 8 godzin. Pracownicy mają 30 minut przerwy w połowie zmiany.</p>
+ <p class="muted">Każda zmiana trwa 8 godzin. Pracownicy mają 30 minut przerwy w połowie zmiany. Każda dodatkowa zmiana podnosi rachunki za media.</p>
+ <div class="row"><span>Planowanie pracy</span><b>${level("planning")}/3</b></div>
  <div class="actions">
  <button onclick="setShifts(1)" ${S.shiftCount===1?"disabled":""}>1 zmiana</button>
- <button onclick="setShifts(2)" ${S.shiftCount===2?"disabled":""}>2 zmiany</button>
- <button onclick="setShifts(3)" ${S.shiftCount===3?"disabled":""}>3 zmiany</button>
- </div></div>`;
+ <button onclick="setShifts(2)" ${S.shiftCount===2||!required2?"disabled":""}>2 zmiany ${required2?"":"🔒"}</button>
+ <button onclick="setShifts(3)" ${S.shiftCount===3||!required3?"disabled":""}>3 zmiany ${required3?"":"🔒"}</button>
+ </div>
+ <p class="muted">2 zmiany: wymagany poziom planowania 1. 3 zmiany: wymagany poziom 2. Dodatkowo liczba operatorów i wózków musi odpowiadać liczbie zmian.</p>
+ </div>`;
 }
 function setShifts(n){
+ if(n>1&&level("planning")<n-1){alert("Ta liczba zmian wymaga poziomu planowania pracy: "+(n-1)+". Rozwiń tę technologię w zakładce Rozwój.");return;}
  if(n>1&&(operators()<n||S.fleet.length<n)){alert("Potrzebujesz minimum "+n+" operatorów i "+n+" wózków.");return;}
- S.shiftCount=n;S.dayHours=0;log("Zmieniono system na "+n+" zmiany.");render();
+ S.shiftCount=n;S.dayHours=0;log("Zmieniono system na "+n+" zmiany. Zwiększono planowane zużycie mediów.");render();
 }
 
 function warehouseView(){
  let w=S.warehouse;
  let caps=[30,80,180,400,800];
- let costs=[0,25000,65000,145000,300000];
+ let costs=[0,50000,130000,290000,600000];
  return `<div class="card"><h3>🏬 Hala magazynowa</h3>
  <img class="hero-image" src="${IMG.WAREHOUSE}" alt="Magazyn" onerror="this.outerHTML='<div class=photo-placeholder>🏬</div>'">
- <p>Powierzchnia składowania i obsługi towarów. Intensywność pracy wpływa na zużycie infrastruktury.</p>
+ <p>Powierzchnia składowania i obsługi towarów. Intensywność pracy wpływa na zużycie infrastruktury i wysokość miesięcznej opłaty za teren.</p>
  </div>
  <div class="grid">
  <div class="card"><h3>Powierzchnia</h3>
@@ -506,6 +590,7 @@ function warehouseView(){
  <div class="row"><span>Zajęte</span><b>${decimal(occupied())}</b></div>
  <div class="row"><span>Wolne</span><b>${decimal(freeSpace())}</b></div>
  <div class="bar"><div style="width:${Math.min(100,occupied()/w.capacity*100)}%"></div></div>
+ <div class="row"><span>Miesięczny koszt terenu</span><b>${money(700+w.level*850+w.capacity*12)}</b></div>
  </div>
  <div class="card"><h3>🧱 Stan magazynu</h3>
  <div class="row"><span>Kondycja</span><b>${decimal(w.condition)}%</b></div>
@@ -514,7 +599,7 @@ function warehouseView(){
  <button class="good" onclick="serviceRacks()">Serwis regałów · ${money(2000+w.level*500)}</button>
  </div></div>
  <div class="card"><h3>Rozbudowa magazynu</h3>
- <p>Nowe poziomy zwiększają liczbę miejsc paletowych.</p>
+ <p>Nowe poziomy zwiększają liczbę miejsc paletowych, ale podnoszą również miesięczny koszt utrzymania terenu.</p>
  <div class="row"><span>Poziom</span><b>${w.level}/5</b></div>
  <div class="row"><span>Nowa pojemność</span><b>${w.level>=5?"Maksimum":caps[w.level]}</b></div>
  <button class="primary" onclick="upgradeWarehouse()" ${w.level>=5?"disabled":""}>Rozbuduj · ${w.level>=5?"—":money(costs[w.level])}</button>
@@ -525,9 +610,9 @@ function warehouseView(){
  <div class="card"><h3>☕ Zaplecze socjalne</h3>
  <p>Przerwy pracowników trwają 30 minut. Zaplecze poprawia regenerację i wydajność po odpoczynku.</p>
  <div class="row"><span>Stołówka</span><b>${w.canteen?"Wybudowana":"Brak"}</b></div>
- <button onclick="buildSocial('canteen')" ${w.canteen?"disabled":""}>Wybuduj stołówkę · 18 000 zł</button>
+ <button onclick="buildSocial('canteen')" ${w.canteen?"disabled":""}>Wybuduj stołówkę · 36 000 zł</button>
  <div class="row" style="margin-top:12px"><span>Palarnia</span><b>${w.smoking?"Wybudowana":"Brak"}</b></div>
- <button onclick="buildSocial('smoking')" ${w.smoking?"disabled":""}>Wybuduj palarnię · 8 000 zł</button>
+ <button onclick="buildSocial('smoking')" ${w.smoking?"disabled":""}>Wybuduj palarnię · 16 000 zł</button>
  </div>`;
 }
 function serviceRacks(){
@@ -537,20 +622,20 @@ function serviceRacks(){
  log("Przeprowadzono konserwację regałów.");render();
 }
 function upgradeWarehouse(){
- let costs=[0,25000,65000,145000,300000],caps=[30,80,180,400,800];
+ let costs=[0,50000,130000,290000,600000],caps=[30,80,180,400,800];
  let lv=S.warehouse.level;
  if(lv>=5||!charge(costs[lv])){alert("Brak środków.");return;}
  S.warehouse.level++;S.warehouse.capacity=caps[S.warehouse.level];
- log("Rozbudowano magazyn.");render();
+ log("Rozbudowano magazyn. Wzrosła opłata za teren.");render();
 }
 function buildSocial(type){
- let cost=type==="canteen"?18000:8000;
+ let cost=type==="canteen"?36000:16000;
  if(S.warehouse[type]||!charge(cost)){alert("Brak środków.");return;}
  S.warehouse[type]=true;log(type==="canteen"?"Wybudowano stołówkę.":"Wybudowano palarnię.");render();
 }
 
 function fleetView(){
- let html=`<div class="card"><h3>🚜 Flota wózków widłowych</h3><p class="muted">Wózki generują koszty energii. Własne egzemplarze zużywają się podczas eksploatacji.</p>`;
+ let html=`<div class="card"><h3>🚜 Flota wózków widłowych</h3><p class="muted">Wózki generują koszty energii, które zależą od liczby zmian. Własne egzemplarze zużywają się podczas eksploatacji.</p>`;
  S.fleet.forEach(v=>{
   let m=MODELS[v.model]||MODELS.RX18;
   html+=`<div class="card"><div class="vehicle">
@@ -566,7 +651,7 @@ function fleetView(){
  Object.keys(MODELS).forEach(k=>{
   let m=MODELS[k];
   html+=`<div class="row" style="padding:9px 0;border-bottom:1px solid var(--line)">
-  <div><b>${m.name}</b><div class="muted">${decimal(m.load/1000)} t · ${money(m.price)} · wynajem ${money(m.rent)}/mies.</div></div>
+  <div><b>${m.name}</b><div class="muted">${decimal(m.load/1000)} t · ${m.price?money(m.price):"Brak zakupu"} · wynajem ${money(m.rent)}/mies.</div></div>
   <div class="actions"><button onclick="buyVehicle('${k}',false)" ${m.price===0?"disabled":""}>Kup</button><button onclick="buyVehicle('${k}',true)">Wynajmij</button></div>
   </div>`;
  });
@@ -595,49 +680,77 @@ function sellVehicle(id){
 function staffView(){
  let html=`<div class="card"><h3>👷 Personel przedsiębiorstwa</h3>
  <div class="vehicle"><img class="worker-image" src="${IMG.WORKER}" alt="Pracownik" onerror="this.outerHTML='<div class=photo-placeholder>👷</div>'">
- <div class="info"><b>Zespół magazynowy</b><p>Pracownicy otrzymują wynagrodzenie miesięczne i zdobywają doświadczenie w trakcie pracy.</p></div></div>`;
+ <div class="info"><b>Zespół magazynowy</b><p>Każdy pracownik zdobywa doświadczenie w godzinach pracy. Awans następuje automatycznie po 200, 400 i 600 godzinach. Wyższe stanowiska oznaczają wyższe wynagrodzenie.</p></div></div>`;
  S.employees.forEach(e=>{
+  let next=[200,400,600][e.promotionLevel||0];
+  let progress=next?Math.min(100,e.hours/next*100):100;
   html+=`<div class="card"><div class="row"><b>${e.name}</b><span class="tag">${e.role}</span></div>
   <div class="row"><span>Pensja miesięczna</span><b>${money(e.salary)}</b></div>
   <div class="row"><span>Doświadczenie</span><b>${num(e.hours)} h</b></div>
   <div class="row"><span>Umiejętności</span><b>${decimal(e.skill)} / 100</b></div>
   <div class="bar"><div style="width:${e.skill}%"></div></div>
-  <button class="danger" onclick="fireEmployee(${e.id})">Zwolnij</button></div>`;
+  <div class="row"><span>Awans</span><b>${next?num(Math.max(0,next-e.hours))+" h do kolejnego":"Maksymalny poziom"}</b></div>
+  <div class="bar"><div style="width:${progress}%"></div></div>
+  <div class="row"><span>Szkolenie podstawowe</span><b>${e.trainedBasic?"Ukończone":"Nieukończone"}</b></div>
+  <div class="row"><span>Szkolenie dodatkowe</span><b>${e.trainedAdvanced?"Ukończone":"Nieukończone"}</b></div>
+  <div class="actions">
+   <button onclick="trainEmployee(${e.id},'basic')" ${e.trainedBasic?"disabled":""}>Szkolenie podstawowe · 1 400 zł</button>
+   <button onclick="trainEmployee(${e.id},'advanced')" ${!e.trainedBasic||e.trainedAdvanced?"disabled":""}>Szkolenie dodatkowe · 3 600 zł</button>
+   <button class="danger" onclick="fireEmployee(${e.id})">Zwolnij</button>
+  </div></div>`;
  });
  html+=`</div><div class="card"><h3>Rekrutacja operacyjna</h3>
+ <p class="muted">Nowy pracownik otrzymuje odzież roboczą i wyposażenie startowe. Koszt wyposażenia jest pobierany przy zatrudnieniu.</p>
  <div class="grid">
- <div><b>Magazynier</b><p>3 800 zł/mies.</p><button onclick="hire('Magazynier')">Zatrudnij</button></div>
- <div><b>Operator wózka</b><p>4 600 zł/mies.</p><button onclick="hire('Pracownik transportu wewnętrznego')">Zatrudnij</button></div>
+ <div><b>Magazynier</b><p>3 800 zł/mies. · wyposażenie 650 zł</p><button onclick="hire('Magazynier')">Zatrudnij</button></div>
+ <div><b>Operator wózka</b><p>4 600 zł/mies. · wyposażenie 650 zł</p><button onclick="hire('Pracownik transportu wewnętrznego')">Zatrudnij</button></div>
  </div></div>
  <div class="card"><h3>👨‍💼 Kierownictwo transportu</h3>
  <p>Kierownik organizuje pracę operatorów, pilnuje wykorzystania wózków i ogranicza zużycie magazynu. Jego znaczenie rośnie wraz z liczbą zmian.</p>
- <p>Wynagrodzenie: 7 500 zł/mies.</p>
+ <p>Wynagrodzenie: 7 500 zł/mies. · wyposażenie 650 zł</p>
  ${manager()?"<span class=green>Kierownik zatrudniony.</span>":'<button onclick="hireManager()">Zatrudnij kierownika transportu</button>'}
  </div>
  <div class="card"><h3>🦺 Bezpieczeństwo pracy</h3>
  <p>Audytor BHP kontroluje procedury, oznakowanie i bezpieczeństwo pracy. Ogranicza ryzyko wypadków i szkód.</p>
- <p>Wynagrodzenie: 5 800 zł/mies.</p>
+ <p>Wynagrodzenie: 5 800 zł/mies. · wyposażenie 650 zł</p>
  ${safety()?"<span class=green>Audytor BHP zatrudniony.</span>":'<button onclick="hireSafety()">Zatrudnij audytora BHP</button>'}
  </div>`;
  return html;
 }
+function trainEmployee(id,type){
+ let e=S.employees.find(x=>x.id===id);if(!e)return;
+ if(type==="basic"){
+  if(e.trainedBasic)return;
+  if(!charge(1400)){alert("Brak środków na szkolenie podstawowe.");return;}
+  e.trainedBasic=true;e.skill=Math.min(100,e.skill+8);
+  log("Szkolenie podstawowe ukończone: "+e.name+".");
+ }else{
+  if(!e.trainedBasic||e.trainedAdvanced)return;
+  if(!charge(3600)){alert("Brak środków na szkolenie dodatkowe.");return;}
+  e.trainedAdvanced=true;e.skill=Math.min(100,e.skill+18);
+  log("Szkolenie dodatkowe ukończone: "+e.name+".");
+ }
+ render();
+}
 function hire(role){
  let salary=role==="Magazynier"?3800:4600;
- if(S.employees.length>=20||!charge(salary)){alert("Brak środków lub osiągnięto limit personelu.");return;}
- S.employees.push({id:S.nextId++,name:role==="Magazynier"?"Nowy magazynier":"Nowy operator",role,salary,hours:0,skill:0,udt:true});
- log("Zatrudniono: "+role);render();
+ let total=salary+650;
+ if(S.employees.length>=20||!charge(total)){alert("Brak środków lub osiągnięto limit personelu. Potrzebujesz również 650 zł na wyposażenie.");return;}
+ S.employees.push({id:S.nextId++,name:generateName(),role,salary,hours:0,skill:0,udt:true,promotionLevel:0,trainedBasic:false,trainedAdvanced:false});
+ log("Zatrudniono: "+S.employees[S.employees.length-1].name+". Koszt wyposażenia: 650 zł.");
+ render();
 }
 function hireManager(){
  if(manager())return;
- if(!charge(1500)){alert("Brak środków na rekrutację.");return;}
- S.employees.push({id:S.nextId++,name:"Kierownik transportu",role:"Kierownik transportu",salary:7500,hours:0,skill:40});
+ if(!charge(2150)){alert("Brak środków na rekrutację i wyposażenie.");return;}
+ S.employees.push({id:S.nextId++,name:generateName(),role:"Kierownik transportu",salary:7500,hours:0,skill:40,promotionLevel:0,trainedBasic:false,trainedAdvanced:false});
  log("Zatrudniono kierownika transportu.");render();
 }
 function hireSafety(){
  if(safety())return;
  if(level("bureaucracy")<1){alert("Najpierw odblokuj podstawowe procedury w dziale Rozwój.");return;}
- if(!charge(1200)){alert("Brak środków na rekrutację.");return;}
- S.employees.push({id:S.nextId++,name:"Audytor BHP",role:"Audytor BHP",salary:5800,hours:0,skill:40});
+ if(!charge(1850)){alert("Brak środków na rekrutację i wyposażenie.");return;}
+ S.employees.push({id:S.nextId++,name:generateName(),role:"Audytor BHP",salary:5800,hours:0,skill:40,promotionLevel:0,trainedBasic:false,trainedAdvanced:false});
  log("Zatrudniono audytora BHP.");render();
 }
 function fireEmployee(id){
@@ -705,9 +818,10 @@ function acceptContract(id){
 
 function developmentView(){
  let html=`<div class=card><h3>📈 Rozwój przedsiębiorstwa</h3>
- <p>Inwestycje poprawiają wydajność, organizację pracy i bezpieczeństwo.</p>
+ <p>Inwestycje poprawiają wydajność, organizację pracy i bezpieczeństwo. Koszty rozwoju zostały podniesione – decyzje inwestycyjne wymagają teraz planowania budżetu.</p>
  <div class=row><span>Wydajność magazynu</span><b>${decimal(throughput())} pal./h</b></div>
  <div class=row><span>Poziom biurokracji</span><b>${level("bureaucracy")}/4</b></div>
+ <div class=row><span>Planowanie pracy</span><b>${level("planning")}/3</b></div>
  </div>`;
  Object.entries(UPGRADES).forEach(([k,u])=>{
   let lv=level(k),max=u.cost.length,cost=u.cost[lv];
@@ -720,13 +834,16 @@ function developmentView(){
  html+=`<div class=card><h3>🏗 Centrum serwisowe</h3>
  <p>Własne zaplecze techniczne pozwala zatrudniać mechaników w kolejnych etapach rozwoju.</p>
  <div class=row><span>Status</span><b>${S.warehouse.serviceCenter?"Wybudowane":"Brak"}</b></div>
- <button onclick="buildService()" ${S.warehouse.serviceCenter?"disabled":""}>Wybuduj · 95 000 zł</button>
+ <button onclick="buildService()" ${S.warehouse.serviceCenter?"disabled":""}>Wybuduj · 190 000 zł</button>
  </div>
  <div class=card><h3>Odblokowania</h3>
  <p>Poziom 2 magazynu: większe kontrakty.</p>
  <p>Poziom 3: zlecenia specjalistyczne.</p>
  <p>Biurokracja poziom 1: możliwość zatrudnienia audytora BHP.</p>
  <p>Biurokracja zwiększa limit aktywnych kontraktów o 2 na poziom.</p>
+ <p>Planowanie pracy poziom 1: druga zmiana.</p>
+ <p>Planowanie pracy poziom 2: trzecia zmiana.</p>
+ <p>IML i udrożnienie miejsc paletowych poprawiają płynność operacji.</p>
  </div>`;
  return html;
 }
@@ -737,23 +854,53 @@ function buyUpgrade(k){
  S.upgrades[k]=lv+1;log("Rozwinięto: "+u.name);render();
 }
 function buildService(){
- if(S.warehouse.serviceCenter||!charge(95000)){alert("Brak środków.");return;}
+ if(S.warehouse.serviceCenter||!charge(190000)){alert("Brak środków.");return;}
  S.warehouse.serviceCenter=true;log("Wybudowano centrum serwisowe.");render();
 }
 
 function financeView(){
+ let c=monthlyCosts();
+ let f=nextSettlementForecast();
+ let taxDays=180-(S.day%180);
+ if(taxDays===180)taxDays=180;
  return `<div class=grid>
  <div class=card><h3>💰 Wyniki finansowe</h3>
  <div class=row><span>Kapitał</span><b>${money(S.money)}</b></div>
- <div class=row><span>Przychody</span><b class=green>${money(S.finances.income)}</b></div>
- <div class=row><span>Koszty</span><b class=red>${money(S.finances.cost)}</b></div>
+ <div class=row><span>Przychody łącznie</span><b class=green>${money(S.finances.income)}</b></div>
+ <div class=row><span>Koszty łącznie</span><b class=red>${money(S.finances.cost)}</b></div>
  <div class=row><span>Kary</span><b class=red>${money(S.finances.penalties)}</b></div>
+ <div class=row><span>Zapłacony podatek</span><b>${money(S.finances.tax||0)}</b></div>
  </div>
- <div class=card><h3>📉 Koszty miesięczne</h3>
- <div class=row><span>Wynagrodzenia</span><b>${money(S.employees.reduce((a,e)=>a+e.salary,0))}</b></div>
- <div class=row><span>Wynajem floty</span><b>${money(S.fleet.filter(v=>v.rented).reduce((a,v)=>a+MODELS[v.model].rent,0))}</b></div>
- <div class=row><span>Zaplecze socjalne</span><b>${S.warehouse.canteen?"4 500 zł":"0 zł"}</b></div>
- </div></div>`;
+ <div class=card><h3>📅 Najbliższe rozliczenie</h3>
+ <p>Do końca miesiąca pozostało <b>${f.days} dni gry</b>.</p>
+ <div class=row><span>Wynagrodzenia</span><b>${money(c.wages)}</b></div>
+ <div class=row><span>Wynajem floty</span><b>${money(c.rent)}</b></div>
+ <div class=row><span>Energia elektryczna</span><b>${money(c.electricity)}</b></div>
+ <div class=row><span>Woda i kanalizacja</span><b>${money(c.water)}</b></div>
+ <div class=row><span>Odzież robocza</span><b>${money(c.clothing)}</b></div>
+ <div class=row><span>Utrzymanie terenu</span><b>${money(c.land)}</b></div>
+ <div class=row><span>Konserwacja magazynu</span><b>${money(c.maintenance)}</b></div>
+ <div class=row><span>Zaplecze socjalne</span><b>${money(c.social)}</b></div>
+ <div class=row><span>Optymalizacja administracji</span><b>${money(c.total-(c.wages+c.rent+c.electricity+c.water+c.clothing+c.land+c.maintenance+c.social))}</b></div>
+ <hr style="border-color:var(--line)">
+ <div class=row><b>Stałe koszty miesięczne</b><b class=red>${money(c.total)}</b></div>
+ <div class=row><span>Podatek w tym rozliczeniu</span><b class=red>${money(f.tax)}</b></div>
+ <div class=row><b>Łączny przewidywany wydatek</b><b class=red>${money(f.grand)}</b></div>
+ </div></div>
+ <div class=card><h3>⚡ Zużycie mediów</h3>
+ <p>Prąd rośnie wraz z liczbą wózków i zmian. Woda obejmuje stałe zużycie obiektu oraz zapotrzebowanie pracowników.</p>
+ <div class=row><span>Liczba zmian</span><b>${S.shiftCount}</b></div>
+ <div class=row><span>Pracownicy</span><b>${S.employees.length}</b></div>
+ <div class=row><span>Szacowany koszt prądu</span><b>${money(c.electricity)}</b></div>
+ <div class=row><span>Szacowany koszt wody</span><b>${money(c.water)}</b></div>
+ <div class=row><span>Wyposażenie i odzież</span><b>${money(c.clothing)}</b></div>
+ </div>
+ <div class=card><h3>🏛 Podatek od przychodu</h3>
+ <p>Podatek wynosi 8% przychodu uzyskanego w ostatnim półroczu. Rozliczenie następuje co 180 dni działalności.</p>
+ <div class=row><span>Przychód w bieżącym okresie</span><b>${money(S.taxCycleRevenue||0)}</b></div>
+ <div class=row><span>Szacowany podatek</span><b class=red>${money((S.taxCycleRevenue||0)*TAX_RATE)}</b></div>
+ <div class=row><span>Do kolejnego rozliczenia</span><b>${taxDays} dni</b></div>
+ </div>`;
 }
 function reportsView(){
  return `<div class=card><h3>📋 Dziennik operacyjny</h3>${S.log.map(x=>`<p>• ${x}</p>`).join("")}</div>
@@ -761,6 +908,7 @@ function reportsView(){
  <p>Dzień: ${S.day} · Godzina gry: ${num(S.gameHour)}</p>
  <p>Pracownicy: ${S.employees.length} · Wózki: ${S.fleet.length}</p>
  <p>Zmiany: ${S.shiftCount} · Aktywne kontrakty: ${activeContracts().length}</p>
+ <p>Przychód do opodatkowania: ${money(S.taxCycleRevenue||0)}</p>
  <button onclick="saveGame()">Zapisz stan gry</button></div>`;
 }
 

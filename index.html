@@ -452,7 +452,7 @@ function employeeExperienceMultiplier(){
  if(S.warehouse.multimedia)bonus+=.10;
  if(S.warehouse.developmentDept)bonus+=.20;
  bonus+=S.upgrades.training*.08;
- return 1+bonus;u
+ return 1+bonus;
 }
 function employeeExperienceBonusText(){
  return Math.round((employeeExperienceMultiplier()-1)*100);
@@ -991,9 +991,11 @@ function tickFrame(now){
  updateTop();requestAnimationFrame(tickFrame);
 }
 
+
 function hourlyTick(){
  if(S.rescue.bankrupt)return;
- S.gameHour++;S.dayHours++;
+ S.gameHour++;
+ S.dayHours++;
 
  activeContracts().forEach(c=>{
   const capable=S.fleet.some(v=>!v.broken&&v.condition>0&&(MODELS[v.model]?.load||0)>=c.load);
@@ -1016,51 +1018,70 @@ function hourlyTick(){
 
   if(shippedNow>0){
    const revenue=Math.round(shippedNow*35);
-   S.money+=revenue;S.finances.income+=revenue;S.taxCycleRevenue+=revenue;
+   S.money+=revenue;
+   S.finances.income+=revenue;
+   S.taxCycleRevenue+=revenue;
   }
 
   if(c.shippedPallets>=total&&!c.done){
-   c.shippedPallets=total;c.receivedPallets=total;
-   c.done=true;changeReputation(c.rep,"Ukończono kontrakt firmy "+c.company+".");
+   c.shippedPallets=total;
+   c.receivedPallets=total;
+   c.done=true;
+   changeReputation(c.rep,"Ukończono kontrakt firmy "+c.company+".");
    const bonus=Math.round(c.value*.35);
-   S.money+=bonus;S.finances.income+=bonus;S.taxCycleRevenue+=bonus;
+   S.money+=bonus;
+   S.finances.income+=bonus;
+   S.taxCycleRevenue+=bonus;
    log("Zakończono kontrakt firmy "+c.company+". Wywieziono "+num(total)+" palet. Premia: "+money(bonus)+".");
   }
  });
 
- const workers=S.employees,usable=forklifts();
+ const workers=S.employees;
+ const usable=forklifts();
  const operatorCount=Math.min(workers.length,usable.length);
  const avgSkill=workers.length?workers.reduce((a,e)=>a+e.skill,0)/workers.length:0;
  const base=usable.reduce((a,v)=>a+(MODELS[v.model]?.throughput||0),0);
  const efficiency=1+avgSkill/250+S.upgrades.training*.08;
  const warehouseFactor=S.warehouse.condition/100;
  const output=base*efficiency*warehouseFactor;
+
  if(operatorCount>0){
   const income=Math.round(output*45*operatorCount);
-  S.money+=income;S.finances.income+=income;S.taxCycleRevenue+=income;
+  S.money+=income;
+  S.finances.income+=income;
+  S.taxCycleRevenue+=income;
 
-  /* Bonus zwiększa dotychczasową szansę 4% na zdobycie punktu doświadczenia. */
   const experienceChance=Math.min(1,.04*employeeExperienceMultiplier());
+
   workers.slice(0,operatorCount).forEach(e=>{
    e.hours++;
-   if(Math.random()<experienceChance)e.skill=clamp(e.skill+1,0,100);
+   if(Math.random()<experienceChance){
+    e.skill=clamp(e.skill+1,0,100);
+   }
   });
 
   usable.slice(0,operatorCount).forEach(v=>{
-   v.hours++;const wear=Math.max(.015,.035-S.upgrades.maintenance*.004);
+   v.hours++;
+   const wear=Math.max(.015,.035-S.upgrades.maintenance*.004);
    v.condition=clamp(v.condition-wear,0,100);
+
    if(v.condition<=0&&!v.broken){
- v.broken=true;
- changeReputation(-2,"Doszło do poważnej awarii wózka "+MODELS[v.model].name+".");
- log("Awaria wózka "+MODELS[v.model].name+".");
-}
+    v.broken=true;
+    changeReputation(-2,"Doszło do poważnej awarii wózka "+MODELS[v.model].name+".");
+    log("Awaria wózka "+MODELS[v.model].name+".");
+   }
+  });
  }
- if(S.warehouse.condition>0&&Math.random()<.002)S.warehouse.condition--;
+
+ if(S.warehouse.condition>0&&Math.random()<.002){
+  S.warehouse.condition--;
+ }
 
  if(S.gameHour%2===0)funnyEvent();
  if(S.gameHour%8===0)checkRandomEvent();
  if(S.dayHours>=8*S.shiftCount)endDay();
 }
+
 
 function checkRandomEvent(){
  if(S.pendingEvent||Math.random()>.16)return;

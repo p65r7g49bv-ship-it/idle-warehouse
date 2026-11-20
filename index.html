@@ -256,8 +256,6 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
 const KEY="idleWarehouse_37";
 const OLD_KEYS=["idleWarehouse_34","idleWarehouse_33","idleWarehouse_32"];
 const HOUR_ONLINE=10;
-const HOUR_OFFLINE=20;
-const MAX_OFFLINE=168;
 const TAX_RATE=.08;
 
 const IMG={
@@ -389,7 +387,7 @@ function migrate(data){
 
 function saveGame(){
  if(saving)return;
- saving=true;S.lastSeen=Date.now();
+ saving=true;
  try{localStorage.setItem(KEY,JSON.stringify(S))}
  catch(e){console.warn("Błąd zapisu",e)}
  saving=false;
@@ -1112,22 +1110,6 @@ function promotionCheck(e){
   log("Automatyczny awans: "+e.name+" został starszym pracownikiem transportu wewnętrznego.");
  }
 }
-function applyOffline(){
- const now=Date.now();
- const elapsed=Math.max(0,(now-(S.lastSeen||now))/1000);
- let hours=Math.min(MAX_OFFLINE,elapsed/HOUR_OFFLINE);
- if(hours<=0)return;
- const whole=Math.floor(hours);
- for(let i=0;i<whole;i++){
-  if(S.rescue.bankrupt)break;
-  hourlyTick();
-  if(S.pendingEvent){S.pendingEvent=null;window.currentEventEffects=null}
- }
- S.hourProgress+=hours-whole;
- if(S.hourProgress>=1){S.hourProgress-=1;hourlyTick()}
- if(whole>0)log("Symulacja offline: naliczono "+whole+" godzin pracy.");
- S.lastSeen=now;
-}
 function changeWarehouseName(){
  const name=prompt("Nowa nazwa magazynu:",S.warehouseName);
  if(name&&name.trim()){
@@ -1145,7 +1127,6 @@ function restartGame(){
 if(!S.warehouseName)askWarehouseName();
 updateHeading();
 if(!S.offers.length)generateOffers();
-applyOffline();
 render();
 requestAnimationFrame(tickFrame);
 setInterval(saveGame,5000);

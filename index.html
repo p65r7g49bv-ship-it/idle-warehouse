@@ -499,15 +499,34 @@ function updateTop(){
 
 function updateEventArea(){
  const area=document.getElementById("eventArea");
- if(!S.pendingEvent){area.style.display="none";area.innerHTML="";return}
+
+ if(!S.pendingEvent){
+  area.style.display="none";
+  area.innerHTML="";
+  return;
+ }
+
  area.style.display="block";
+
  const e=S.pendingEvent;
- area.innerHTML=`<strong>⚠ ZDARZENIE OPERACYJNE: ${e.title}</strong>
- <p>${e.description}</p><div class="event-choice">${e.choices.map((c,i)=>`<button onclick="resolveEvent(${i})">${c.label}</button>`).join("")}</div>
- <div class="small">Zegar został zatrzymany do czasu podjęcia decyzji.</div>`;
+
+ area.innerHTML=`
+  <strong>⚠ ZDARZENIE OPERACYJNE: ${e.title}</strong>
+  <p>${e.description}</p>
+  <div class="event-choice">
+   ${e.choices.map((c,i)=>`
+    <button type="button" data-choice="${i}">${c.label}</button>
+   `).join("")}
+  </div>
+  <div class="small">Zegar został zatrzymany do czasu podjęcia decyzji.</div>
+ `;
+
+ area.onclick=function(event){
+  const button=event.target.closest("button[data-choice]");
+  if(!button||!area.contains(button))return;
+  resolveEvent(Number(button.dataset.choice));
+ };
 }
-
-
 function render(){
  updateTop();
  updateEventArea();
@@ -1096,36 +1115,140 @@ function hourlyTick(){
 
 function checkRandomEvent(){
  if(S.pendingEvent||Math.random()>.16)return;
+
  const events=[
-  {title:"Uszkodzona paleta",description:"Operator zgłasza uszkodzenie palety. Możesz poświęcić czas na kontrolę albo zaakceptować ryzyko.",choices:[
-   {label:"Przeprowadź kontrolę",effect:()=>{S.money-=400;log("Kontrola palety kosztowała 400 zł.");}},
-   {label:"Zignoruj problem",effect:()=>{changeReputation(-1,"Zignorowano uszkodzenie palety.");}}
-  ]},
-  {title:"Błędna etykieta",description:"Partia towaru otrzymała nieprawidłowe oznaczenia.",choices:[
-   {label:"Popraw etykiety · 250 zł",effect:()=>{S.money-=250;log("Poprawiono oznaczenia towaru.");}},
-   {label:"Wstrzymaj wysyłkę",effect:()=>{changeReputation(1,"Wstrzymano wysyłkę i uniknięto pomyłki.");}}
-  ]},
-  {title:"Awaria wózka",description:"Jeden z operatorów zgłasza niepokojące dźwięki dochodzące z układu napędowego.",choices:[
-   {label:"Wezwij serwis · 900 zł",effect:()=>{S.money-=900;let v=pick(S.fleet);if(v)v.condition=100;log("Serwis usunął problem techniczny.");}},
-   {label:"Kontynuuj pracę",effect:()=>{let v=pick(S.fleet);if(v)v.condition=clamp(v.condition-15,0,100);log("Zignorowano niepokojące objawy wózka.");}}
-  ]},
-  {title:"Opóźniona dostawa",description:"Dostawca informuje o opóźnieniu transportu.",choices:[
-   {label:"Zorganizuj transport zastępczy · 700 zł",effect:()=>{changeReputation(1,"Transport zastępczy dotarł na czas.");}},
-   {label:"Poczekaj",effect:()=>{changeReputation(-1,"Opóźnienie dostawy wpłynęło na reputację.");}}
-  ]},
-  {title:"Nadgodziny",description:"Klient prosi o pilną obsługę dodatkowej partii towaru.",choices:[
-   {label:"Przyjmij zlecenie · zysk 1500 zł",effect:()=>{S.money+=1500;S.finances.income+=1500;S.taxCycleRevenue+=1500;log("Zrealizowano pilne zlecenie.");}},
-   {label:"Odmów",effect:()=>{log("Odmówiono dodatkowego zlecenia.");}}
-  ]}
+  {
+   title:"Uszkodzona paleta",
+   description:"Operator zgłasza uszkodzenie palety. Możesz poświęcić czas na kontrolę albo zaakceptować ryzyko.",
+   choices:[
+    {label:"Przeprowadź kontrolę",action:"inspect_pallet"},
+    {label:"Zignoruj problem",action:"ignore_pallet"}
+   ]
+  },
+  {
+   title:"Błędna etykieta",
+   description:"Partia towaru otrzymała nieprawidłowe oznaczenia.",
+   choices:[
+    {label:"Popraw etykiety · 250 zł",action:"fix_labels"},
+    {label:"Wstrzymaj wysyłkę",action:"hold_shipment"}
+   ]
+  },
+  {
+   title:"Awaria wózka",
+   description:"Jeden z operatorów zgłasza niepokojące dźwięki dochodzące z układu napędowego.",
+   choices:[
+    {label:"Wezwij serwis · 900 zł",action:"repair_vehicle"},
+    {label:"Kontynuuj pracę",action:"ignore_vehicle"}
+   ]
+  },
+  {
+   title:"Opóźniona dostawa",
+   description:"Dostawca informuje o opóźnieniu transportu.",
+   choices:[
+    {label:"Zorganizuj transport zastępczy · 700 zł",action:"replacement_transport"},
+    {label:"Poczekaj",action:"wait_delivery"}
+   ]
+  },
+  {
+   title:"Nadgodziny",
+   description:"Klient prosi o pilną obsługę dodatkowej partii towaru.",
+   choices:[
+    {label:"Przyjmij zlecenie · zysk 1500 zł",action:"accept_overtime"},
+    {label:"Odmów",action:"refuse_overtime"}
+   ]
+  }
  ];
- const e=pick(events);
- S.pendingEvent={...e,choices:e.choices.map(c=>({label:c.label,effectName:c.label}))};
- window.currentEventEffects=e.choices.map(c=>c.effect);updateEventArea();
+
+ S.pendingEvent=pick(events);
+ saveGame();
+ updateEventArea();
 }
 function resolveEvent(index){
  if(!S.pendingEvent)return;
- const effect=window.currentEventEffects?.[index];if(effect)effect();
- S.pendingEvent=null;window.currentEventEffects=null;saveGame();render();
+
+ const choice=S.pendingEvent.choices[Number(index)];
+ if(!choice)return;
+
+ // Obsługa nowych identyfikatorów oraz starszych zapisanych zdarzeń.
+ const action=choice.action||choice.effectName||choice.label;
+
+ switch(action){
+
+  case "inspect_pallet":
+  case "Przeprowadź kontrolę":
+   S.money-=400;
+   log("Kontrola palety kosztowała 400 zł.");
+   break;
+
+  case "ignore_pallet":
+  case "Zignoruj problem":
+   changeReputation(-1,"Zignorowano uszkodzenie palety.");
+   break;
+
+  case "fix_labels":
+  case "Popraw etykiety · 250 zł":
+   S.money-=250;
+   log("Poprawiono oznaczenia towaru.");
+   break;
+
+  case "hold_shipment":
+  case "Wstrzymaj wysyłkę":
+   changeReputation(1,"Wstrzymano wysyłkę i uniknięto pomyłki.");
+   break;
+
+  case "repair_vehicle":
+  case "Wezwij serwis · 900 zł":
+   S.money-=900;
+   {
+    const v=pick(S.fleet);
+    if(v){
+     v.condition=100;
+     v.broken=false;
+    }
+   }
+   log("Serwis usunął problem techniczny.");
+   break;
+
+  case "ignore_vehicle":
+  case "Kontynuuj pracę":
+   {
+    const v=pick(S.fleet);
+    if(v)v.condition=clamp(v.condition-15,0,100);
+   }
+   log("Zignorowano niepokojące objawy wózka.");
+   break;
+
+  case "replacement_transport":
+  case "Zorganizuj transport zastępczy · 700 zł":
+   S.money-=700;
+   changeReputation(1,"Transport zastępczy dotarł na czas.");
+   break;
+
+  case "wait_delivery":
+  case "Poczekaj":
+   changeReputation(-1,"Opóźnienie dostawy wpłynęło na reputację.");
+   break;
+
+  case "accept_overtime":
+  case "Przyjmij zlecenie · zysk 1500 zł":
+   S.money+=1500;
+   S.finances.income+=1500;
+   S.taxCycleRevenue+=1500;
+   log("Zrealizowano pilne zlecenie.");
+   break;
+
+  case "refuse_overtime":
+  case "Odmów":
+   log("Odmówiono dodatkowego zlecenia.");
+   break;
+
+  default:
+   log("Nie rozpoznano decyzji w zdarzeniu. Zdarzenie zamknięto.");
+ }
+
+ S.pendingEvent=null;
+ saveGame();
+ render();
 }
 function funnyEvent(){
  const employeeCount=S.employees.length;

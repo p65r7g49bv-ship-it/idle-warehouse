@@ -522,7 +522,8 @@ function companyView(){
  return `<h2>🏢 Firma</h2><div class="grid">
  <div class="card"><h3>Centrum logistyczne</h3><img class="hero-image" src="${IMG.WAREHOUSE}" onerror="this.style.display='none'">
  <p><b>${escapeHTML(S.warehouseName||"Nowy magazyn")}</b></p><p class="muted">Dzień działalności: ${S.day}</p>
- <p>Reputacja: <b>${S.rep}</b></p><p>Poziom magazynu: ${S.warehouse.level}</p><p>Stan techniczny: ${num(S.warehouse.condition)}%</p></div>
+ <p>Reputacja: <b>${S.rep} pkt</b></p>
+<p>Status firmy: <b class="good">${reputationTitle()}</b></p>Poziom magazynu: ${S.warehouse.level}</p><p>Stan techniczny: ${num(S.warehouse.condition)}%</p></div>
  <div class="card"><h3>Wyniki finansowe</h3><p>Przychody: <span class="good">${money(income)}</span></p>
  <p>Koszty: <span class="bad">${money(costs)}</span></p><p>Kary: <span class="bad">${money(S.finances.penalties)}</span></p>
  <p>Podatki: ${money(S.finances.tax)}</p><p>Bilans: <b>${money(income-costs-S.finances.penalties-S.finances.tax)}</b></p></div></div>
@@ -1048,8 +1049,11 @@ function hourlyTick(){
   usable.slice(0,operatorCount).forEach(v=>{
    v.hours++;const wear=Math.max(.015,.035-S.upgrades.maintenance*.004);
    v.condition=clamp(v.condition-wear,0,100);
-   if(v.condition<=0){v.broken=true;log("Awaria wózka "+MODELS[v.model].name+".")}
-  });
+   if(v.condition<=0&&!v.broken){
+ v.broken=true;
+ changeReputation(-2,"Doszło do poważnej awarii wózka "+MODELS[v.model].name+".");
+ log("Awaria wózka "+MODELS[v.model].name+".");
+}
  }
  if(S.warehouse.condition>0&&Math.random()<.002)S.warehouse.condition--;
 
@@ -1113,7 +1117,9 @@ function endDay(){
   log("Pobrano podatek okresowy 8%: "+money(tax)+".");
  }
  if(S.rescue.bankDebt>0&&S.day>S.rescue.bankDeadline){
-  S.rescue.bankrupt=true;log("Nie spłacono długu w terminie. Firma ogłosiła bankructwo.");
+  changeReputation(-5,"Firma nie spłaciła zadłużenia bankowego w terminie.");
+  S.rescue.bankrupt=true;
+  log("Nie spłacono długu w terminie. Firma ogłosiła bankructwo.");
  }
  S.employees.forEach(e=>{
   if(e.role==="Magazynier"&&e.hours>=200&&e.trainedBasic)promotionCheck(e);

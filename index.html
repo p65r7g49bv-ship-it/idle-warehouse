@@ -867,10 +867,29 @@ function escapeHTML(s){
 /* FLOTА */
 function buyForklift(model){
  const m=MODELS[model];if(!m||S.money<m.price)return;
- if(S.fleet.length>=S.warehouse.level*3+2){alert("Brak miejsca na kolejne wózki.");return}
- S.money-=m.price;S.finances.cost+=m.price;
- S.fleet.push({id:S.nextId++,model,rented:false,condition:100,hours:0,broken:false});
- log("Zakupiono wózek "+m.name+".");saveGame();render();
+
+ const ownedCount=S.fleet.filter(v=>!v.rented).length;
+
+ if(ownedCount>=S.warehouse.level*3+2){
+  alert("Brak miejsca na kolejne kupione wózki.");
+  return;
+ }
+
+ S.money-=m.price;
+ S.finances.cost+=m.price;
+
+ S.fleet.push({
+  id:S.nextId++,
+  model,
+  rented:false,
+  condition:100,
+  hours:0,
+  broken:false
+ });
+
+ log("Zakupiono wózek "+m.name+".");
+ saveGame();
+ render();
 }
 function rentForklift(model){
  const m=MODELS[model];if(!m)return;

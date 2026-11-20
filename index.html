@@ -1280,10 +1280,10 @@ function resolveEvent(index){
 }
 function funnyEvent(){
  const employeeCount=S.employees.length;
- const dailyLimit=clamp(Math.ceil(employeeCount*.7),2,12);
+  const dailyLimit=clamp(Math.ceil(employeeCount*2.5),6,40);
  if(S.funny.count>=dailyLimit)return;
 
- const chance=Math.min(.7,.08+employeeCount*.035);
+ const chance=Math.min(.95,.32+employeeCount*.12);
  if(Math.random()>chance)return;
 
  S.funny.count++;

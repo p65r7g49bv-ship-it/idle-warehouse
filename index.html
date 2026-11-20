@@ -844,8 +844,11 @@ function developmentView(){
   const level=S.upgrades[key],cost=base*(level+1);
   return `<div class="card"><h3>${title}</h3><p>${desc}</p><p>Poziom: <b>${level}</b></p>
   ${key==="training"?`<p class="good">Bonus do doświadczenia: +${level*8}%</p>`:""}
-  <p class="price">Koszt kolejnego poziomu: ${money(cost)}</p>
-  <button onclick="upgradeResearch('${key}',${base})" ${S.money<cost?"disabled":""}>Rozwijaj</button></div>`;
+  ${key==="planning"&&level>=2
+ ?'<p class="good">Maksymalny poziom osiągnięty. Odblokowano 3 zmiany.</p><button disabled>Rozwój zakończony</button>'
+ :`<p class="price">Koszt kolejnego poziomu: ${money(cost)}</p>
+ <button onclick="upgradeResearch('${key}',${base})" ${S.money<cost?"disabled":""}>Rozwijaj</button>`}
+</div>`;
  }).join("")}</div>`;
 }
 
@@ -1149,16 +1152,30 @@ function buildFacility(key,cost){
  S.money-=cost;S.finances.cost+=cost;S.warehouse[key]=true;
  log("Uruchomiono nowy obiekt zaplecza: "+key+".");saveGame();render();
 }
+
 function upgradeResearch(key,base){
- const level=S.upgrades[key],cost=base*(level+1);if(S.money<cost)return;
- S.money-=cost;S.finances.cost+=cost;S.upgrades[key]++;
+ if(key==="planning"&&S.upgrades.planning>=2){
+  alert("Planowanie logistyki osiągnęło maksymalny poziom. Odblokowano już 3 zmiany.");
+  return;
+ }
+
+ const level=S.upgrades[key],cost=base*(level+1);
+ if(S.money<cost)return;
+
+ S.money-=cost;
+ S.finances.cost+=cost;
+ S.upgrades[key]++;
+
  log("Rozwinięto obszar: "+key+" do poziomu "+S.upgrades[key]+".");
  if(key==="planning"){
   if(S.upgrades.planning>=1)S.shiftCount=Math.min(S.shiftCount,2);
   if(S.upgrades.planning>=2)S.shiftCount=Math.min(S.shiftCount,3);
  }
- generateOffers();saveGame();render();
+ generateOffers();
+ saveGame();
+ render();
 }
+
 function setShifts(n){
  if(n===2&&S.upgrades.planning<1){alert("Wymagany 1 poziom planowania.");return}
  if(n===3&&S.upgrades.planning<2){alert("Wymagany 2 poziom planowania.");return}

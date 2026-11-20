@@ -484,6 +484,7 @@ function askWarehouseName(){
 function updateHeading(){
  document.getElementById("warehouseHeading").textContent=S.warehouseName||"Nowe centrum logistyczne";
 }
+
 function updateTop(){
  document.getElementById("moneyStat").textContent=money(S.money);
  document.getElementById("repStat").textContent=num(S.rep);
@@ -493,9 +494,9 @@ function updateTop(){
  document.getElementById("remainingTime").textContent=formatCountdown(8-getShiftHour());
  document.getElementById("shiftNumber").textContent=getShift()+" / "+S.shiftCount;
  document.getElementById("shiftProgress").style.width=(getShiftHour()/8*100)+"%";
- updateEventArea();
  updateChat();
 }
+
 function updateEventArea(){
  const area=document.getElementById("eventArea");
  if(!S.pendingEvent){area.style.display="none";area.innerHTML="";return}
@@ -506,16 +507,26 @@ function updateEventArea(){
  <div class="small">Zegar został zatrzymany do czasu podjęcia decyzji.</div>`;
 }
 
+
 function render(){
- updateTop();updateHeading();
- const views={company:companyView,warehouse:warehouseView,fleet:fleetView,staff:staffView,contracts:contractsView,development:developmentView,finance:financeView,reports:reportsView};
+ updateTop();
+ updateEventArea();
+ updateHeading();
+
+ const views={
+  company:companyView,
+  warehouse:warehouseView,
+  fleet:fleetView,
+  staff:staffView,
+  contracts:contractsView,
+  development:developmentView,
+  finance:financeView,
+  reports:reportsView
+ };
+
  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===activeTab));
  document.getElementById("content").innerHTML=views[activeTab]();
 }
-document.getElementById("navigation").addEventListener("click",e=>{
- const b=e.target.closest("button[data-tab]");
- if(!b)return;activeTab=b.dataset.tab;render();
-});
 
 function companyView(){
  const income=S.finances.income,costs=S.finances.cost;

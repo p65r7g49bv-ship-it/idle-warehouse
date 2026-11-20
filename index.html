@@ -896,7 +896,6 @@ function repairForklift(id){
 /* PRACOWNICY */
 function hireEmployee(){
  if(S.money<1500){alert("Za mało środków.");return}
- if(S.employees.length>=S.shiftCount*3+3){alert("Najpierw zwiększ możliwości organizacyjne firmy.");return}
  S.money-=1500;S.finances.cost+=1500;
  const name=pick(FIRST_NAMES)+" "+pick(LAST_NAMES);
  S.employees.push({id:S.nextId++,name,role:"Magazynier",salary:3800,hours:0,skill:rand(0,10),udt:true,promotionLevel:0,trainedBasic:false,trainedAdvanced:false});

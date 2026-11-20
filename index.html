@@ -1060,13 +1060,79 @@ function repairAllForklifts(){
 }
 
 /* PRACOWNICY */
+
 function hireEmployee(){
- if(S.money<1500){alert("Za mało środków.");return}
- S.money-=1500;S.finances.cost+=1500;
+ const cost=1500;
+
+ if(S.money<cost){
+  alert("Za mało środków.");
+  return;
+ }
+
+ let role="Magazynier";
+ let salary=3800;
+ let hours=0;
+ let skill=rand(0,10);
+ let trainedBasic=false;
+ let trainedAdvanced=false;
+ let promotionLevel=0;
+
+ const roll=Math.random();
+
+ if(S.rep>=81){
+  if(roll<0.65){
+   role="Magazynier";
+  }else if(roll<0.95){
+   role="Pracownik transportu wewnętrznego";
+   salary=4600;
+   hours=200;
+   skill=rand(20,40);
+   trainedBasic=true;
+   promotionLevel=1;
+  }else{
+   role="Starszy pracownik transportu wewnętrznego";
+   salary=5200;
+   hours=400;
+   skill=rand(50,70);
+   trainedBasic=true;
+   trainedAdvanced=true;
+   promotionLevel=2;
+  }
+ }else{
+  if(roll>=0.75){
+   role="Pracownik transportu wewnętrznego";
+   salary=4600;
+   hours=200;
+   skill=rand(20,40);
+   trainedBasic=true;
+   promotionLevel=1;
+  }
+ }
+
+ S.money-=cost;
+ S.finances.cost+=cost;
+
  const name=pick(FIRST_NAMES)+" "+pick(LAST_NAMES);
- S.employees.push({id:S.nextId++,name,role:"Magazynier",salary:3800,hours:0,skill:rand(0,10),udt:true,promotionLevel:0,trainedBasic:false,trainedAdvanced:false});
- log("Zatrudniono nowego pracownika: "+name+".");saveGame();render();
+
+ S.employees.push({
+  id:S.nextId++,
+  name,
+  role,
+  salary,
+  hours,
+  skill,
+  udt:true,
+  promotionLevel,
+  trainedBasic,
+  trainedAdvanced
+ });
+
+ log("Zatrudniono: "+name+" — "+role+". Doświadczenie: "+skill+"/100 pkt.");
+
+ saveGame();
+ render();
 }
+
 function trainEmployee(id,type){
  const e=S.employees.find(x=>x.id===id);if(!e)return;
  const cost=type==="basic"?1800:3200;

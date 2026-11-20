@@ -308,6 +308,7 @@ function fresh(){
  return {
   warehouseName:"",
   money:20000,rep:0,day:1,gameHour:0,hourProgress:0,dayHours:0,
+  internUntilDay:0,
   shiftCount:1,pendingEvent:null,lastSeen:Date.now(),taxCycleRevenue:0,
   warehouse:{level:1,capacity:30,condition:100,serviceCenter:false,canteen:false,smoking:false,multimedia:false,developmentDept:false},
   upgrades:{automation:0,planning:0,training:0,marketing:0,maintenance:0},
@@ -365,6 +366,7 @@ function migrate(data){
  merged.finances={...base.finances,...(data.finances||{})};
  merged.rescue={...base.rescue,...(data.rescue||{})};
  merged.funny={...base.funny,...(data.funny||{})};
+ merged.internUntilDay=Number(data.internUntilDay)||0;
  merged.employees=Array.isArray(data.employees)?data.employees:base.employees;
  merged.fleet=Array.isArray(data.fleet)?data.fleet:base.fleet;
  merged.contracts=Array.isArray(data.contracts)?data.contracts:[];
@@ -620,28 +622,93 @@ function facilityCard(key,title,desc,cost,monthly){
  <button onclick="buildFacility('${key}',${cost})" ${built||S.money<cost?"disabled":""}>${built?"Wybudowano":"Zbuduj · "+money(cost)}</button></div>`;
 }
 
+
 function fleetView(){
+ const ownedCount=S.fleet.filter(v=>!v.rented).length;
+ const maxOwned=S.warehouse.level*3+2;
+ const internActive=S.internUntilDay>S.day;
+
+ const repairList=S.fleet.filter(v=>v.broken||v.condition<100);
+ const repairCost=repairList.reduce((sum,v)=>
+  sum+Math.max(500,Math.round((100-v.condition)*100)),0);
+
+ const shop=Object.entries(MODELS)
+  .filter(([id])=>id!=="RX18")
+  .map(([id,m])=>`
+   <div class="card">
+    <div class="vehicle">
+     <img src="${m.image}" alt="${m.name}" onerror="this.src='${IMG.RX20}'">
+     <div style="flex:1;min-width:0">
+      <div class="row between">
+       <h3>${m.name}</h3>
+       <button onclick="buyForklift('${id}')"
+        ${S.money<m.price||ownedCount>=maxOwned?"disabled":""}
+        style="font-size:22px;font-weight:bold;padding:4px 14px">+</button>
+      </div>
+      <span class="tag">Udźwig ${num(m.load)} kg</span>
+      <p class="price">${money(m.price)}</p>
+     </div>
+    </div>
+    <p>Wynajem miesięczny: ${money(m.rent)}</p>
+    <p>Zużycie energii: ${m.energy} zł/h</p>
+    <p>Przepustowość: ${m.throughput} jednostek/h</p>
+    <button onclick="rentForklift('${id}')">Wynajmij</button>
+   </div>
+  `).join("");
+
  const cards=S.fleet.map(v=>{
   const m=MODELS[v.model]||MODELS.RX18;
-  return `<div class="card"><div class="vehicle"><img src="${m.image}" alt="${m.name}" onerror="this.src='${IMG.RX20}'">
-  <div><h3>${m.name}</h3><div class="small">Udźwig ${num(m.load)} kg</div><span class="tag">${v.rented?"Wynajem":"Własny"}</span>
-  <span class="tag">${v.broken?"Awaria":num(v.condition)+"% sprawności"}</span></div></div>
-  <p>Przepracowane godziny: ${num(v.hours)}</p><p>Wydajność: ${m.throughput} jednostek/h</p>
-  <p>Zużycie energii: ${m.energy} zł/h</p><p>Stan: ${v.broken?'<span class="bad">Uszkodzony</span>':v.condition<30?'<span class="bad">Wymaga serwisu</span>':'<span class="good">Gotowy do pracy</span>'}</p>
-  <div class="actions"><button onclick="repairForklift(${v.id})">Napraw · ${money(Math.max(500,(100-v.condition)*100))}</button>
-  <button onclick="sellForklift(${v.id})">Sprzedaj</button></div></div>`;
+  return `
+   <div class="card">
+    <div class="vehicle">
+     <img src="${m.image}" alt="${m.name}" onerror="this.src='${IMG.RX20}'">
+     <div>
+      <h3>${m.name}</h3>
+      <div class="small">Udźwig ${num(m.load)} kg</div>
+      <span class="tag">${v.rented?"Wynajem":"Własny"}</span>
+      <span class="tag">${v.broken?"Awaria":num(v.condition)+"% sprawności"}</span>
+     </div>
+    </div>
+    <p>Przepracowane godziny: ${num(v.hours)}</p>
+    <p>Wydajność: ${m.throughput} jednostek/h</p>
+    <p>Zużycie energii: ${m.energy} zł/h</p>
+    <p>Stan: ${v.broken?'<span class="bad">Uszkodzony</span>':v.condition<30?'<span class="bad">Wymaga serwisu</span>':'<span class="good">Gotowy do pracy</span>'}</p>
+    <button onclick="sellForklift(${v.id})">Sprzedaj</button>
+   </div>
+  `;
  }).join("");
- const shop=Object.entries(MODELS).filter(([id])=>id!=="RX18").map(([id,m])=>
- `<div class="card"><div class="vehicle"><img src="${m.image}" alt="${m.name}" onerror="this.src='${IMG.RX20}'">
- <div><h3>${m.name}</h3><span class="tag">Udźwig ${num(m.load)} kg</span></div></div>
- <p>Cena zakupu: <b class="price">${money(m.price)}</b></p><p>Wynajem miesięczny: ${money(m.rent)}</p>
- <p>Zużycie energii: ${m.energy} zł/h</p><p>Przepustowość: ${m.throughput}</p>
- <div class="actions"><button onclick="buyForklift('${id}')" ${S.money<m.price?"disabled":""}>Kup</button>
- <button onclick="rentForklift('${id}')">Wynajmij</button></div></div>`).join("");
- return `<h2>🚜 Flota wózków</h2><p class="muted">Wydajność magazynu zależy od liczby sprawnych wózków, ich udźwigu i dostępnych operatorów.</p>
- <div class="grid">${cards||'<div class="empty">Brak wózków we flocie.</div>'}</div>
- <h2 style="margin-top:22px">Oferta zakupu i wynajmu</h2><div class="grid">${shop}</div>`;
+
+ return `
+  <h2>🚜 Oferta zakupu i wynajmu</h2>
+  <div class="card">
+   <p>Kupione wózki: <b>${ownedCount} / ${maxOwned}</b></p>
+   <p class="muted">Kliknij + przy wybranym modelu, aby kupić jeden egzemplarz.</p>
+  </div>
+  <div class="grid">${shop}</div>
+
+  <h2 style="margin-top:22px">🔧 Serwis floty</h2>
+  <div class="card">
+   <p>Praktykant:
+    <b class="${internActive?"good":"bad"}">
+     ${internActive?"Aktywny — pozostało "+(S.internUntilDay-S.day)+" dni":"Brak aktywnego praktykanta"}
+    </b>
+   </p>
+   <p>Wózki wymagające naprawy: <b>${repairList.length}</b></p>
+   <p>Łączny koszt naprawy: <b>${money(repairCost)}</b></p>
+   <button onclick="repairAllForklifts()"
+    ${!internActive||repairList.length===0||S.money<repairCost?"disabled":""}>
+    Napraw wszystkie
+   </button>
+   ${!internActive?'<p class="muted">Zatrudnij praktykanta w zakładce Rozwój, aby odblokować naprawy.</p>':""}
+   ${internActive&&S.money<repairCost&&repairList.length>0?'<p class="bad">Za mało środków na naprawę całej floty.</p>':""}
+  </div>
+
+  <h2 style="margin-top:22px">Twoja flota</h2>
+  <p class="muted">Wydajność magazynu zależy od liczby sprawnych wózków, ich udźwigu i dostępnych operatorów.</p>
+  <div class="grid">${cards||'<div class="empty">Brak wózków we flocie.</div>'}</div>
+ `;
 }
+
 
 function staffView(){
  return `<h2>👷 Pracownicy</h2><div class="card"><h3>Zespół magazynu</h3>
@@ -735,6 +802,7 @@ function contractsView(){
  }).join("")||'<div class="empty">Nie masz jeszcze historii kontraktów.</div>'}</div>`;
 }
 
+
 function developmentView(){
  const items=[
   ["automation","Automatyzacja","Zmniejsza część kosztów administracyjnych.",12000],
@@ -743,18 +811,41 @@ function developmentView(){
   ["marketing","Marketing","Zwiększa reputację i jakość ofert.",11000],
   ["maintenance","Utrzymanie floty","Zmniejsza zużycie wózków.",14000]
  ];
- return `<h2>📈 Rozwój przedsiębiorstwa</h2><div class="card"><h3>Organizacja pracy</h3>
- <p>Aktualna liczba zmian: <b>${S.shiftCount}</b></p><p>Poziom planowania: ${S.upgrades.planning}</p>
- <p class="muted">Dodatkowe zmiany wymagają odpowiedniej liczby pracowników i wózków.</p>
- <button onclick="setShifts(2)" ${S.upgrades.planning<1?"disabled":""}>Uruchom 2 zmiany</button>
- <button onclick="setShifts(3)" ${S.upgrades.planning<2?"disabled":""}>Uruchom 3 zmiany</button>
- <button onclick="setShifts(1)">Powróć do 1 zmiany</button></div>
+
+ const internActive=S.internUntilDay>S.day;
+
+ return `<h2>📈 Rozwój przedsiębiorstwa</h2>
+ <div class="card">
+  <h3>🔧 Praktykant — kontrola techniczna floty</h3>
+  <p>Praktykant sprawdza stan techniczny wózków i umożliwia przeprowadzenie zbiorczej naprawy całej floty.</p>
+  <p>Koszt zatrudnienia: <b class="price">5 000 zł</b></p>
+  <p>Czas pracy: <b>30 dni</b></p>
+  <p>Status:
+   <b class="${internActive?"good":"bad"}">
+    ${internActive?"Praktykant zatrudniony — pozostało "+(S.internUntilDay-S.day)+" dni":"Brak zatrudnionego praktykanta"}
+   </b>
+  </p>
+  <button onclick="hireIntern()" ${internActive||S.money<5000?"disabled":""}>
+   ${internActive?"Praktykant już pracuje":"Zatrudnij praktykanta · 5 000 zł"}
+  </button>
+ </div>
+
+ <div class="card" style="margin-top:12px">
+  <h3>Organizacja pracy</h3>
+  <p>Aktualna liczba zmian: <b>${S.shiftCount}</b></p>
+  <p>Poziom planowania: ${S.upgrades.planning}</p>
+  <p class="muted">Dodatkowe zmiany wymagają odpowiedniej liczby pracowników i wózków.</p>
+  <button onclick="setShifts(2)" ${S.upgrades.planning<1?"disabled":""}>Uruchom 2 zmiany</button>
+  <button onclick="setShifts(3)" ${S.upgrades.planning<2?"disabled":""}>Uruchom 3 zmiany</button>
+  <button onclick="setShifts(1)">Powróć do 1 zmiany</button>
+ </div>
+
  <div class="grid" style="margin-top:12px">${items.map(([key,title,desc,base])=>{
- const level=S.upgrades[key],cost=base*(level+1);
- return `<div class="card"><h3>${title}</h3><p>${desc}</p><p>Poziom: <b>${level}</b></p>
- ${key==="training"?`<p class="good">Bonus do doświadczenia: +${level*8}%</p>`:""}
- <p class="price">Koszt kolejnego poziomu: ${money(cost)}</p>
- <button onclick="upgradeResearch('${key}',${base})" ${S.money<cost?"disabled":""}>Rozwijaj</button></div>`;
+  const level=S.upgrades[key],cost=base*(level+1);
+  return `<div class="card"><h3>${title}</h3><p>${desc}</p><p>Poziom: <b>${level}</b></p>
+  ${key==="training"?`<p class="good">Bonus do doświadczenia: +${level*8}%</p>`:""}
+  <p class="price">Koszt kolejnego poziomu: ${money(cost)}</p>
+  <button onclick="upgradeResearch('${key}',${base})" ${S.money<cost?"disabled":""}>Rozwijaj</button></div>`;
  }).join("")}</div>`;
 }
 
@@ -904,12 +995,60 @@ function sellForklift(id){
  S.money+=value;S.fleet=S.fleet.filter(x=>x.id!==id);
  log("Sprzedano wózek "+MODELS[v.model].name+" za "+money(value)+".");saveGame();render();
 }
-function repairForklift(id){
- const v=S.fleet.find(x=>x.id===id);if(!v)return;
- const cost=Math.max(500,Math.round((100-v.condition)*100));
- if(S.money<cost){alert("Za mało środków.");return}
- S.money-=cost;S.finances.cost+=cost;v.condition=100;v.broken=false;
- log("Przeprowadzono serwis wózka "+MODELS[v.model].name+".");saveGame();render();
+
+function hireIntern(){
+ if(S.internUntilDay>S.day){
+  alert("Praktykant jest już zatrudniony.");
+  return;
+ }
+
+ const cost=5000;
+ if(S.money<cost){
+  alert("Za mało środków. Zatrudnienie praktykanta kosztuje 5 000 zł.");
+  return;
+ }
+
+ S.money-=cost;
+ S.finances.cost+=cost;
+ S.internUntilDay=S.day+30;
+
+ log("Zatrudniono praktykanta do kontroli technicznej floty. Umowa obowiązuje przez 30 dni.");
+ saveGame();
+ render();
+}
+
+function repairAllForklifts(){
+ if(S.internUntilDay<=S.day){
+  alert("Najpierw zatrudnij praktykanta w dziale Rozwój.");
+  return;
+ }
+
+ const damaged=S.fleet.filter(v=>v.broken||v.condition<100);
+
+ if(!damaged.length){
+  alert("Wszystkie wózki są sprawne.");
+  return;
+ }
+
+ const totalCost=damaged.reduce((sum,v)=>
+  sum+Math.max(500,Math.round((100-v.condition)*100)),0);
+
+ if(S.money<totalCost){
+  alert("Za mało środków na naprawę całej floty. Potrzeba "+money(totalCost)+".");
+  return;
+ }
+
+ S.money-=totalCost;
+ S.finances.cost+=totalCost;
+
+ damaged.forEach(v=>{
+  v.condition=100;
+  v.broken=false;
+ });
+
+ log("Praktykant przeprowadził kontrolę i naprawę "+damaged.length+" wózków. Koszt: "+money(totalCost)+".");
+ saveGame();
+ render();
 }
 
 /* PRACOWNICY */

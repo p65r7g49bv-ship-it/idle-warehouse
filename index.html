@@ -292,6 +292,9 @@ const FUNNY=[
  "Ktoś zostawił kanapkę na palecie. Kontrola jakości uznała ją za towar priorytetowy.",
  "Magazynier twierdzi, że paleta sama zmieniła miejsce. Monitoring nie potwierdza tej teorii.",
  "Wózek zaparkował idealnie równo. Operator dostał pochwałę, choć twierdzi, że to przypadek.",
+ "Kierownik kierowników nad kierownikami nakrył pracowników na rampie grających w gry. Od teraz jest tam strefa gracza dla wybranych.",
+ "Ten, którego imienia nie można wymawiać, nakrywa pracownika na przerwie minutę po czasie. Szykuje się nagana.",
+ "Jeden z pracowników kończy 70 lat. W ramach nagrody wręczono mu czekoladkę Merci… jedną.",
  "Kierownik odkrył, że drukarka etykiet działa najlepiej po groźnym spojrzeniu.",
  "Ktoś nazwał regał imieniem swojego szefa. Nikt nie chce wyjaśnić dlaczego.",
  "W stołówce zabrakło kawy. Wydajność zespołu stała się tematem pilnego zebrania.",
@@ -335,7 +338,25 @@ function loadGame(){
 function contractTotal(c){
  return Math.max(1,Math.round(Number(c.totalPallets)||Number(c.p||1)*8*Number(c.days||1)));
 }
+function reputationTitle(value=S.rep){
+ if(value<=30)return "Nowa firma na rynku";
+ if(value<=50)return "Mała firma";
+ if(value<=70)return "Średnia firma";
+ if(value<=80)return "Duża firma";
+ if(value<=99)return "Ceniona firma w kraju";
+ return "Rozpoznawalna marka na świecie";
+}
 
+function changeReputation(amount,reason=""){
+ const oldValue=S.rep;
+ S.rep=Math.max(0,Math.round(S.rep+amount));
+ const difference=S.rep-oldValue;
+
+ if(difference!==0){
+  const direction=difference>0?"wzrosła":"spadła";
+  log("Reputacja firmy "+direction+" o "+Math.abs(difference)+" pkt. "+reason);
+ }
+}
 function migrate(data){
  const base=fresh();
  const merged={...base,...data};
@@ -431,7 +452,7 @@ function employeeExperienceMultiplier(){
  if(S.warehouse.multimedia)bonus+=.10;
  if(S.warehouse.developmentDept)bonus+=.20;
  bonus+=S.upgrades.training*.08;
- return 1+bonus;
+ return 1+bonus;u
 }
 function employeeExperienceBonusText(){
  return Math.round((employeeExperienceMultiplier()-1)*100);
@@ -861,13 +882,13 @@ function generateOffers(){
  );
 
  if(max>=3000&&S.warehouse.level>=2)base.push(
-  {p:3,storage:10,days:2,advance:3000,penalty:1000,load:3000,rep:3,value:8000},
-  {p:4,storage:14,days:2,advance:4500,penalty:1500,load:3000,rep:4,value:11000}
+  {p:3,storage:10,days:2,advance:3000,penalty:1000,load:3000,rep:1,value:8000},
+  {p:4,storage:14,days:2,advance:4500,penalty:1500,load:3000,rep:1,value:11000}
  );
 
  if(max>=5000&&S.warehouse.level>=3)base.push(
   {p:5,storage:18,days:3,advance:7000,penalty:2500,load:5000,rep:5,value:16000},
-  {p:6,storage:24,days:3,advance:9000,penalty:3500,load:5000,rep:6,value:22000}
+  {p:6,storage:24,days:3,advance:9000,penalty:3500,load:5000,rep:5,value:22000}
  );
 
  base=base.filter(o=>o.load<=max&&o.storage<=S.warehouse.capacity*2);
@@ -999,7 +1020,7 @@ function hourlyTick(){
 
   if(c.shippedPallets>=total&&!c.done){
    c.shippedPallets=total;c.receivedPallets=total;
-   c.done=true;S.rep+=c.rep;
+   c.done=true;changeReputation(c.rep,"Ukończono kontrakt firmy "+c.company+".");
    const bonus=Math.round(c.value*.35);
    S.money+=bonus;S.finances.income+=bonus;S.taxCycleRevenue+=bonus;
    log("Zakończono kontrakt firmy "+c.company+". Wywieziono "+num(total)+" palet. Premia: "+money(bonus)+".");
@@ -1042,19 +1063,19 @@ function checkRandomEvent(){
  const events=[
   {title:"Uszkodzona paleta",description:"Operator zgłasza uszkodzenie palety. Możesz poświęcić czas na kontrolę albo zaakceptować ryzyko.",choices:[
    {label:"Przeprowadź kontrolę",effect:()=>{S.money-=400;log("Kontrola palety kosztowała 400 zł.");}},
-   {label:"Zignoruj problem",effect:()=>{S.rep-=1;log("Zignorowano uszkodzenie palety. Reputacja spadła.");}}
+   {label:"Zignoruj problem",effect:()=>{changeReputation(-1,"Zignorowano uszkodzenie palety.");}}
   ]},
   {title:"Błędna etykieta",description:"Partia towaru otrzymała nieprawidłowe oznaczenia.",choices:[
    {label:"Popraw etykiety · 250 zł",effect:()=>{S.money-=250;log("Poprawiono oznaczenia towaru.");}},
-   {label:"Wstrzymaj wysyłkę",effect:()=>{S.rep++;log("Wstrzymano wysyłkę i uniknięto pomyłki.");}}
+   {label:"Wstrzymaj wysyłkę",effect:()=>{changeReputation(1,"Wstrzymano wysyłkę i uniknięto pomyłki.");}}
   ]},
   {title:"Awaria wózka",description:"Jeden z operatorów zgłasza niepokojące dźwięki dochodzące z układu napędowego.",choices:[
    {label:"Wezwij serwis · 900 zł",effect:()=>{S.money-=900;let v=pick(S.fleet);if(v)v.condition=100;log("Serwis usunął problem techniczny.");}},
    {label:"Kontynuuj pracę",effect:()=>{let v=pick(S.fleet);if(v)v.condition=clamp(v.condition-15,0,100);log("Zignorowano niepokojące objawy wózka.");}}
   ]},
   {title:"Opóźniona dostawa",description:"Dostawca informuje o opóźnieniu transportu.",choices:[
-   {label:"Zorganizuj transport zastępczy · 700 zł",effect:()=>{S.money-=700;S.rep++;log("Transport zastępczy dotarł na czas.");}},
-   {label:"Poczekaj",effect:()=>{S.rep--;log("Opóźnienie dostawy wpłynęło na reputację.");}}
+   {label:"Zorganizuj transport zastępczy · 700 zł",effect:()=>{changeReputation(1,"Transport zastępczy dotarł na czas.");}},
+   {label:"Poczekaj",effect:()=>{changeReputation(-1,"Opóźnienie dostawy wpłynęło na reputację.");}}
   ]},
   {title:"Nadgodziny",description:"Klient prosi o pilną obsługę dodatkowej partii towaru.",choices:[
    {label:"Przyjmij zlecenie · zysk 1500 zł",effect:()=>{S.money+=1500;S.finances.income+=1500;S.taxCycleRevenue+=1500;log("Zrealizowano pilne zlecenie.");}},

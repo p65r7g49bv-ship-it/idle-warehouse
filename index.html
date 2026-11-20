@@ -301,7 +301,12 @@ const FUNNY=[
  "Pracownik zgłosił, że paleta jest krzywo. Paleta nie złożyła wyjaśnień.",
  "Dział logistyki rozważa wprowadzenie osobnego stanowiska do pilnowania taśmy klejącej.",
  "Wózek otrzymał imię. Operator twierdzi, że teraz jeździ znacznie lepiej.",
- "Kierownik zmiany przez pięć minut szukał własnego notesu. Notes leżał w jego dłoni."
+ "Kierownik zmiany przez pięć minut szukał własnego notesu. Notes leżał w jego dłoni.",
+ "Nowy pracownik dostał 4 segregatory OPL do przeczytania, 3 segregatory ASP, 2 segregatory BHP i 1 długopis. Poszedł do toalety i już nie wrócił. Długopisu nie odzyskaliśmy.",
+ "Kierownik przeprowadził szkolenie związane z CultureWeek. Podsumowane zostało słowami: „jazda z kurwami ze stolicy”.",
+ "Pani Anetka z HR założyła mini. Kolejki do HR kończą się przy palarni.",
+ "Dodano nową OPL. Lista szkoleniowa została zmieniona po raz 47. w tym tygodniu.",
+ "Premiera miała ostatnio hitowa gra na konsole. Czuć zauważalne zwiększenie braków w obsadzie."
 ];
 
 function fresh(){
@@ -1453,14 +1458,12 @@ function resolveEvent(index){
  render();
 }
 function funnyEvent(){
- const employeeCount=S.employees.length;
-  const dailyLimit=clamp(Math.ceil(employeeCount*2.5),6,40);
+ const dailyLimit=4*S.shiftCount;
+
  if(S.funny.count>=dailyLimit)return;
 
- const chance=Math.min(.95,.32+employeeCount*.12);
- if(Math.random()>chance)return;
-
  S.funny.count++;
+
  log("💬 "+pick(FUNNY));
 }
 function endDay(){

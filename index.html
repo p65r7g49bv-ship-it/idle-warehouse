@@ -544,7 +544,26 @@ function render(){
  };
 
  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===activeTab));
- document.getElementById("content").innerHTML=views[activeTab]();
+
+ try{
+  const view=views[activeTab];
+
+  if(typeof view!=="function"){
+   throw new Error("Brak funkcji widoku: "+activeTab);
+  }
+
+  document.getElementById("content").innerHTML=view();
+
+ }catch(error){
+  console.error("Błąd zakładki:",activeTab,error);
+
+  document.getElementById("content").innerHTML=`
+   <div class="card">
+    <h2>Błąd zakładki: ${activeTab}</h2>
+    <p>${escapeHTML(error.message)}</p>
+   </div>
+  `;
+ }
 }
 
 document.getElementById("navigation").addEventListener("click",function(event){

@@ -547,6 +547,15 @@ function render(){
  document.getElementById("content").innerHTML=views[activeTab]();
 }
 
+document.getElementById("navigation").addEventListener("click",function(event){
+ const button=event.target.closest("button[data-tab]");
+
+ if(!button)return;
+
+ activeTab=button.dataset.tab;
+ render();
+});
+
 function companyView(){
  const income=S.finances.income,costs=S.finances.cost;
  return `<h2>🏢 Firma</h2><div class="grid">

@@ -341,7 +341,8 @@ function fresh(){
   internUntilDay:0,
   shiftCount:1,pendingEvent:null,lastSeen:Date.now(),taxCycleRevenue:0,
   warehouse:{level:1,capacity:30,condition:100,serviceCenter:false,canteen:false,smoking:false,multimedia:false,developmentDept:false},
-  upgrades:{automation:0,planning:0,training:0,marketing:0,maintenance:0},
+  upgradeSystemVersion:1,
+  upgrades:{automation:1,planning:1,training:1,marketing:1,maintenance:1},
   employees:[{id:1,name:"Jan Kowalski",role:"Magazynier",salary:3800,hours:180,skill:0,udt:true,promotionLevel:0,trainedBasic:false,trainedAdvanced:false}],
   fleet:[{id:1,model:"RX18",rented:true,condition:92,hours:1250,broken:false}],
   contracts:[],offers:[],nextId:2,
@@ -388,14 +389,17 @@ function changeReputation(amount,reason=""){
   log("Reputacja firmy "+direction+" o "+Math.abs(difference)+" pkt. "+reason);
  }
 }
+
 function migrate(data){
  const base=fresh();
  const merged={...base,...data};
+
  merged.warehouse={...base.warehouse,...(data.warehouse||{})};
  merged.upgrades={...base.upgrades,...(data.upgrades||{})};
  merged.finances={...base.finances,...(data.finances||{})};
  merged.rescue={...base.rescue,...(data.rescue||{})};
  merged.funny={...base.funny,...(data.funny||{})};
+
  merged.internUntilDay=Number(data.internUntilDay)||0;
  merged.employees=Array.isArray(data.employees)?data.employees:base.employees;
  merged.fleet=Array.isArray(data.fleet)?data.fleet:base.fleet;
@@ -403,22 +407,47 @@ function migrate(data){
  merged.offers=Array.isArray(data.offers)?data.offers:[];
  merged.logs=Array.isArray(data.logs)?data.logs:base.logs;
 
+ if(!data.upgradeSystemVersion){
+  merged.upgrades.automation=Math.min(4,(Number(merged.upgrades.automation)||0)+1);
+  merged.upgrades.planning=Math.min(3,(Number(merged.upgrades.planning)||0)+1);
+  merged.upgrades.training=Math.min(3,(Number(merged.upgrades.training)||0)+1);
+  merged.upgrades.marketing=Math.min(3,(Number(merged.upgrades.marketing)||0)+1);
+  merged.upgrades.maintenance=Math.min(3,(Number(merged.upgrades.maintenance)||0)+1);
+  merged.upgradeSystemVersion=1;
+ }
+
+ merged.upgrades.automation=clamp(Number(merged.upgrades.automation)||1,1,4);
+ merged.upgrades.planning=clamp(Number(merged.upgrades.planning)||1,1,3);
+ merged.upgrades.training=clamp(Number(merged.upgrades.training)||1,1,3);
+ merged.upgrades.marketing=clamp(Number(merged.upgrades.marketing)||1,1,3);
+ merged.upgrades.maintenance=clamp(Number(merged.upgrades.maintenance)||1,1,3);
+
  merged.fleet.forEach(v=>{
   if(v.model==="RX60_30")v.model="RX22";
   if(v.model==="RX60_50")v.model="RX30";
-  v.condition??=90;v.hours??=0;v.broken??=false;v.rented??=false;
+  v.condition??=90;
+  v.hours??=0;
+  v.broken??=false;
+  v.rented??=false;
  });
+
  merged.employees.forEach(e=>{
-  e.hours??=0;e.skill??=0;e.promotionLevel??=0;
-  e.trainedBasic??=false;e.trainedAdvanced??=false;e.udt??=true;
+  e.hours??=0;
+  e.skill??=0;
+  e.promotionLevel??=0;
+  e.trainedBasic??=false;
+  e.trainedAdvanced??=false;
+  e.udt??=true;
  });
 
  merged.contracts.forEach(c=>{
   const total=contractTotal(c);
+
   if(c.totalPallets==null){
    const oldDuration=Math.max(1,Number(c.days||1)*24);
    const fraction=clamp((Number(c.progress)||0)/oldDuration,0,1);
    const completed=Math.min(total,Math.round(total*fraction));
+
    c.totalPallets=total;
    c.receivedPallets=completed;
    c.shippedPallets=completed;
@@ -427,14 +456,20 @@ function migrate(data){
    c.receivedPallets=clamp(Math.round(Number(c.receivedPallets)||0),0,total);
    c.shippedPallets=clamp(Math.round(Number(c.shippedPallets)||0),0,c.receivedPallets);
   }
+
   c.receivedPallets??=0;
   c.shippedPallets??=0;
-  c.done??=false;c.failed??=false;
+  c.done??=false;
+  c.failed??=false;
  });
 
- merged.nextId=Math.max(merged.nextId||2,
+ merged.nextId=Math.max(
+  merged.nextId||2,
   ...merged.employees.map(x=>x.id+1),
-  ...merged.fleet.map(x=>x.id+1),2);
+  ...merged.fleet.map(x=>x.id+1),
+  2
+ );
+
  return merged;
 }
 
@@ -496,16 +531,22 @@ function formatCountdown(hours){
 }
 
 /* Bonusy doświadczenia z zaplecza */
+
 function employeeExperienceMultiplier(){
  let bonus=0;
+
  if(S.warehouse.serviceCenter)bonus+=.05;
  if(S.warehouse.canteen)bonus+=.10;
  if(S.warehouse.smoking)bonus+=.05;
  if(S.warehouse.multimedia)bonus+=.10;
  if(S.warehouse.developmentDept)bonus+=.20;
- bonus+=S.upgrades.training*.08;
+
+ if(S.upgrades.training>=2)bonus+=.05;
+ if(S.upgrades.training>=3)bonus+=.10;
+
  return 1+bonus;
 }
+
 function employeeExperienceBonusText(){
  return Math.round((employeeExperienceMultiplier()-1)*100);
 }
@@ -1013,18 +1054,66 @@ function contractsView(){
  </div>`;
 }
 
+
 function developmentView(){
  const items=[
-  ["automation","Automatyzacja","Zmniejsza część kosztów administracyjnych.",12000],
-  ["planning","Planowanie logistyki","Zwiększa limit aktywnych kontraktów. Poziom 1 odblokowuje 2 zmiany, poziom 2 odblokowuje 3 zmiany.",18000],
-  ["training","Szkolenia","Zwiększa efektywność pracowników oraz tempo zdobywania doświadczenia.",9000],
-  ["marketing","Marketing","Zwiększa reputację i jakość ofert.",11000],
-  ["maintenance","Utrzymanie floty","Zmniejsza zużycie wózków.",14000]
+  {
+   key:"planning",
+   title:"Planowanie logistyki materiałowej",
+   levels:[
+    "Jedna zmiana robocza.",
+    "Odblokowuje możliwość pracy na 2 zmiany.",
+    "Odblokowuje możliwość pracy na 3 zmiany."
+   ],
+   costs:{2:95000,3:220000}
+  },
+  {
+   key:"automation",
+   title:"Automatyzacja",
+   levels:[
+    "Podstawowy system organizacji procesów.",
+    "3% niższy podatek miesięczny dzięki usprawnieniu procesów kadrowych.",
+    "Dodatkowe 5% obniżki podatku dzięki oszczędności energii.",
+    "Dodatkowe 8% obniżki podatku dzięki ulgom podatkowym dla firm."
+   ],
+   costs:{2:70000,3:250000,4:500000}
+  },
+  {
+   key:"training",
+   title:"Szkolenia",
+   levels:[
+    "Podstawowe szkolenia BHP i instruktaż stanowiskowy.",
+    "5% szybsze zdobywanie doświadczenia dzięki TPM Leader.",
+    "Dodatkowe 10% szybsze zdobywanie doświadczenia dzięki filmom i instrukcjom pracy."
+   ],
+   costs:{2:35000,3:60000}
+  },
+  {
+   key:"marketing",
+   title:"Marketing",
+   levels:[
+    "Podstawowa obecność firmy na rynku.",
+    "50% szans na podwójną reputację za ukończony kontrakt.",
+    "Dodatkowe 5 punktów reputacji co miesiąc dzięki kampanii pracowniczej."
+   ],
+   costs:{2:350000,3:1000000}
+  },
+  {
+   key:"maintenance",
+   title:"Utrzymanie floty",
+   levels:[
+    "Podstawowe metody utrzymywania floty w dobrym stanie.",
+    "10% wolniejsze zużycie wózków dzięki częstszym przeglądom mechaników STILL.",
+    "Naprawy floty kosztują 50% mniej dzięki serwisowi na miejscu."
+   ],
+   costs:{2:300000,3:1000000}
+  }
  ];
 
  const internActive=S.internUntilDay>S.day;
 
  return `<h2>📈 Rozwój przedsiębiorstwa</h2>
+
  <div class="card">
   <h3>🔧 Praktykant — kontrola techniczna floty</h3>
   <p>Praktykant sprawdza stan techniczny wózków i umożliwia przeprowadzenie zbiorczej naprawy całej floty.</p>
@@ -1045,24 +1134,36 @@ function developmentView(){
   <p>Aktualna liczba zmian: <b>${S.shiftCount}</b></p>
   <p>Poziom planowania: ${S.upgrades.planning}</p>
   <p class="muted">Dodatkowe zmiany wymagają odpowiedniej liczby pracowników i wózków.</p>
-  <button onclick="setShifts(2)" ${S.upgrades.planning<1?"disabled":""}>Uruchom 2 zmiany</button>
-  <button onclick="setShifts(3)" ${S.upgrades.planning<2?"disabled":""}>Uruchom 3 zmiany</button>
+  <button onclick="setShifts(2)" ${S.upgrades.planning<2?"disabled":""}>Uruchom 2 zmiany</button>
+  <button onclick="setShifts(3)" ${S.upgrades.planning<3?"disabled":""}>Uruchom 3 zmiany</button>
   <button onclick="setShifts(1)">Powróć do 1 zmiany</button>
  </div>
 
- <div class="grid" style="margin-top:12px">${items.map(([key,title,desc,base])=>{
-  const level=S.upgrades[key],cost=base*(level+1);
-  return `<div class="card"><h3>${title}</h3><p>${desc}</p><p>Poziom: <b>${level}</b></p>
-  ${key==="training"?`<p class="good">Bonus do doświadczenia: +${level*8}%</p>`:""}
-  ${key==="planning"&&level>=2
- ?'<p class="good">Maksymalny poziom osiągnięty. Odblokowano 3 zmiany.</p><button disabled>Rozwój zakończony</button>'
- :`<p class="price">Koszt kolejnego poziomu: ${money(cost)}</p>
- <button onclick="upgradeResearch('${key}',${base})" ${S.money<cost?"disabled":""}>Rozwijaj</button>`}
-</div>`;
- }).join("")}</div>`;
+ <div class="grid" style="margin-top:12px">
+ ${items.map(item=>{
+  const level=S.upgrades[item.key];
+  const maxLevel=item.levels.length;
+  const nextLevel=level+1;
+  const cost=item.costs[nextLevel];
+  const currentDescription=item.levels[level-1];
+
+  return `<div class="card">
+   <h3>${item.title}</h3>
+   <p>Poziom: <b>${level}/${maxLevel}</b></p>
+   <p class="good">${currentDescription}</p>
+   ${level>=maxLevel
+    ?'<p class="good">Osiągnięto maksymalny poziom rozwoju.</p><button disabled>Rozwój zakończony</button>'
+    :`<p>Następny poziom: <b>${item.levels[nextLevel-1]}</b></p>
+      <p class="price">Koszt: ${money(cost)}</p>
+      <button onclick="upgradeResearch('${item.key}')" ${S.money<cost?"disabled":""}>Rozwijaj</button>`
+   }
+  </div>`;
+ }).join("")}
+ </div>`;
 }
 
 /* SZCZEGÓŁOWY ROZKŁAD KOSZTÓW MIESIĘCZNYCH */
+
 function monthlyCostBreakdown(){
  const wages=S.employees.reduce((a,e)=>a+e.salary,0);
  const rent=S.fleet.filter(v=>v.rented).reduce((a,v)=>a+(MODELS[v.model]?.rent||0),0);
@@ -1081,12 +1182,11 @@ function monthlyCostBreakdown(){
 
  const administration=1200+S.employees.length*120;
  const gross=wages+rent+electricity+water+clothing+land+maintenance+facilities+administration;
- const discount=gross*S.upgrades.automation*.04;
- const total=Math.round(gross-discount);
+ const total=Math.round(gross);
 
  return {
   wages,rent,electricity,water,clothing,land,maintenance,
-  facilities,administration,gross,discount,total
+  facilities,administration,gross,discount:0,total
  };
 }
 
@@ -1318,6 +1418,7 @@ function hireIntern(){
  render();
 }
 
+
 function repairAllForklifts(){
  if(S.internUntilDay<=S.day){
   alert("Najpierw zatrudnij praktykanta w dziale Rozwój.");
@@ -1331,8 +1432,12 @@ function repairAllForklifts(){
   return;
  }
 
- const totalCost=damaged.reduce((sum,v)=>
+ let totalCost=damaged.reduce((sum,v)=>
   sum+Math.max(500,Math.round((100-v.condition)*100)),0);
+
+ if(S.upgrades.maintenance>=3){
+  totalCost=Math.round(totalCost*.5);
+ }
 
  if(S.money<totalCost){
   alert("Za mało środków na naprawę całej floty. Potrzeba "+money(totalCost)+".");
@@ -1517,43 +1622,100 @@ function buildFacility(key,cost){
  log("Uruchomiono nowy obiekt zaplecza: "+key+".");saveGame();render();
 }
 
-function upgradeResearch(key,base){
- if(key==="planning"&&S.upgrades.planning>=2){
-  alert("Planowanie logistyki osiągnęło maksymalny poziom. Odblokowano już 3 zmiany.");
+
+function upgradeResearch(key){
+ const costs={
+  planning:{2:95000,3:220000},
+  automation:{2:70000,3:250000,4:500000},
+  training:{2:35000,3:60000},
+  marketing:{2:350000,3:1000000},
+  maintenance:{2:300000,3:1000000}
+ };
+
+ const maxLevels={
+  planning:3,
+  automation:4,
+  training:3,
+  marketing:3,
+  maintenance:3
+ };
+
+ if(!Object.prototype.hasOwnProperty.call(maxLevels,key))return;
+
+ const currentLevel=S.upgrades[key];
+ const nextLevel=currentLevel+1;
+
+ if(nextLevel>maxLevels[key]){
+  alert("Ten obszar osiągnął maksymalny poziom.");
   return;
  }
 
- const level=S.upgrades[key],cost=base*(level+1);
- if(S.money<cost)return;
+ const cost=costs[key][nextLevel];
+
+ if(S.money<cost){
+  alert("Za mało środków na rozwój. Potrzeba "+money(cost)+".");
+  return;
+ }
 
  S.money-=cost;
  S.finances.cost+=cost;
- S.upgrades[key]++;
+ S.upgrades[key]=nextLevel;
 
- log("Rozwinięto obszar: "+key+" do poziomu "+S.upgrades[key]+".");
  if(key==="planning"){
-  if(S.upgrades.planning>=1)S.shiftCount=Math.min(S.shiftCount,2);
-  if(S.upgrades.planning>=2)S.shiftCount=Math.min(S.shiftCount,3);
+  S.shiftCount=Math.min(S.shiftCount,nextLevel);
  }
+
+ const names={
+  planning:"Planowanie logistyki materiałowej",
+  automation:"Automatyzacja",
+  training:"Szkolenia",
+  marketing:"Marketing",
+  maintenance:"Utrzymanie floty"
+ };
+
+ log("Rozwinięto obszar: "+names[key]+" do poziomu "+nextLevel+".");
  generateOffers();
  saveGame();
  render();
 }
 
 function setShifts(n){
- if(n===2&&S.upgrades.planning<1){alert("Wymagany 1 poziom planowania.");return}
- if(n===3&&S.upgrades.planning<2){alert("Wymagany 2 poziom planowania.");return}
- if(n>S.employees.length){alert("Za mało pracowników do obsługi zmian.");return}
- if(n>S.fleet.length){alert("Za mało wózków do obsługi zmian.");return}
- S.shiftCount=n;log("Zmieniono organizację pracy. Liczba zmian: "+n+".");saveGame();render();
+ if(n===2&&S.upgrades.planning<2){
+  alert("Wymagany 2 poziom planowania logistyki materiałowej.");
+  return;
+ }
+
+ if(n===3&&S.upgrades.planning<3){
+  alert("Wymagany 3 poziom planowania logistyki materiałowej.");
+  return;
+ }
+
+ if(n>S.employees.length){
+  alert("Za mało pracowników do obsługi zmian.");
+  return;
+ }
+
+ if(n>S.fleet.length){
+  alert("Za mało wózków do obsługi zmian.");
+  return;
+ }
+
+ S.shiftCount=n;
+ log("Zmieniono organizację pracy. Liczba zmian: "+n+".");
+ saveGame();
+ render();
 }
 
 /* EKONOMIA */
+
 function settleMonth(){
- const cost=monthlyCosts();S.money-=cost;S.finances.cost+=cost;
+ const cost=monthlyCosts();
+
+ S.money-=cost;
+ S.finances.cost+=cost;
  S.finances.history.push({day:S.day,income:0,cost});
+
  log("Rozliczenie miesięczne. Koszty utrzymania: "+money(cost)+".");
- if(S.money<0)financialRescue();
 }
 function financialRescue(){
  if(S.rescue.used===0){
@@ -1602,7 +1764,7 @@ function hourlyTick(){
   c.receivedPallets=clamp(Math.round(Number(c.receivedPallets)||0),0,total);
   c.shippedPallets=clamp(Math.round(Number(c.shippedPallets)||0),0,c.receivedPallets);
 
-  const multiplier=1+S.upgrades.automation*.08;
+  const multiplier=1;
   const receiveRate=Math.max(1,Math.round(c.p*1.5*multiplier));
   const receivedNow=Math.min(receiveRate,total-c.receivedPallets);
   c.receivedPallets+=receivedNow;
@@ -1623,7 +1785,14 @@ function hourlyTick(){
    c.shippedPallets=total;
    c.receivedPallets=total;
    c.done=true;
-   changeReputation(c.rep,"Ukończono kontrakt firmy "+c.company+".");
+   let reputationReward=c.rep;
+
+if(S.upgrades.marketing>=2&&Math.random()<.5){
+ reputationReward*=2;
+ log("Kampania marketingowa zwiększyła nagrodę reputacyjną za kontrakt firmy "+c.company+".");
+}
+
+changeReputation(reputationReward,"Ukończono kontrakt firmy "+c.company+".");
    const bonus=Math.round(c.value*.35);
    S.money+=bonus;
    S.finances.income+=bonus;
@@ -1637,7 +1806,7 @@ function hourlyTick(){
  const operatorCount=Math.min(workers.length,usable.length);
  const avgSkill=workers.length?workers.reduce((a,e)=>a+e.skill,0)/workers.length:0;
  const base=usable.reduce((a,v)=>a+(MODELS[v.model]?.throughput||0),0);
- const efficiency=1+avgSkill/250+S.upgrades.training*.08;
+ const efficiency=1+avgSkill/250;
  const warehouseFactor=S.warehouse.condition/100;
  const output=base*efficiency*warehouseFactor;
 
@@ -1658,7 +1827,7 @@ function hourlyTick(){
 
   usable.slice(0,operatorCount).forEach(v=>{
    v.hours++;
-   const wear=Math.max(.015,.035-S.upgrades.maintenance*.004);
+   const wear=S.upgrades.maintenance>=2?.035*.9:.035;
    v.condition=clamp(v.condition-wear,0,100);
 
    if(v.condition<=0&&!v.broken){
@@ -1826,6 +1995,7 @@ function funnyEvent(){
  log("💬 "+pick(FUNNY));
 }
 
+
 function endDay(){
  S.dayHours=0;
  S.day++;
@@ -1856,6 +2026,10 @@ function endDay(){
   );
 
   S.taxCycleRevenue=0;
+
+  if(S.upgrades.marketing>=3){
+   changeReputation(5,"Miesięczna kampania marketingowa firmy.");
+  }
 
   if(S.money<0)financialRescue();
  }

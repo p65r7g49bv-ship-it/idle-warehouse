@@ -628,8 +628,10 @@ function facilityCard(key,title,desc,cost,monthly){
 }
 
 
+
 function fleetView(){
  const ownedCount=S.fleet.filter(v=>!v.rented).length;
+ const rentedCount=S.fleet.filter(v=>v.rented).length;
  const maxOwned=S.warehouse.level*3+2;
  const internActive=S.internUntilDay>S.day;
 
@@ -644,25 +646,35 @@ function fleetView(){
     <div class="vehicle">
      <img src="${m.image}" alt="${m.name}" onerror="this.src='${IMG.RX20}'">
      <div style="flex:1;min-width:0">
-      <div class="row between">
-       <h3>${m.name}</h3>
-       <button onclick="buyForklift('${id}')"
-        ${S.money<m.price||ownedCount>=maxOwned?"disabled":""}
-        style="font-size:22px;font-weight:bold;padding:4px 14px">+</button>
-      </div>
+      <h3>${m.name}</h3>
       <span class="tag">Udźwig ${num(m.load)} kg</span>
-      <p class="price">${money(m.price)}</p>
+      <p class="price">Zakup: ${money(m.price)}</p>
+      <p>Wynajem miesięczny: ${money(m.rent)}</p>
      </div>
     </div>
-    <p>Wynajem miesięczny: ${money(m.rent)}</p>
+
     <p>Zużycie energii: ${m.energy} zł/h</p>
     <p>Przepustowość: ${m.throughput} jednostek/h</p>
-    <button onclick="rentForklift('${id}')">Wynajmij</button>
+
+    <div class="actions">
+     <button onclick="buyForklift('${id}')"
+      ${S.money<m.price||ownedCount>=maxOwned?"disabled":""}>
+      ＋ Kup
+     </button>
+
+     <button onclick="rentForklift('${id}')">
+      ＋ Wynajmij
+     </button>
+    </div>
+
+    ${ownedCount>=maxOwned?
+     '<p class="small bad">Osiągnięto limit kupionych wózków.</p>':""}
    </div>
   `).join("");
 
  const cards=S.fleet.map(v=>{
   const m=MODELS[v.model]||MODELS.RX18;
+
   return `
    <div class="card">
     <div class="vehicle">
@@ -674,46 +686,77 @@ function fleetView(){
       <span class="tag">${v.broken?"Awaria":num(v.condition)+"% sprawności"}</span>
      </div>
     </div>
+
     <p>Przepracowane godziny: ${num(v.hours)}</p>
     <p>Wydajność: ${m.throughput} jednostek/h</p>
     <p>Zużycie energii: ${m.energy} zł/h</p>
-    <p>Stan: ${v.broken?'<span class="bad">Uszkodzony</span>':v.condition<30?'<span class="bad">Wymaga serwisu</span>':'<span class="good">Gotowy do pracy</span>'}</p>
-    <button onclick="sellForklift(${v.id})">Sprzedaj</button>
+
+    <p>Stan:
+     ${v.broken?
+      '<span class="bad">Uszkodzony</span>':
+      v.condition<30?
+      '<span class="bad">Wymaga serwisu</span>':
+      '<span class="good">Gotowy do pracy</span>'}
+    </p>
+
+    ${v.rented?
+     `<button onclick="endRental(${v.id})">Skończ wynajem</button>`:
+     `<button onclick="sellForklift(${v.id})">Sprzedaj</button>`}
    </div>
   `;
  }).join("");
 
  return `
   <h2>🚜 Oferta zakupu i wynajmu</h2>
+
   <div class="card">
    <p>Kupione wózki: <b>${ownedCount} / ${maxOwned}</b></p>
-   <p class="muted">Kliknij + przy wybranym modelu, aby kupić jeden egzemplarz.</p>
+   <p>Wynajęte wózki: <b>${rentedCount}</b></p>
+   <p class="muted">
+    Wybierz osobno zakup lub wynajem. Każdy przycisk dodaje jeden wózek wybranego modelu.
+   </p>
   </div>
+
   <div class="grid">${shop}</div>
 
   <h2 style="margin-top:22px">🔧 Serwis floty</h2>
+
   <div class="card">
    <p>Praktykant:
     <b class="${internActive?"good":"bad"}">
-     ${internActive?"Aktywny — pozostało "+(S.internUntilDay-S.day)+" dni":"Brak aktywnego praktykanta"}
+     ${internActive?
+      "Aktywny — pozostało "+(S.internUntilDay-S.day)+" dni":
+      "Brak aktywnego praktykanta"}
     </b>
    </p>
+
    <p>Wózki wymagające naprawy: <b>${repairList.length}</b></p>
    <p>Łączny koszt naprawy: <b>${money(repairCost)}</b></p>
+
    <button onclick="repairAllForklifts()"
     ${!internActive||repairList.length===0||S.money<repairCost?"disabled":""}>
     Napraw wszystkie
    </button>
-   ${!internActive?'<p class="muted">Zatrudnij praktykanta w zakładce Rozwój, aby odblokować naprawy.</p>':""}
-   ${internActive&&S.money<repairCost&&repairList.length>0?'<p class="bad">Za mało środków na naprawę całej floty.</p>':""}
+
+   ${!internActive?
+    '<p class="muted">Zatrudnij praktykanta w zakładce Rozwój, aby odblokować naprawy.</p>':""}
+
+   ${internActive&&S.money<repairCost&&repairList.length>0?
+    '<p class="bad">Za mało środków na naprawę całej floty.</p>':""}
   </div>
 
   <h2 style="margin-top:22px">Twoja flota</h2>
-  <p class="muted">Wydajność magazynu zależy od liczby sprawnych wózków, ich udźwigu i dostępnych operatorów.</p>
-  <div class="grid">${cards||'<div class="empty">Brak wózków we flocie.</div>'}</div>
+
+  <p class="muted">
+   Wydajność magazynu zależy od liczby sprawnych wózków,
+   ich udźwigu i dostępnych operatorów.
+  </p>
+
+  <div class="grid">
+   ${cards||'<div class="empty">Brak wózków we flocie.</div>'}
+  </div>
  `;
 }
-
 
 function staffView(){
  return `<h2>👷 Pracownicy</h2><div class="card"><h3>Zespół magazynu</h3>
@@ -964,12 +1007,20 @@ function escapeHTML(s){
 }
 
 /* FLOTА */
+
 function buyForklift(model){
- const m=MODELS[model];if(!m||S.money<m.price)return;
+ const m=MODELS[model];
+ if(!m)return;
+
+ if(S.money<m.price){
+  alert("Za mało środków na zakup tego wózka.");
+  return;
+ }
 
  const ownedCount=S.fleet.filter(v=>!v.rented).length;
+ const maxOwned=S.warehouse.level*3+2;
 
- if(ownedCount>=S.warehouse.level*3+2){
+ if(ownedCount>=maxOwned){
   alert("Brak miejsca na kolejne kupione wózki.");
   return;
  }
@@ -990,19 +1041,99 @@ function buyForklift(model){
  saveGame();
  render();
 }
+
 function rentForklift(model){
- const m=MODELS[model];if(!m)return;
- S.fleet.push({id:S.nextId++,model,rented:true,condition:100,hours:0,broken:false});
- log("Wynajęto wózek "+m.name+".");saveGame();render();
+ const m=MODELS[model];
+ if(!m)return;
+
+ S.fleet.push({
+  id:S.nextId++,
+  model,
+  rented:true,
+  condition:100,
+  hours:0,
+  broken:false
+ });
+
+ log("Wynajęto wózek "+m.name+". Miesięczny koszt wynajmu: "+money(m.rent)+".");
+ saveGame();
+ render();
 }
+
+function endRental(id){
+ const v=S.fleet.find(x=>x.id===id);
+
+ if(!v||!v.rented)return;
+
+ const remainingFleet=S.fleet.filter(x=>x.id!==id);
+
+ const unsupported=activeContracts().find(c=>
+  !remainingFleet.some(x=>
+   !x.broken&&
+   x.condition>0&&
+   (MODELS[x.model]?.load||0)>=c.load
+  )
+ );
+
+ if(unsupported){
+  alert(
+   "Nie można zakończyć wynajmu. Pozostała flota nie obsłuży aktywnego kontraktu wymagającego udźwigu "+
+   num(unsupported.load)+" kg."
+  );
+  return;
+ }
+
+ S.fleet=remainingFleet;
+
+ log("Zakończono wynajem wózka "+MODELS[v.model].name+". Wózek został zwrócony.");
+ saveGame();
+ render();
+}
+
 function sellForklift(id){
- const v=S.fleet.find(x=>x.id===id);if(!v)return;
- if(S.fleet.length<=1){alert("Firma musi posiadać przynajmniej jeden wózek.");return}
- if(S.fleet.some(x=>x.id!==id)&&activeContracts().some(c=>c.load>(maxLoad()))){alert("Najpierw zabezpiecz obsługę aktywnych kontraktów.");return}
- const value=v.rented?0:Math.round(MODELS[v.model].price*.45*(v.condition/100));
- S.money+=value;S.fleet=S.fleet.filter(x=>x.id!==id);
- log("Sprzedano wózek "+MODELS[v.model].name+" za "+money(value)+".");saveGame();render();
+ const v=S.fleet.find(x=>x.id===id);
+ if(!v)return;
+
+ if(v.rented){
+  alert("Wynajętego wózka nie można sprzedać. Użyj przycisku Skończ wynajem.");
+  return;
+ }
+
+ if(S.fleet.length<=1){
+  alert("Firma musi posiadać przynajmniej jeden wózek.");
+  return;
+ }
+
+ const remainingFleet=S.fleet.filter(x=>x.id!==id);
+
+ const unsupported=activeContracts().find(c=>
+  !remainingFleet.some(x=>
+   !x.broken&&
+   x.condition>0&&
+   (MODELS[x.model]?.load||0)>=c.load
+  )
+ );
+
+ if(unsupported){
+  alert(
+   "Nie można sprzedać tego wózka. Pozostała flota nie obsłuży aktywnego kontraktu wymagającego udźwigu "+
+   num(unsupported.load)+" kg."
+  );
+  return;
+ }
+
+ const value=Math.round(
+  MODELS[v.model].price*.45*(v.condition/100)
+ );
+
+ S.money+=value;
+ S.fleet=remainingFleet;
+
+ log("Sprzedano wózek "+MODELS[v.model].name+" za "+money(value)+".");
+ saveGame();
+ render();
 }
+
 
 function hireIntern(){
  if(S.internUntilDay>S.day){

@@ -1825,28 +1825,58 @@ function funnyEvent(){
 
  log("💬 "+pick(FUNNY));
 }
+
 function endDay(){
- S.dayHours=0;S.day++;
+ S.dayHours=0;
+ S.day++;
+
  S.funny.month=Math.floor((S.day-1)/30)+1;
  S.funny.count=0;
- if(S.day%30===0)settleMonth();
- if(S.day%180===0){
-  const tax=Math.round(S.taxCycleRevenue*TAX_RATE);
-  S.money-=tax;S.finances.tax+=tax;S.taxCycleRevenue=0;
-  log("Pobrano podatek okresowy 8%: "+money(tax)+".");
+
+ if(S.day%30===0){
+  settleMonth();
+
+  const automationLevel=S.upgrades.automation||1;
+  let taxDiscount=0;
+
+  if(automationLevel>=2)taxDiscount+=0.03;
+  if(automationLevel>=3)taxDiscount+=0.05;
+  if(automationLevel>=4)taxDiscount+=0.08;
+
+  const grossTax=Math.round(S.taxCycleRevenue*TAX_RATE);
+  const tax=Math.round(grossTax*(1-taxDiscount));
+
+  S.money-=tax;
+  S.finances.tax+=tax;
+
+  log(
+   "Pobrano podatek miesięczny: "+money(tax)+
+   ". Przychód podatkowy: "+money(S.taxCycleRevenue)+
+   ". Obniżka z automatyzacji: "+Math.round(taxDiscount*100)+"%."
+  );
+
+  S.taxCycleRevenue=0;
+
+  if(S.money<0)financialRescue();
  }
+
  if(S.rescue.bankDebt>0&&S.day>S.rescue.bankDeadline){
   changeReputation(-5,"Firma nie spłaciła zadłużenia bankowego w terminie.");
   S.rescue.bankrupt=true;
   log("Nie spłacono długu w terminie. Firma ogłosiła bankructwo.");
  }
+
  S.employees.forEach(e=>{
   if(e.role==="Magazynier"&&e.hours>=200&&e.trainedBasic)promotionCheck(e);
   if(e.role==="Pracownik transportu wewnętrznego"&&e.hours>=400&&e.trainedAdvanced)promotionCheck(e);
  });
+
  if(S.day%3===0)generateOffers();
- log("Rozpoczęto dzień "+S.day+". Nowy dzień pracy.");saveGame();
+
+ log("Rozpoczęto dzień "+S.day+". Nowy dzień pracy.");
+ saveGame();
 }
+
 function promotionCheck(e){
  if(e.role==="Magazynier"){
   e.role="Pracownik transportu wewnętrznego";e.salary=4600;e.promotionLevel=1;

@@ -896,49 +896,97 @@ function staffView(){
 
 /* KONTRAKTY — NOWY SYSTEM PALETOWY */
 
+
 function contractsView(){
- return `<h2>📦 Kontrakty logistyczne</h2>
- <div class="card"><h3>Możliwości operacyjne</h3>
- <p>Maksymalny udźwig sprawnych wózków: <b>${num(maxLoad())} kg</b></p>
- <p>Pojemność magazynu: <b>${S.warehouse.capacity} miejsc</b></p>
- <p>Aktywne kontrakty: ${activeContracts().length}/${contractLimit()}</p>
- <p class="small">Kontrakt obejmuje przyjęcie towaru do magazynu i jego późniejszy wywóz. Postęp jest liczony na podstawie palet, a nie godzin.</p>
- <button onclick="generateOffers();render()">Odśwież oferty</button></div>
- <h3 style="margin-top:18px">Dostępne oferty</h3>
- <div class="grid">${S.offers.map(o=>{
-  const total=contractTotal(o);
-  return `<div class="card"><h3>${escapeHTML(o.company)}</h3><p class="muted">${escapeHTML(o.desc)}</p>
-  <p>Tempo obsługi: <b>${o.p} palet/h</b></p>
-  <p>Łączna liczba palet: <b>${num(total)} palet</b></p>
-  <p>Wymagany udźwig wózka: <b>${num(o.load)} kg</b></p>
-  <p>Zajętość magazynu: ${o.storage} miejsc</p><p>Czas realizacji: ${o.days} dni</p>
-  <p>Zaliczka: <span class="good">${money(o.advance)}</span></p>
-  <p>Kara za niewykonanie: <span class="bad">${money(o.penalty)}</span></p>
-  <p>Reputacja po wykonaniu: +${o.rep}</p>
-  <button onclick="acceptContract(${o.id})" ${activeContracts().length>=contractLimit()?"disabled":""}>Przyjmij kontrakt</button></div>`;
- }).join("")||'<div class="empty">Brak dostępnych ofert. Rozbuduj flotę lub magazyn.</div>'}</div>
- <h3 style="margin-top:20px">Realizowane i zakończone kontrakty</h3>
- <div class="grid">${S.contracts.map(c=>{
+ const current=S.contracts.filter(c=>!c.done&&!c.failed);
+ const finished=S.contracts.filter(c=>c.done||c.failed);
+
+ const activeCards=current.map(c=>{
   const total=contractTotal(c);
   const received=clamp(Number(c.receivedPallets)||0,0,total);
   const shipped=clamp(Number(c.shippedPallets)||0,0,received);
   const waiting=received-shipped;
   const remaining=Math.max(0,total-shipped);
-  const percent=c.done?100:Math.min(100,shipped/total*100);
-  return `<div class="card"><h3>${escapeHTML(c.company)}</h3>
-  <p>Wymagany udźwig: ${num(c.load)} kg</p>
-  <p>Łączna liczba palet w kontrakcie: <b>${num(total)}</b></p>
-  <p>Palety przyjęte do magazynu: <b class="good">${num(received)} / ${num(total)}</b></p>
-  <p>Palety oczekujące na wywóz: <b class="blue">${num(waiting)}</b></p>
-  <p>Palety pozostałe do wywiezienia: <b>${num(remaining)}</b></p>
-  <p>Palety wywiezione: <b>${num(shipped)} / ${num(total)}</b></p>
-  <div class="contract-progress"><div style="width:${percent}%"></div></div>
-  <p class="small">Postęp realizacji: ${percent.toFixed(1).replace(".",",")}%</p>
-  <p>Status: ${c.done?'<span class="good">Zakończony</span>':c.failed?'<span class="bad">Niepowodzenie</span>':'<span class="blue">W realizacji</span>'}</p>
-  <p>Wartość kontraktu: ${money(c.value)}</p></div>`;
- }).join("")||'<div class="empty">Nie masz jeszcze historii kontraktów.</div>'}</div>`;
-}
+  const percent=Math.min(100,shipped/total*100);
 
+  return `<div class="card">
+   <h3>${escapeHTML(c.company)}</h3>
+   <p>Wymagany udźwig: ${num(c.load)} kg</p>
+   <p>Łączna liczba palet w kontrakcie: <b>${num(total)}</b></p>
+   <p>Palety przyjęte do magazynu: <b class="good">${num(received)} / ${num(total)}</b></p>
+   <p>Palety oczekujące na wywóz: <b class="blue">${num(waiting)}</b></p>
+   <p>Palety pozostałe do wywiezienia: <b>${num(remaining)}</b></p>
+   <p>Palety wywiezione: <b>${num(shipped)} / ${num(total)}</b></p>
+   <div class="contract-progress"><div style="width:${percent}%"></div></div>
+   <p class="small">Postęp realizacji: ${percent.toFixed(1).replace(".",",")}%</p>
+   <p>Status: <span class="blue">W realizacji</span></p>
+   <p>Wartość kontraktu: ${money(c.value)}</p>
+  </div>`;
+ }).join("");
+
+ const finishedCards=finished.map(c=>{
+  const total=contractTotal(c);
+  const received=clamp(Number(c.receivedPallets)||0,0,total);
+  const shipped=clamp(Number(c.shippedPallets)||0,0,received);
+  const percent=c.done?100:Math.min(100,shipped/total*100);
+
+  return `<div class="card" style="width:100%;max-width:520px;padding:10px 14px">
+   <div class="row between">
+    <b>${escapeHTML(c.company)}</b>
+    <span class="${c.done?"good":"bad"}">
+     ${c.done?"✓ Zakończony":"✕ Niepowodzenie"}
+    </span>
+   </div>
+   <div class="row between">
+    <span class="small">Palety: ${num(shipped)} / ${num(total)}</span>
+    <span class="small">Wartość: ${money(c.value)}</span>
+   </div>
+   <div class="contract-progress">
+    <div style="width:${percent}%"></div>
+   </div>
+   <p class="small">Postęp: ${percent.toFixed(1).replace(".",",")}% · Udźwig: ${num(c.load)} kg</p>
+  </div>`;
+ }).join("");
+
+ return `<h2>📦 Kontrakty logistyczne</h2>
+
+ <div class="card">
+  <h3>Możliwości operacyjne</h3>
+  <p>Maksymalny udźwig sprawnych wózków: <b>${num(maxLoad())} kg</b></p>
+  <p>Pojemność magazynu: <b>${S.warehouse.capacity} miejsc</b></p>
+  <p>Aktywne kontrakty: ${activeContracts().length}/${contractLimit()}</p>
+  <p class="small">Kontrakt obejmuje przyjęcie towaru do magazynu i jego późniejszy wywóz. Postęp jest liczony na podstawie palet, a nie godzin.</p>
+  <button onclick="generateOffers();render()">Odśwież oferty</button>
+ </div>
+
+ <h3 style="margin-top:18px">Dostępne oferty</h3>
+ <div class="grid">${S.offers.map(o=>{
+  const total=contractTotal(o);
+  return `<div class="card">
+   <h3>${escapeHTML(o.company)}</h3>
+   <p class="muted">${escapeHTML(o.desc)}</p>
+   <p>Tempo obsługi: <b>${o.p} palet/h</b></p>
+   <p>Łączna liczba palet: <b>${num(total)} palet</b></p>
+   <p>Wymagany udźwig wózka: <b>${num(o.load)} kg</b></p>
+   <p>Zajętość magazynu: ${o.storage} miejsc</p>
+   <p>Czas realizacji: ${o.days} dni</p>
+   <p>Zaliczka: <span class="good">${money(o.advance)}</span></p>
+   <p>Kara za niewykonanie: <span class="bad">${money(o.penalty)}</span></p>
+   <p>Reputacja po wykonaniu: +${o.rep}</p>
+   <button onclick="acceptContract(${o.id})" ${activeContracts().length>=contractLimit()?"disabled":""}>Przyjmij kontrakt</button>
+  </div>`;
+ }).join("")||'<div class="empty">Brak dostępnych ofert. Rozbuduj flotę lub magazyn.</div>'}</div>
+
+ <h3 style="margin-top:20px">📋 Aktywne kontrakty (${current.length})</h3>
+ <div class="grid">
+  ${activeCards||'<div class="empty">Brak aktywnych kontraktów.</div>'}
+ </div>
+
+ <h3 style="margin-top:22px">📁 Historia kontraktów (${finished.length})</h3>
+ <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+  ${finishedCards||'<div class="empty">Nie masz jeszcze zakończonych kontraktów.</div>'}
+ </div>`;
+}
 
 function developmentView(){
  const items=[

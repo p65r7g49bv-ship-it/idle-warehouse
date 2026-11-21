@@ -437,6 +437,26 @@ function forklifts(){return S.fleet.filter(v=>!v.broken&&v.condition>0)}
 function maxLoad(){return forklifts().reduce((m,v)=>Math.max(m,MODELS[v.model]?.load||0),0)}
 function operators(){return S.employees.length}
 function totalFleet(){return S.fleet.length}
+function occupiedPallets(){
+ return S.contracts.reduce((sum,c)=>{
+  const received=Math.max(0,Number(c.receivedPallets)||0);
+  const shipped=Math.max(0,Number(c.shippedPallets)||0);
+  return sum+Math.max(0,received-shipped);
+ },0);
+}
+
+function freePalletPlaces(){
+ return Math.max(0,S.warehouse.capacity-occupiedPallets());
+}
+
+function staffedForklifts(){
+ return Math.min(S.employees.length,forklifts().length);
+}
+
+function unstaffedForklifts(){
+ return Math.max(0,forklifts().length-staffedForklifts());
+}
+
 function shiftLength(){return 8}
 function shiftStartHour(){return 6}
 function getShift(){return Math.min(S.shiftCount,Math.floor(S.dayHours/8)+1)}
@@ -598,28 +618,83 @@ function companyView(){
  <button onclick="restartGame()" style="border-color:var(--red)">Zacznij od nowa</button></div></div>`;
 }
 
+
 function warehouseView(){
- const w=S.warehouse,cost=80000*w.level;
- return `<h2>🏬 Magazyn</h2><div class="grid">
- <div class="card"><img class="hero-image" src="${IMG.WAREHOUSE}" onerror="this.style.display='none'"><h3>Infrastruktura</h3>
- <p>Poziom: <b>${w.level}</b></p><p>Pojemność: <b>${w.capacity} miejsc paletowych</b></p><p>Stan techniczny: <b>${num(w.condition)}%</b></p>
- <p>Możliwości magazynu wpływają na wielkość dostępnych kontraktów.</p>
- <button onclick="upgradeWarehouse()" ${S.money<cost?"disabled":""}>Rozbuduj magazyn · ${money(cost)}</button></div>
- <div class="card"><h3>Utrzymanie obiektu</h3><p>Stan techniczny: ${num(w.condition)}%</p>
- <div class="progress"><div style="width:${w.condition}%;background:${w.condition<40?"var(--red)":"var(--green)"}"></div></div>
- <p class="muted">Zaniedbany magazyn obniża wydajność operacyjną.</p><button onclick="repairWarehouse()">Napraw magazyn · 3500 zł</button></div></div>
+ const w=S.warehouse;
+ const cost=80000*w.level;
+
+ const occupied=occupiedPallets();
+ const free=freePalletPlaces();
+ const occupancyPercent=Math.min(100,occupied/w.capacity*100);
+
+ return `<h2>🏬 Magazyn</h2>
+
+ <div class="grid">
+  <div class="card">
+   <img class="hero-image" src="${IMG.WAREHOUSE}" onerror="this.style.display='none'">
+   <h3>Infrastruktura</h3>
+   <p>Poziom: <b>${w.level}</b></p>
+   <p>Pojemność: <b>${num(w.capacity)} miejsc paletowych</b></p>
+   <p>Stan techniczny: <b>${num(w.condition)}%</b></p>
+   <p>Możliwości magazynu wpływają na wielkość dostępnych kontraktów.</p>
+   <button onclick="upgradeWarehouse()" ${S.money<cost?"disabled":""}>Rozbuduj magazyn · ${money(cost)}</button>
+  </div>
+
+  <div class="card">
+   <h3>📦 Aktualne wykorzystanie magazynu</h3>
+
+   <p>Wszystkie miejsca: <b>${num(w.capacity)}</b></p>
+   <p>Zajęte miejsca: <b class="bad">${num(occupied)}</b></p>
+   <p>Wolne miejsca: <b class="good">${num(free)}</b></p>
+
+   <div class="progress">
+    <div style="width:${occupancyPercent}%;background:${occupancyPercent>=90?"var(--red)":"var(--green)"}"></div>
+   </div>
+
+   <p class="small">
+    Wykorzystanie magazynu: ${occupancyPercent.toFixed(1).replace(".",",")}%
+   </p>
+
+   ${free===0?
+    '<p class="bad">Magazyn jest pełny!</p>':
+    free<=w.capacity*.2?
+    '<p class="bad">Uwaga: pozostało niewiele wolnych miejsc.</p>':
+    '<p class="good">Magazyn posiada wolną przestrzeń.</p>'}
+
+   <p class="small">
+    Zajętość uwzględnia przyjęte palety, które nie zostały jeszcze wywiezione.
+   </p>
+  </div>
+
+  <div class="card">
+   <h3>Utrzymanie obiektu</h3>
+   <p>Stan techniczny: ${num(w.condition)}%</p>
+   <div class="progress">
+    <div style="width:${w.condition}%;background:${w.condition<40?"var(--red)":"var(--green)"}"></div>
+   </div>
+   <p class="muted">Zaniedbany magazyn obniża wydajność operacyjną.</p>
+   <button onclick="repairWarehouse()">Napraw magazyn · 3500 zł</button>
+  </div>
+ </div>
+
  <h3 style="margin-top:18px">Zaplecze socjalne i techniczne</h3>
  <p class="muted">Obiekty zwiększają tempo zdobywania doświadczenia przez pracowników. Bonusy sumują się.</p>
+
  <div class="grid">
- ${facilityCard("serviceCenter","Serwis techniczny","Szybsze naprawy i niższe koszty awarii. Bonus doświadczenia: +5%.",18000,450)}
- ${facilityCard("canteen","Stołówka","Poprawia morale pracowników i zapewnia lepsze warunki regeneracji. Bonus doświadczenia: +10%.",12000,350)}
- ${facilityCard("smoking","Palarnia","Zapewnia dodatkowe miejsce odpoczynku. Bonus doświadczenia: +5%.",5000,120)}
- ${facilityCard("multimedia","Strefa multimedialna","Poprawia komfort zespołu i ułatwia wymianę wiedzy. Bonus doświadczenia: +10%.",14000,250)}
- ${facilityCard("developmentDept","Dział rozwoju i nierozwoju","Ułatwia szkolenie i rozwój pracowników. Bonus doświadczenia: +20%.",26000,600)}</div>
- <div class="card" style="margin-top:12px"><h3>Łączny bonus doświadczenia</h3>
- <p>Zaplecze i rozwój szkoleń zapewniają obecnie: <b class="good">+${employeeExperienceBonusText()}%</b> do szansy zdobycia punktu doświadczenia podczas pracy.</p>
- <p class="small">Bonusy z obiektów oraz poziomów badań „Szkolenia” sumują się.</p></div>`;
+  ${facilityCard("serviceCenter","Serwis techniczny","Szybsze naprawy i niższe koszty awarii. Bonus doświadczenia: +5%.",18000,450)}
+  ${facilityCard("canteen","Stołówka","Poprawia morale pracowników i zapewnia lepsze warunki regeneracji. Bonus doświadczenia: +10%.",12000,350)}
+  ${facilityCard("smoking","Palarnia","Zapewnia dodatkowe miejsce odpoczynku. Bonus doświadczenia: +5%.",5000,120)}
+  ${facilityCard("multimedia","Strefa multimedialna","Poprawia komfort zespołu i ułatwia wymianę wiedzy. Bonus doświadczenia: +10%.",14000,250)}
+  ${facilityCard("developmentDept","Dział rozwoju i nierozwoju","Ułatwia szkolenie i rozwój pracowników. Bonus doświadczenia: +20%.",26000,600)}
+ </div>
+
+ <div class="card" style="margin-top:12px">
+  <h3>Łączny bonus doświadczenia</h3>
+  <p>Zaplecze i rozwój szkoleń zapewniają obecnie: <b class="good">+${employeeExperienceBonusText()}%</b> do szansy zdobycia punktu doświadczenia podczas pracy.</p>
+  <p class="small">Bonusy z obiektów oraz poziomów badań „Szkolenia” sumują się.</p>
+ </div>`;
 }
+
 function facilityCard(key,title,desc,cost,monthly){
  const built=S.warehouse[key];
  return `<div class="card"><h3>${title}</h3><p>${desc}</p><p class="small">Koszt miesięczny: ${money(monthly)}</p>
@@ -630,9 +705,13 @@ function facilityCard(key,title,desc,cost,monthly){
 
 
 function fleetView(){
- const ownedCount=S.fleet.filter(v=>!v.rented).length;
+  const ownedCount=S.fleet.filter(v=>!v.rented).length;
  const rentedCount=S.fleet.filter(v=>v.rented).length;
  const maxOwned=S.warehouse.level*3+2;
+
+ const operationalCount=forklifts().length;
+ const staffedCount=staffedForklifts();
+ const unstaffedCount=unstaffedForklifts();
  const internActive=S.internUntilDay>S.day;
 
  const repairList=S.fleet.filter(v=>v.broken||v.condition<100);
@@ -709,9 +788,19 @@ function fleetView(){
  return `
   <h2>🚜 Oferta zakupu i wynajmu</h2>
 
+  
   <div class="card">
    <p>Kupione wózki: <b>${ownedCount} / ${maxOwned}</b></p>
    <p>Wynajęte wózki: <b>${rentedCount}</b></p>
+
+   <p>Sprawne wózki: <b>${operationalCount}</b></p>
+   <p>Obsadzone przez pracowników: <b class="good">${staffedCount}</b></p>
+   <p>Sprawne, ale bez operatora: <b class="${unstaffedCount>0?"bad":"good"}">${unstaffedCount}</b></p>
+
+   <p class="muted">
+    Obsada uwzględnia aktualną liczbę pracowników i sprawnych wózków.
+   </p>
+
    <p class="muted">
     Wybierz osobno zakup lub wynajem. Każdy przycisk dodaje jeden wózek wybranego modelu.
    </p>

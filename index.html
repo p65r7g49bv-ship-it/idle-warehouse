@@ -395,6 +395,15 @@ function migrate(data){
  const merged={...base,...data};
 
  merged.warehouse={...base.warehouse,...(data.warehouse||{})};
+
+merged.warehouse.level=clamp(
+ Math.round(Number(merged.warehouse.level)||1),
+ 1,
+  6
+);
+
+const warehouseCapacities=[0,30,70,100,200,350,500];
+merged.warehouse.capacity=warehouseCapacities[merged.warehouse.level];
  merged.upgrades={...base.upgrades,...(data.upgrades||{})};
  merged.finances={...base.finances,...(data.finances||{})};
  merged.rescue={...base.rescue,...(data.rescue||{})};
@@ -685,10 +694,10 @@ function companyView(){
 }
 
 
-
 function warehouseView(){
  const w=S.warehouse;
- const cost=80000*w.level;
+ const upgrade=warehouseUpgradeInfo();
+ const cost=upgrade?upgrade.cost:0;
 
  const occupied=occupiedPallets();
  const free=freePalletPlaces();
@@ -704,8 +713,10 @@ function warehouseView(){
    <p>Pojemność: <b>${num(w.capacity)} miejsc paletowych</b></p>
    <p>Stan techniczny: <b>${num(w.condition)}%</b></p>
    <p>Możliwości magazynu wpływają na wielkość dostępnych kontraktów.</p>
-   <button onclick="upgradeWarehouse()" ${S.money<cost?"disabled":""}>Rozbuduj magazyn · ${money(cost)}</button>
-  </div>
+   <p>Następny poziom: <b>${upgrade?upgrade.capacity+" miejsc paletowych":"Maksymalny poziom osiągnięty"}</b></p>
+   <button onclick="upgradeWarehouse()" ${!upgrade||S.money<cost?"disabled":""}>
+   ${upgrade?"Rozbuduj magazyn · "+money(cost):"Osiągnięto maksymalny poziom"}
+   </button>
 
   <div class="card">
    <h3>📦 Aktualne wykorzystanie magazynu</h3>
@@ -1654,11 +1665,59 @@ function acceptContract(id){
 }
 
 /* ROZWÓJ */
-function upgradeWarehouse(){
- const cost=80000*S.warehouse.level;if(S.money<cost)return;
- S.money-=cost;S.finances.cost+=cost;S.warehouse.level++;S.warehouse.capacity+=30;S.warehouse.condition=100;
- log("Rozbudowano magazyn do poziomu "+S.warehouse.level+".");generateOffers();saveGame();render();
+
+function warehouseUpgradeInfo(){
+ const nextLevel=Number(S.warehouse.level)+1;
+
+ const upgrades={
+  2:{cost:50000,capacity:70},
+  3:{cost:80000,capacity:100},
+  4:{cost:250000,capacity:200},
+  5:{cost:400000,capacity:350},
+  6:{cost:950000,capacity:500}
+ };
+
+ return upgrades[nextLevel]||null;
 }
+
+function upgradeWarehouse(){
+ const currentLevel=clamp(
+  Math.round(Number(S.warehouse.level)||1),
+  1,
+  6
+ );
+
+ const nextLevel=currentLevel+1;
+ const upgrade=warehouseUpgradeInfo();
+
+ if(!upgrade){
+  alert("Magazyn osiągnął maksymalny poziom 6.");
+  return;
+ }
+
+ if(S.money<upgrade.cost){
+  alert("Za mało środków. Rozbudowa kosztuje "+money(upgrade.cost)+".");
+  return;
+ }
+
+ S.money-=upgrade.cost;
+ S.finances.cost+=upgrade.cost;
+
+ S.warehouse.level=nextLevel;
+ S.warehouse.capacity=upgrade.capacity;
+ S.warehouse.condition=100;
+
+ log(
+  "Rozbudowano magazyn do poziomu "+
+  nextLevel+". Pojemność wynosi teraz "+
+  upgrade.capacity+" miejsc paletowych."
+ );
+
+ generateOffers();
+ saveGame();
+ render();
+}
+
 function repairWarehouse(){
  if(S.money<3500)return;
  S.money-=3500;S.finances.cost+=3500;S.warehouse.condition=100;

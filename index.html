@@ -1242,13 +1242,14 @@ function monthlyCostBreakdown(){
  const land=S.warehouse.level<=3?40000:75000;
  const maintenance=800+S.fleet.length*350;
 
- const facilities=
+  const facilities=
   (S.warehouse.canteen?15000:0)+
   (S.warehouse.smoking?1000:0)+
   (S.warehouse.multimedia?30000:0)+
   (S.warehouse.developmentDept?50000:0)+
-  (S.warehouse.serviceCenter?8000:0)+
-   const cleaningCompany=S.warehouse.cleaningCompany?10000:0;
+  (S.warehouse.serviceCenter?8000:0);
+
+ const cleaningCompany=S.warehouse.cleaningCompany?10000:0;
 
  const administration=S.employees.length*1000;
  const gross=wages+employerCosts+rent+electricity+water+clothing+land+maintenance+facilities+cleaningCompany+administration;
@@ -1268,7 +1269,7 @@ function financeView(){
  const f=S.finances;
  const c=monthlyCostBreakdown();
  
- const rows=[
+  const rows=[
   ["Wynagrodzenia pracowników",c.wages],
   ["Składki i obciążenia pracodawcy (23%)",c.employerCosts],
   ["Wynajem wózków",c.rent],
@@ -1276,9 +1277,11 @@ function financeView(){
   ["Woda – operatorzy wózków",c.water],
   ["Odzież robocza",c.clothing],
   ["Utrzymanie terenu i powierzchni",c.land],
-  ["Konserwacja i utrzymanie floty",  ["Zaplecze socjalne i techniczne",c.facilities],
+  ["Konserwacja i utrzymanie floty",c.maintenance],
+  ["Zaplecze socjalne i techniczne",c.facilities],
   ["Zewnętrzna firma sprzątająca",c.cleaningCompany],
   ["Administracja i koszty stałe",c.administration]
+ ];
  return `<h2>💰 Finanse</h2><div class="grid">
  <div class="card"><h3>Kapitał</h3><p style="font-size:25px" class="price">${money(S.money)}</p>
  <p>Przychody łącznie: ${money(f.income)}</p><p>Koszty łącznie: ${money(f.cost)}</p></div>

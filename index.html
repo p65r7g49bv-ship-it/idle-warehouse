@@ -1177,13 +1177,15 @@ function developmentView(){
 /* SZCZEGÓŁOWY ROZKŁAD KOSZTÓW MIESIĘCZNYCH */
 
 
+
 function monthlyCostBreakdown(){
  const wages=S.employees.reduce((a,e)=>a+e.salary,0);
+ const employerCosts=Math.round(wages*0.23);
  const rent=S.fleet.filter(v=>v.rented).reduce((a,v)=>a+(MODELS[v.model]?.rent||0),0);
- const electricity=S.fleet.reduce((a,v)=>a+(MODELS[v.model]?.energy||0)*8*22,0);
- const water=250+S.employees.length*55;
+ const electricity=S.fleet.reduce((a,v)=>a+(MODELS[v.model]?.energy||0)*8*22*2,0);
+ const water=staffedForklifts()*450;
  const clothing=S.employees.length*90;
- const land=1500*S.warehouse.level;
+ const land=S.warehouse.level<=3?40000:75000;
  const maintenance=800+S.fleet.length*350;
 
  const facilities=
@@ -1193,12 +1195,12 @@ function monthlyCostBreakdown(){
   (S.warehouse.developmentDept?50000:0)+
   (S.warehouse.serviceCenter?8000:0);
 
- const administration=1200+S.employees.length*120;
- const gross=wages+rent+electricity+water+clothing+land+maintenance+facilities+administration;
+ const administration=S.employees.length*1000;
+ const gross=wages+employerCosts+rent+electricity+water+clothing+land+maintenance+facilities+administration;
  const total=Math.round(gross);
 
  return {
-  wages,rent,electricity,water,clothing,land,maintenance,
+  wages,employerCosts,rent,electricity,water,clothing,land,maintenance,
   facilities,administration,gross,discount:0,total
  };
 }
@@ -1210,11 +1212,13 @@ function monthlyCosts(){
 function financeView(){
  const f=S.finances;
  const c=monthlyCostBreakdown();
+ 
  const rows=[
   ["Wynagrodzenia pracowników",c.wages],
+  ["Składki i obciążenia pracodawcy (23%)",c.employerCosts],
   ["Wynajem wózków",c.rent],
   ["Energia elektryczna floty",c.electricity],
-  ["Woda i media socjalne",c.water],
+  ["Woda – operatorzy wózków",c.water],
   ["Odzież robocza",c.clothing],
   ["Utrzymanie terenu i powierzchni",c.land],
   ["Konserwacja i utrzymanie floty",c.maintenance],

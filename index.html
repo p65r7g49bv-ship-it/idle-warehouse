@@ -259,19 +259,19 @@ const HOUR_ONLINE=10;
 const TAX_RATE=.08;
 
 const IMG={
- RX18:"https://data.still.de/assets/products/Vehicles/Electric_Forklift_Trucks/RX_20_14-20/images/2020/STILL_RX20_2018_USP_Umschlagsleistung.jpg?fit=max&fm=webp&s=01b75d7b314d5fd27807548082c8df17&w=1920",
- RX20:"https://data.still.de/assets/products/Vehicles/Electric_Forklift_Trucks/RX_20_14-20/images/2020/STILL_RX20-Kampagne_HB-2020.jpg?fit=max&fm=webp&s=2b64b0a15860c05d4d9b807cbc352f86&w=1920",
- RX22:"https://data.still.de/assets/products/Vehicles/Electric_Forklift_Trucks/RX_20_14-20/images/2020/STILL_RX20-Kampagne_HB-2020.jpg?fit=max&fm=webp&s=2b64b0a15860c05d4d9b807cbc352f86&w=1920",
- RX30:"https://data.still.de/assets/products/Vehicles/Electric_Forklift_Trucks/RX_20_14-20/images/2020/STILL_RX20-Kampagne_HB-2020.jpg?fit=max&fm=webp&s=2b64b0a15860c05d4d9b807cbc352f86&w=1920",
+ RX18:"https://cdn.sanity.io/images/ygdam831/production/2b376d9cbdf2f7031f4a14748bdf456b86b3efa4-7360x4912.png?auto=format&fit=clip&h=750&w=750",
+ RX20:"https://data.still.de/assets/products/Vehicles/Rent_Vehicles/images/STILL_RX20_800x800.png?fit=max&s=558be844d9a31643fcfc69f22042c167&w=1600",
+ RX22:"https://trecar.it/wp-content/uploads/2021/10/RX60-testo.jpg",
+ RX30:"https://data.still.de/assets/products/Vehicles/Electric_Forklift_Trucks/RX_60_35-50/images/STILL_Fahrzeuge_Elektro-Stapler_RX_60-50_Teaser_800x800.png?fit=max&fm=webp&s=6c41be44a812db58d7752b7e9c2c9fd0&w=1920",
  WAREHOUSE:"https://www.toromontmh.com/media/wysiwyg/RW_JH_Racking_500x400_1.jpg",
  WORKER:"https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=600&q=85"
 };
 
 const MODELS={
- RX18:{name:"STILL RX18",load:1800,price:0,rent:1250,energy:32,throughput:2,image:IMG.RX18},
- RX20:{name:"STILL RX20",load:2400,price:96000,rent:2100,energy:38,throughput:2.3,image:IMG.RX20},
- RX22:{name:"STILL RX22",load:3000,price:184000,rent:4300,energy:53,throughput:2.5,image:IMG.RX22},
- RX30:{name:"STILL RX30",load:5000,price:296000,rent:6800,energy:72,throughput:2.7,image:IMG.RX30}
+ RX18:{name:"STILL RX18",load:1800,price:75000,rent:7000,energy:32,throughput:2,image:IMG.RX18},
+ RX20:{name:"STILL RX20",load:2400,price:120000,rent:9000,energy:38,throughput:2.3,image:IMG.RX20},
+ RX22:{name:"STILL RX22",load:3000,price:150000,rent:23000,energy:53,throughput:2.5,image:IMG.RX22},
+ RX30:{name:"STILL RX30",load:5000,price:220000,rent:26000,energy:72,throughput:2.7,image:IMG.RX30}
 };
 
 const COMPANIES=[
@@ -797,7 +797,6 @@ function fleetView(){
   sum+forkliftRepairCost(v),0);
 
  const shop=Object.entries(MODELS)
-  .filter(([id])=>id!=="RX18")
   .map(([id,m])=>`
    <div class="card">
     <div class="vehicle">

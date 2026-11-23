@@ -340,9 +340,26 @@ function fresh(){
   money:20000,rep:0,day:1,gameHour:0,hourProgress:0,dayHours:0,
   internUntilDay:0,
   shiftCount:1,pendingEvent:null,lastSeen:Date.now(),taxCycleRevenue:0,
-  warehouse:{level:1,capacity:30,condition:100,serviceCenter:false,canteen:false,smoking:false,multimedia:false,developmentDept:false},
-  upgradeSystemVersion:1,
-  upgrades:{automation:1,planning:1,training:1,marketing:1,maintenance:1},
+  warehouse:{
+ level:1,
+ capacity:30,
+ condition:100,
+ serviceCenter:false,
+ canteen:false,
+ smoking:false,
+ multimedia:false,
+ developmentDept:false,
+ cleaningCompany:false
+},
+upgradeSystemVersion:1,
+upgrades:{
+ automation:1,
+ planning:1,
+ training:1,
+ marketing:1,
+ maintenance:1,
+ warehouseCare:1
+},
   employees:[{id:1,name:"Jan Kowalski",role:"Magazynier",salary:3800,hours:180,skill:0,udt:true,promotionLevel:0,trainedBasic:false,trainedAdvanced:false}],
   fleet:[{id:1,model:"RX18",rented:true,condition:92,hours:1250,broken:false}],
   contracts:[],offers:[],nextId:2,
@@ -429,7 +446,11 @@ merged.warehouse.capacity=warehouseCapacities[merged.warehouse.level];
  merged.upgrades.planning=clamp(Number(merged.upgrades.planning)||1,1,3);
  merged.upgrades.training=clamp(Number(merged.upgrades.training)||1,1,3);
  merged.upgrades.marketing=clamp(Number(merged.upgrades.marketing)||1,1,3);
- merged.upgrades.maintenance=clamp(Number(merged.upgrades.maintenance)||1,1,3);
+ merged.upgrades.warehouseCare=clamp(
+ Number(merged.upgrades.warehouseCare)||1,
+ 1,
+  2
+);
 
  merged.fleet.forEach(v=>{
   if(v.model==="RX60_30")v.model="RX22";
@@ -1111,6 +1132,14 @@ function developmentView(){
    costs:{2:35000,3:60000}
   },
   {
+   key:"warehouseCare",
+   title:"Utrzymanie obiektu – TPM / 5S",
+   levels:[
+    "Podstawowe TPM – standardowe zasady utrzymania porządku.",
+    "Standard 5S – pracownicy poprawiają stan techniczny magazynu o 20% na każdej zmianie."
+   ],
+   costs:{2:50000}
+  },
    key:"marketing",
    title:"Marketing",
    levels:[
@@ -1150,7 +1179,21 @@ function developmentView(){
    ${internActive?"Praktykant już pracuje":"Zatrudnij praktykanta · 5 000 zł"}
   </button>
  </div>
-
+ <div class="card" style="margin-top:12px">
+  <h3>🧹 Zewnętrzna firma sprzątająca</h3>
+  <p>Firma odpowiada za utrzymanie czystości i poprawę stanu technicznego magazynu.</p>
+  <p>Poprawa stanu magazynu: <b class="good">+20% na każdej zmianie</b></p>
+  <p>Koszt miesięczny: <b class="price">10 000 zł</b></p>
+  <p>Status:
+   ${S.warehouse.cleaningCompany?
+    '<b class="good">Firma zatrudniona</b>':
+    '<b class="bad">Brak umowy</b>'}
+  </p>
+  <button onclick="hireCleaningCompany()"
+   ${S.warehouse.cleaningCompany||S.money<0?"disabled":""}>
+   ${S.warehouse.cleaningCompany?"Firma już zatrudniona":"Zatrudnij firmę sprzątającą"}
+  </button>
+ </div>
  <div class="card" style="margin-top:12px">
   <h3>Organizacja pracy</h3>
   <p>Aktualna liczba zmian: <b>${S.shiftCount}</b></p>
@@ -1203,15 +1246,16 @@ function monthlyCostBreakdown(){
   (S.warehouse.smoking?1000:0)+
   (S.warehouse.multimedia?30000:0)+
   (S.warehouse.developmentDept?50000:0)+
-  (S.warehouse.serviceCenter?8000:0);
+  (S.warehouse.serviceCenter?8000:0)+
+   const cleaningCompany=S.warehouse.cleaningCompany?10000:0;
 
  const administration=S.employees.length*1000;
- const gross=wages+employerCosts+rent+electricity+water+clothing+land+maintenance+facilities+administration;
+ const gross=wages+employerCosts+rent+electricity+water+clothing+land+maintenance+facilities+cleaningCompany+administration;
  const total=Math.round(gross);
 
  return {
   wages,employerCosts,rent,electricity,water,clothing,land,maintenance,
-  facilities,administration,gross,discount:0,total
+    facilities,cleaningCompany,administration,gross,discount:0,total
  };
 }
 
@@ -1231,10 +1275,9 @@ function financeView(){
   ["Woda – operatorzy wózków",c.water],
   ["Odzież robocza",c.clothing],
   ["Utrzymanie terenu i powierzchni",c.land],
-  ["Konserwacja i utrzymanie floty",c.maintenance],
-  ["Zaplecze socjalne i techniczne",c.facilities],
+  ["Konserwacja i utrzymanie floty",  ["Zaplecze socjalne i techniczne",c.facilities],
+  ["Zewnętrzna firma sprzątająca",c.cleaningCompany],
   ["Administracja i koszty stałe",c.administration]
- ];
  return `<h2>💰 Finanse</h2><div class="grid">
  <div class="card"><h3>Kapitał</h3><p style="font-size:25px" class="price">${money(S.money)}</p>
  <p>Przychody łącznie: ${money(f.income)}</p><p>Koszty łącznie: ${money(f.cost)}</p></div>
@@ -1735,7 +1778,8 @@ function upgradeResearch(key){
   automation:{2:70000,3:250000,4:500000},
   training:{2:35000,3:60000},
   marketing:{2:350000,3:1000000},
-  maintenance:{2:300000,3:1000000}
+  maintenance:{2:300000,3:1000000},
+  warehouseCare:{2:50000},
  };
 
  const maxLevels={
@@ -1743,7 +1787,8 @@ function upgradeResearch(key){
   automation:4,
   training:3,
   marketing:3,
-  maintenance:3
+  maintenance:3,
+  warehouseCare:2
  };
 
  if(!Object.prototype.hasOwnProperty.call(maxLevels,key))return;
@@ -1776,7 +1821,8 @@ function upgradeResearch(key){
   automation:"Automatyzacja",
   training:"Szkolenia",
   marketing:"Marketing",
-  maintenance:"Utrzymanie floty"
+  maintenance:"Utrzymanie floty",
+  warehouseCare:"Utrzymanie obiektu – TPM / 5S"
  };
 
  log("Rozwinięto obszar: "+names[key]+" do poziomu "+nextLevel+".");
@@ -1784,7 +1830,17 @@ function upgradeResearch(key){
  saveGame();
  render();
 }
+function hireCleaningCompany(){
+ if(S.warehouse.cleaningCompany)return;
 
+ S.warehouse.cleaningCompany=true;
+
+ log("Zatrudniono zewnętrzną firmę sprzątającą. Miesięczny koszt usługi wynosi 10 000 zł.");
+
+ saveGame();
+ render();
+}
+ 
 function setShifts(n){
  if(n===2&&S.upgrades.planning<2){
   alert("Wymagany 2 poziom planowania logistyki materiałowej.");
@@ -1944,8 +2000,31 @@ changeReputation(reputationReward,"Ukończono kontrakt firmy "+c.company+".");
   });
  }
 
- if(S.warehouse.condition>0&&Math.random()<.002){
-  S.warehouse.condition--;
+  if(S.dayHours%8===0){
+  const fleetPenalty=Math.floor(S.fleet.length/5)*5;
+
+  const deterioration=(10*S.shiftCount)+fleetPenalty;
+
+  const cleaningBonus=S.warehouse.cleaningCompany?20:0;
+  const employeeBonus=S.upgrades.warehouseCare>=2?20:0;
+
+  const totalImprovement=cleaningBonus+employeeBonus;
+
+  const previousCondition=S.warehouse.condition;
+
+  S.warehouse.condition=clamp(
+   previousCondition-deterioration+totalImprovement,
+   0,
+   100
+  );
+
+  log(
+   "Zakończono zmianę. Stan magazynu: "+
+   num(previousCondition)+"%. Zużycie: "+
+   deterioration+"%. Poprawa dzięki utrzymaniu: "+
+   totalImprovement+"%. Aktualny stan: "+
+   num(S.warehouse.condition)+"%."
+  );
  }
 
  if(S.gameHour%2===0)funnyEvent();

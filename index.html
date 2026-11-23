@@ -780,9 +780,10 @@ function fleetView(){
  const unstaffedCount=unstaffedForklifts();
  const internActive=S.internUntilDay>S.day;
 
- const repairList=S.fleet.filter(v=>v.broken||v.condition<100);
+  const repairList=S.fleet.filter(v=>v.broken||v.condition<100);
+
  const repairCost=repairList.reduce((sum,v)=>
-  sum+Math.max(500,Math.round((100-v.condition)*100)),0);
+  sum+forkliftRepairCost(v),0);
 
  const shop=Object.entries(MODELS)
   .filter(([id])=>id!=="RX18")
@@ -817,8 +818,10 @@ function fleetView(){
    </div>
   `).join("");
 
- const cards=S.fleet.map(v=>{
+  const cards=S.fleet.map(v=>{
   const m=MODELS[v.model]||MODELS.RX18;
+  const needsRepair=v.broken||v.condition<100;
+  const individualRepairCost=forkliftRepairCost(v);
 
   return `
    <div class="card">
@@ -846,7 +849,16 @@ function fleetView(){
 
     ${v.rented?
      `<button onclick="endRental(${v.id})">Skończ wynajem</button>`:
-     `<button onclick="sellForklift(${v.id})">Sprzedaj</button>`}
+     `
+      ${needsRepair?
+       `<p>Koszt naprawy: <b>${money(individualRepairCost)}</b></p>
+        <button onclick="repairForklift(${v.id})"
+         ${S.money<individualRepairCost?"disabled":""}>
+         🔧 Napraw wózek
+        </button>`:
+       ""}
+      <button onclick="sellForklift(${v.id})">Sprzedaj</button>
+     `}
    </div>
   `;
  }).join("");
@@ -1421,6 +1433,50 @@ function hireIntern(){
 
 
 
+function forkliftRepairCost(v){
+ let cost=Math.max(500,Math.round((100-v.condition)*100));
+
+ if(S.upgrades.maintenance>=3){
+  cost=Math.round(cost*.5);
+ }
+
+ if(S.warehouse.serviceCenter){
+  cost=Math.round(cost*.85);
+ }
+
+ return cost;
+}
+
+
+function repairForklift(id){
+ const v=S.fleet.find(x=>x.id===id);
+
+ if(!v||v.rented)return;
+
+ if(!v.broken&&v.condition>=100){
+  alert("Ten wózek nie wymaga naprawy.");
+  return;
+ }
+
+ const cost=forkliftRepairCost(v);
+
+ if(S.money<cost){
+  alert("Za mało środków na naprawę tego wózka. Potrzeba "+money(cost)+".");
+  return;
+ }
+
+ S.money-=cost;
+ S.finances.cost+=cost;
+
+ v.condition=100;
+ v.broken=false;
+
+ log("Naprawiono wózek "+MODELS[v.model].name+". Koszt: "+money(cost)+".");
+ saveGame();
+ render();
+}
+
+
 function repairAllForklifts(){
  if(S.internUntilDay<=S.day){
   alert("Najpierw zatrudnij praktykanta w dziale Rozwój.");
@@ -1434,16 +1490,8 @@ function repairAllForklifts(){
   return;
  }
 
- let totalCost=damaged.reduce((sum,v)=>
-  sum+Math.max(500,Math.round((100-v.condition)*100)),0);
-
- if(S.upgrades.maintenance>=3){
-  totalCost=Math.round(totalCost*.5);
- }
-
- if(S.warehouse.serviceCenter){
-  totalCost=Math.round(totalCost*.85);
- }
+ const totalCost=damaged.reduce((sum,v)=>
+  sum+forkliftRepairCost(v),0);
 
  if(S.money<totalCost){
   alert("Za mało środków na naprawę całej floty. Potrzeba "+money(totalCost)+".");

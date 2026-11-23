@@ -535,8 +535,22 @@ function occupiedPallets(){
  },0);
 }
 
+function effectiveWarehouseCapacity(){
+ const condition=clamp(Number(S.warehouse.condition)||0,0,100);
+
+ let capacityFactor;
+
+ if(condition<=30){
+  capacityFactor=condition/60;
+ }else{
+  capacityFactor=0.5+((condition-30)/140);
+ }
+
+ return Math.floor(S.warehouse.capacity*capacityFactor);
+}
+
 function freePalletPlaces(){
- return Math.max(0,S.warehouse.capacity-occupiedPallets());
+ return Math.max(0,effectiveWarehouseCapacity()-occupiedPallets());
 }
 
 function staffedForklifts(){
@@ -611,7 +625,8 @@ function updateHeading(){
 function updateTop(){
  document.getElementById("moneyStat").textContent=money(S.money);
  document.getElementById("repStat").textContent=num(S.rep);
- document.getElementById("capacityStat").textContent=num(S.warehouse.capacity)+" miejsc";
+ document.getElementById("capacityStat").textContent=
+ num(effectiveWarehouseCapacity())+" / "+num(S.warehouse.capacity)+" miejsc";
  document.getElementById("dayStat").textContent=S.day;
  document.getElementById("clockTime").textContent=formatTime(getShiftHour())+" / 08:00";
  document.getElementById("remainingTime").textContent=formatCountdown(8-getShiftHour());
@@ -721,8 +736,11 @@ function warehouseView(){
  const cost=upgrade?upgrade.cost:0;
 
  const occupied=occupiedPallets();
- const free=freePalletPlaces();
- const occupancyPercent=Math.min(100,occupied/w.capacity*100);
+const effectiveCapacity=effectiveWarehouseCapacity();
+const free=freePalletPlaces();
+const occupancyPercent=effectiveCapacity>0
+ ?Math.min(100,occupied/effectiveCapacity*100)
+ :0;
 
  return `<h2>🏬 Magazyn</h2>
 
@@ -731,7 +749,8 @@ function warehouseView(){
    <img class="hero-image" src="${IMG.WAREHOUSE}" onerror="this.style.display='none'">
    <h3>Infrastruktura</h3>
    <p>Poziom: <b>${w.level}</b></p>
-   <p>Pojemność: <b>${num(w.capacity)} miejsc paletowych</b></p>
+   <p>Pojemność nominalna: <b>${num(w.capacity)} miejsc paletowych</b></p>
+   <p>Pojemność dostępna: <b>${num(effectiveCapacity)} miejsc paletowych</b></p>
    <p>Stan techniczny: <b>${num(w.condition)}%</b></p>
    <p>Możliwości magazynu wpływają na wielkość dostępnych kontraktów.</p>
    <p>Następny poziom: <b>${upgrade?upgrade.capacity+" miejsc paletowych":"Maksymalny poziom osiągnięty"}</b></p>
@@ -741,7 +760,7 @@ function warehouseView(){
 
   <div class="card">
    <h3>📦 Aktualne wykorzystanie magazynu</h3>
-   <p>Wszystkie miejsca: <b>${num(w.capacity)}</b></p>
+   <p>Wszystkie miejsca: <b>${num(effectiveCapacity)}</b></p>
    <p>Zajęte miejsca: <b class="bad">${num(occupied)}</b></p>
    <p>Wolne miejsca: <b class="good">${num(free)}</b></p>
 
@@ -1693,7 +1712,16 @@ function generateOffers(){
 
 function acceptContract(id){
  const o=S.offers.find(x=>x.id===id);if(!o)return;
- if(activeContracts().length>=contractLimit()){alert("Osiągnięto limit kontraktów.");return}
+
+if(effectiveWarehouseCapacity()<=0){
+ alert("Magazyn jest nieczynny! Przywróć jego stan techniczny, aby przyjmować kontrakty.");
+ return;
+}
+
+if(activeContracts().length>=contractLimit()){
+ alert("Osiągnięto limit kontraktów.");
+ return;
+}
  if(!S.fleet.some(v=>(MODELS[v.model]?.load||0)>=o.load&&!v.broken&&v.condition>0)){
   alert("Brak sprawnego wózka o wymaganym udźwigu.");return;
  }
@@ -1932,8 +1960,16 @@ function hourlyTick(){
 
   const multiplier=1;
   const receiveRate=Math.max(1,Math.round(c.p*1.5*multiplier));
-  const receivedNow=Math.min(receiveRate,total-c.receivedPallets);
-  c.receivedPallets+=receivedNow;
+
+const availableStorage=freePalletPlaces();
+
+const receivedNow=Math.min(
+ receiveRate,
+ total-c.receivedPallets,
+ availableStorage
+);
+
+c.receivedPallets+=receivedNow;
 
   const shipRate=Math.max(1,Math.round(c.p*multiplier));
   const available=c.receivedPallets-c.shippedPallets;

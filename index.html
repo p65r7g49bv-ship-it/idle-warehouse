@@ -532,14 +532,14 @@ function formatCountdown(hours){
 
 /* Bonusy doświadczenia z zaplecza */
 
+
 function employeeExperienceMultiplier(){
  let bonus=0;
 
- if(S.warehouse.serviceCenter)bonus+=.05;
- if(S.warehouse.canteen)bonus+=.10;
- if(S.warehouse.smoking)bonus+=.05;
- if(S.warehouse.multimedia)bonus+=.10;
- if(S.warehouse.developmentDept)bonus+=.20;
+ if(S.warehouse.canteen)bonus+=.05;
+ if(S.warehouse.smoking)bonus+=.02;
+ if(S.warehouse.multimedia)bonus+=.05;
+ if(S.warehouse.developmentDept)bonus+=.08;
 
  if(S.upgrades.training>=2)bonus+=.05;
  if(S.upgrades.training>=3)bonus+=.10;
@@ -685,6 +685,7 @@ function companyView(){
 }
 
 
+
 function warehouseView(){
  const w=S.warehouse;
  const cost=80000*w.level;
@@ -708,7 +709,6 @@ function warehouseView(){
 
   <div class="card">
    <h3>📦 Aktualne wykorzystanie magazynu</h3>
-
    <p>Wszystkie miejsca: <b>${num(w.capacity)}</b></p>
    <p>Zajęte miejsca: <b class="bad">${num(occupied)}</b></p>
    <p>Wolne miejsca: <b class="good">${num(free)}</b></p>
@@ -744,18 +744,18 @@ function warehouseView(){
  </div>
 
  <h3 style="margin-top:18px">Zaplecze socjalne i techniczne</h3>
- <p class="muted">Obiekty zwiększają tempo zdobywania doświadczenia przez pracowników. Bonusy sumują się.</p>
+ <p class="muted">Obiekty zapewniają dodatkowe korzyści operatorom wózków. Bonusy doświadczenia sumują się z bonusami ze szkoleń.</p>
 
  <div class="grid">
-  ${facilityCard("serviceCenter","Serwis techniczny","Szybsze naprawy i niższe koszty awarii. Bonus doświadczenia: +5%.",18000,450)}
-  ${facilityCard("canteen","Stołówka","Poprawia morale pracowników i zapewnia lepsze warunki regeneracji. Bonus doświadczenia: +10%.",12000,350)}
-  ${facilityCard("smoking","Palarnia","Zapewnia dodatkowe miejsce odpoczynku. Bonus doświadczenia: +5%.",5000,120)}
-  ${facilityCard("multimedia","Strefa multimedialna","Poprawia komfort zespołu i ułatwia wymianę wiedzy. Bonus doświadczenia: +10%.",14000,250)}
-  ${facilityCard("developmentDept","Dział rozwoju i nierozwoju","Ułatwia szkolenie i rozwój pracowników. Bonus doświadczenia: +20%.",26000,600)}
+  ${facilityCard("serviceCenter","Serwis techniczny","Naprawy wózków wykonywane na miejscu. Koszt napraw niższy o 15%.",60000,8000)}
+  ${facilityCard("canteen","Stołówka","Poprawia warunki regeneracji operatorów. Bonus doświadczenia: +5%.",85000,15000)}
+  ${facilityCard("smoking","Palarnia","Dodatkowe miejsce odpoczynku operatorów. Bonus doświadczenia: +2%.",15000,1000)}
+  ${facilityCard("multimedia","Strefa multimedialna","Ułatwia operatorom zdobywanie wiedzy. Bonus doświadczenia: +5%.",120000,30000)}
+  ${facilityCard("developmentDept","Dział rozwoju i nierozwoju","Wspiera rozwój umiejętności operatorów. Bonus doświadczenia: +8%.",300000,50000)}
  </div>
 
  <div class="card" style="margin-top:12px">
-  <h3>Łączny bonus doświadczenia</h3>
+  <h3>Łączny bonus doświadczenia operatorów</h3>
   <p>Zaplecze i rozwój szkoleń zapewniają obecnie: <b class="good">+${employeeExperienceBonusText()}%</b> do szansy zdobycia punktu doświadczenia podczas pracy.</p>
   <p class="small">Bonusy z obiektów oraz poziomów badań „Szkolenia” sumują się.</p>
  </div>`;
@@ -1164,6 +1164,7 @@ function developmentView(){
 
 /* SZCZEGÓŁOWY ROZKŁAD KOSZTÓW MIESIĘCZNYCH */
 
+
 function monthlyCostBreakdown(){
  const wages=S.employees.reduce((a,e)=>a+e.salary,0);
  const rent=S.fleet.filter(v=>v.rented).reduce((a,v)=>a+(MODELS[v.model]?.rent||0),0);
@@ -1174,11 +1175,11 @@ function monthlyCostBreakdown(){
  const maintenance=800+S.fleet.length*350;
 
  const facilities=
-  (S.warehouse.canteen?350:0)+
-  (S.warehouse.smoking?120:0)+
-  (S.warehouse.multimedia?250:0)+
-  (S.warehouse.developmentDept?600:0)+
-  (S.warehouse.serviceCenter?450:0);
+  (S.warehouse.canteen?15000:0)+
+  (S.warehouse.smoking?1000:0)+
+  (S.warehouse.multimedia?30000:0)+
+  (S.warehouse.developmentDept?50000:0)+
+  (S.warehouse.serviceCenter?8000:0);
 
  const administration=1200+S.employees.length*120;
  const gross=wages+rent+electricity+water+clothing+land+maintenance+facilities+administration;
@@ -1419,6 +1420,7 @@ function hireIntern(){
 }
 
 
+
 function repairAllForklifts(){
  if(S.internUntilDay<=S.day){
   alert("Najpierw zatrudnij praktykanta w dziale Rozwój.");
@@ -1437,6 +1439,10 @@ function repairAllForklifts(){
 
  if(S.upgrades.maintenance>=3){
   totalCost=Math.round(totalCost*.5);
+ }
+
+ if(S.warehouse.serviceCenter){
+  totalCost=Math.round(totalCost*.85);
  }
 
  if(S.money<totalCost){

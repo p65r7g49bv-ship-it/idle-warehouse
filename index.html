@@ -790,7 +790,9 @@ const occupancyPercent=effectiveCapacity>0
     <div style="width:${w.condition}%;background:${w.condition<40?"var(--red)":"var(--green)"}"></div>
    </div>
    <p class="muted">Zaniedbany magazyn obniża wydajność operacyjną.</p>
-   <button onclick="repairWarehouse()">Napraw magazyn · 3500 zł</button>
+   <button onclick="repairWarehouse()" ${S.money<80000||w.condition>=50?"disabled":""}>
+ Zatrudnij awaryjny serwis · 80 000 zł
+</button>
   </div>
  </div>
 
@@ -1793,9 +1795,33 @@ function upgradeWarehouse(){
 }
 
 function repairWarehouse(){
- if(S.money<3500)return;
- S.money-=3500;S.finances.cost+=3500;S.warehouse.condition=100;
- log("Przeprowadzono konserwację magazynu.");saveGame();render();
+ const cost=80000;
+
+ if(S.warehouse.condition>=50){
+  alert("Stan magazynu jest wystarczający. Awaryjny serwis nie jest potrzebny.");
+  return;
+ }
+
+ if(S.money<cost){
+  alert("Za mało środków. Awaryjny serwis kosztuje 80 000 zł.");
+  return;
+ }
+
+ S.money-=cost;
+ S.finances.cost+=cost;
+
+ const previousCondition=S.warehouse.condition;
+ S.warehouse.condition=50;
+
+ log(
+  "Zatrudniono awaryjny serwis magazynu. "+
+  "Stan techniczny wzrósł z "+
+  num(previousCondition)+"% do 50%. "+
+  "Koszt interwencji: 80 000 zł."
+ );
+
+ saveGame();
+ render();
 }
 function buildFacility(key,cost){
  if(S.warehouse[key]||S.money<cost)return;

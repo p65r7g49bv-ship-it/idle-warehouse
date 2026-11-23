@@ -1203,16 +1203,6 @@ function monthlyCostBreakdown(){
  };
 }
 
-function monthlyFacilityCosts(){
- let n=0;
- if(S.warehouse.canteen)n+=350;
- if(S.warehouse.smoking)n+=120;
- if(S.warehouse.multimedia)n+=250;
- if(S.warehouse.developmentDept)n+=600;
- if(S.warehouse.serviceCenter)n+=450;
- return n+1200+S.employees.length*120;
-}
-
 function monthlyCosts(){
  return monthlyCostBreakdown().total;
 }

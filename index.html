@@ -391,6 +391,8 @@ function fresh(){
   internUntilDay:0,
   shiftCount:1,pendingEvent:null,lastSeen:Date.now(),taxCycleRevenue:0,
 repEventShiftCount:0,
+palletRepairUntilHour:0,
+palletRepairWorkerId:null,
   warehouse:{
  level:1,
  capacity:30,
@@ -478,7 +480,15 @@ merged.repEventShiftCount=clamp(
  0,
   5
 );
+merged.palletRepairUntilHour=Math.max(
+ 0,
+ Math.floor(Number(merged.palletRepairUntilHour)||0)
+);
 
+merged.palletRepairWorkerId=
+ merged.palletRepairWorkerId==null
+ ?null
+ :Number(merged.palletRepairWorkerId);
  merged.warehouse={...base.warehouse,...(data.warehouse||{})};
 
 merged.warehouse.level=clamp(
@@ -2405,42 +2415,60 @@ function hourlyTick(){
   }
  });
 
- const workers=S.employees;
- const usable=forklifts();
- const operatorCount=Math.min(workers.length,usable.length);
- const avgSkill=workers.length?workers.reduce((a,e)=>a+e.skill,0)/workers.length:0;
- const base=usable.reduce((a,v)=>a+(MODELS[v.model]?.throughput||0),0);
- const efficiency=1+avgSkill/250;
- const warehouseFactor=S.warehouse.condition/100;
- const output=base*efficiency*warehouseFactor;
 
- if(operatorCount>0){
-  const income=Math.round(output*45*operatorCount);
-  S.money+=income;
-  S.finances.income+=income;
-  S.taxCycleRevenue+=income;
+const workers=S.employees;
+const usable=forklifts();
 
-  const experienceChance=Math.min(1,.04*employeeExperienceMultiplier());
+const palletRepairActive=
+ S.palletRepairUntilHour>=S.gameHour&&
+ S.palletRepairWorkerId!==null;
 
-  workers.slice(0,operatorCount).forEach(e=>{
-   e.hours++;
-   if(Math.random()<experienceChance){
-    e.skill=clamp(e.skill+1,0,100);
-   }
-  });
+const activeWorkers=palletRepairActive
+ ?workers.filter(e=>e.id!==S.palletRepairWorkerId)
+ :workers;
 
-  usable.slice(0,operatorCount).forEach(v=>{
-   v.hours++;
-   const wear=S.upgrades.maintenance>=2?.035*.9:.035;
-   v.condition=clamp(v.condition-wear,0,100);
+if(palletRepairActive){
+ S.palletRepairUntilHour=0;
+ S.palletRepairWorkerId=null;
+}
 
-   if(v.condition<=0&&!v.broken){
-    v.broken=true;
-    changeReputation(-2,"Doszło do poważnej awarii wózka "+MODELS[v.model].name+".");
-    log("Awaria wózka "+MODELS[v.model].name+".");
-   }
-  });
- }
+const operatorCount=Math.min(activeWorkers.length,usable.length);
+const avgSkill=activeWorkers.length
+ ?activeWorkers.reduce((a,e)=>a+e.skill,0)/activeWorkers.length
+ :0;
+
+const base=usable.reduce((a,v)=>a+(MODELS[v.model]?.throughput||0),0);
+const efficiency=1+avgSkill/250;
+const warehouseFactor=S.warehouse.condition/100;
+const output=base*efficiency*warehouseFactor;
+
+if(operatorCount>0){
+ const income=Math.round(output*45*operatorCount);
+ S.money+=income;
+ S.finances.income+=income;
+ S.taxCycleRevenue+=income;
+
+ const experienceChance=Math.min(1,.04*employeeExperienceMultiplier());
+
+ activeWorkers.slice(0,operatorCount).forEach(e=>{
+  e.hours++;
+  if(Math.random()<experienceChance){
+   e.skill=clamp(e.skill+1,0,100);
+  }
+ });
+
+ usable.slice(0,operatorCount).forEach(v=>{
+  v.hours++;
+  const wear=S.upgrades.maintenance>=2?.035*.9:.035;
+  v.condition=clamp(v.condition-wear,0,100);
+
+  if(v.condition<=0&&!v.broken){
+   v.broken=true;
+   changeReputation(-2,"Doszło do poważnej awarii wózka "+MODELS[v.model].name+".");
+   log("Awaria wózka "+MODELS[v.model].name+".");
+  }
+ });
+}
 
   if(S.dayHours%8===0){
   const fleetPenalty=Math.floor(S.fleet.length/5)*5;
@@ -2479,47 +2507,48 @@ function hourlyTick(){
 }
 
 
+
 function checkRandomEvent(){
  if(S.pendingEvent||Math.random()>.16)return;
 
  const events=[
   {
    title:"Uszkodzona paleta",
-   description:"Operator zgłasza uszkodzenie palety. Możesz poświęcić czas na kontrolę albo zaakceptować ryzyko.",
+   description:"Operator zgłasza uszkodzenie palety. Towar wymaga przełożenia na sprawną paletę.",
    choices:[
-    {label:"Przeprowadź kontrolę",action:"inspect_pallet"},
+    {label:"Wymień paletę",action:"replace_pallet"},
     {label:"Zignoruj problem",action:"ignore_pallet"}
    ]
   },
   {
    title:"Błędna etykieta",
-   description:"Partia towaru otrzymała nieprawidłowe oznaczenia.",
+   description:"Partia towaru otrzymała nieprawidłowe oznaczenia. Trzeba podjąć decyzję przed wysyłką.",
    choices:[
-    {label:"Popraw etykiety · 250 zł",action:"fix_labels"},
+    {label:"Popraw etykiety",action:"fix_labels"},
     {label:"Wstrzymaj wysyłkę",action:"hold_shipment"}
    ]
   },
   {
    title:"Awaria wózka",
-   description:"Jeden z operatorów zgłasza niepokojące dźwięki dochodzące z układu napędowego.",
+   description:"Operator zgłasza niepokojące dźwięki dochodzące z układu napędowego. Dalsza praca może być niebezpieczna.",
    choices:[
-    {label:"Wezwij serwis · 900 zł",action:"repair_vehicle"},
+    {label:"Wezwij serwis",action:"repair_vehicle"},
     {label:"Kontynuuj pracę",action:"ignore_vehicle"}
    ]
   },
   {
    title:"Opóźniona dostawa",
-   description:"Dostawca informuje o opóźnieniu transportu.",
+   description:"Dostawca informuje o opóźnieniu transportu. Możesz zorganizować transport zastępczy albo poczekać.",
    choices:[
-    {label:"Zorganizuj transport zastępczy · 700 zł",action:"replacement_transport"},
+    {label:"Zorganizuj transport zastępczy",action:"replacement_transport"},
     {label:"Poczekaj",action:"wait_delivery"}
    ]
   },
   {
    title:"Nadgodziny",
-   description:"Klient prosi o pilną obsługę dodatkowej partii towaru.",
+   description:"Klient prosi o pilną obsługę dodatkowej partii towaru. Przyjęcie zlecenia może poprawić wizerunek firmy.",
    choices:[
-    {label:"Przyjmij zlecenie · zysk 1500 zł",action:"accept_overtime"},
+    {label:"Przyjmij zlecenie",action:"accept_overtime"},
     {label:"Odmów",action:"refuse_overtime"}
    ]
   }
@@ -2529,83 +2558,168 @@ function checkRandomEvent(){
  saveGame();
  updateEventArea();
 }
+
 function resolveEvent(index){
  if(!S.pendingEvent)return;
 
  const choice=S.pendingEvent.choices[Number(index)];
  if(!choice)return;
 
- // Obsługa nowych identyfikatorów oraz starszych zapisanych zdarzeń.
  const action=choice.action||choice.effectName||choice.label;
 
  switch(action){
 
-  case "inspect_pallet":
-  case "Przeprowadź kontrolę":
-   S.money-=400;
-   log("Kontrola palety kosztowała 400 zł.");
-   break;
+  // 1. USZKODZONA PALETA
+
+  case "replace_pallet":
+   case "Wymień paletę":{
+    const worker=pick(S.employees);
+
+    if(worker){
+     S.palletRepairWorkerId=worker.id;
+     S.palletRepairUntilHour=S.gameHour+1;
+
+     log(
+      "Operator "+worker.name+
+      " zajmuje się wymianą uszkodzonej palety. "+
+      "Przez najbliższą godzinę nie będzie realizował innych transportów."
+     );
+    }else{
+     log("Wymieniono uszkodzoną paletę. Brak dostępnego operatora do dodatkowych prac.");
+    }
+    break;
+   }
 
   case "ignore_pallet":
   case "Zignoruj problem":
-   changeReputation(-1,"Zignorowano uszkodzenie palety.");
+   if(Math.random()<0.60){
+    log("📢 Uszkodzona paleta doprowadziła do zniszczenia części towaru. Kontrahenci zgłaszają powtarzające się problemy z jakością obsługi.");
+    changeReputation(
+     -10,
+     "Powtarzające się zgłoszenia o uszkodzonych paletach."
+    );
+   }else{
+    log("Zignorowano uszkodzenie palety. Na szczęście towar nie uległ uszkodzeniu.");
+   }
    break;
+
+  // 2. BŁĘDNA ETYKIETA
 
   case "fix_labels":
   case "Popraw etykiety · 250 zł":
-   S.money-=250;
-   log("Poprawiono oznaczenia towaru.");
+  case "Popraw etykiety":
+   log("Poprawiono błędne oznaczenia towaru.");
+
+   if(Math.random()<0.50){
+    log("📢 Klient docenił szybką reakcję i profesjonalne rozwiązanie problemu.");
+    changeReputation(5,"Klient docenił poprawienie błędnych etykiet.");
+   }else{
+    log("Poprawienie etykiet nie przyniosło dodatkowej korzyści reputacyjnej.");
+   }
    break;
 
   case "hold_shipment":
   case "Wstrzymaj wysyłkę":
-   changeReputation(1,"Wstrzymano wysyłkę i uniknięto pomyłki.");
+   log("Wstrzymano wysyłkę do czasu wyjaśnienia błędnych oznaczeń.");
+   changeReputation(1,"Wstrzymano wysyłkę i uniknięto błędów w dostawie.");
    break;
+
+  // 3. AWARIA WÓZKA
 
   case "repair_vehicle":
   case "Wezwij serwis · 900 zł":
-   S.money-=900;
-   {
-    const v=pick(S.fleet);
-    if(v){
-     v.condition=100;
-     v.broken=false;
-    }
+  case "Wezwij serwis":{
+   const cost=Math.floor(Math.random()*4001)+1000;
+
+   S.money-=cost;
+
+   const vehicle=pick(S.fleet);
+
+   if(vehicle){
+    vehicle.condition=100;
+    vehicle.broken=false;
+
+    log(
+     "Wezwano serwis techniczny. Naprawiono "+
+     MODELS[vehicle.model].name+
+     ". Koszt interwencji: "+money(cost)+"."
+    );
+   }else{
+    log("Wezwano serwis techniczny. Koszt interwencji: "+money(cost)+".");
    }
-   log("Serwis usunął problem techniczny.");
    break;
+  }
 
   case "ignore_vehicle":
-  case "Kontynuuj pracę":
-   {
-    const v=pick(S.fleet);
-    if(v)v.condition=clamp(v.condition-15,0,100);
+  case "Kontynuuj pracę":{
+   const vehicle=pick(S.fleet);
+
+   if(vehicle){
+    vehicle.condition=clamp(vehicle.condition-35,0,100);
+
+    if(vehicle.condition<=0){
+     vehicle.broken=true;
+    }
+
+    log(
+     "Zignorowano niepokojące objawy. "+
+     MODELS[vehicle.model].name+
+     " stracił 35 punktów procentowych sprawności."
+    );
    }
-   log("Zignorowano niepokojące objawy wózka.");
+
+   if(Math.random()<0.30){
+    log("📢 Doszło do poważnego wypadku z udziałem osób postronnych. Informacja o zdarzeniu wywołała duże poruszenie i poważnie zaszkodziła wizerunkowi przedsiębiorstwa.");
+    changeReputation(
+     -20,
+     "Poważny wypadek z udziałem osób postronnych."
+    );
+   }else{
+    log("Nie doszło do wypadku. Firma uniknęła najpoważniejszych konsekwencji.");
+   }
    break;
+  }
+
+  // 4. OPÓŹNIONA DOSTAWA
 
   case "replacement_transport":
   case "Zorganizuj transport zastępczy · 700 zł":
-   S.money-=700;
-   changeReputation(1,"Transport zastępczy dotarł na czas.");
+  case "Zorganizuj transport zastępczy":{
+   const cost=Math.floor(Math.random()*1001)+500;
+
+   S.money-=cost;
+
+   log("Zorganizowano transport zastępczy. Koszt: "+money(cost)+".");
+   changeReputation(5,"Transport zastępczy dotarł na czas.");
    break;
+  }
 
   case "wait_delivery":
   case "Poczekaj":
-   changeReputation(-1,"Opóźnienie dostawy wpłynęło na reputację.");
+   log("Zdecydowano się poczekać na opóźnioną dostawę.");
+   changeReputation(-3,"Opóźnienie dostawy wpłynęło na reputację firmy.");
    break;
+
+  // 5. NADGODZINY
 
   case "accept_overtime":
   case "Przyjmij zlecenie · zysk 1500 zł":
-   S.money+=1500;
-   S.finances.income+=1500;
-   S.taxCycleRevenue+=1500;
-   log("Zrealizowano pilne zlecenie.");
+  case "Przyjmij zlecenie":
+   log("Przyjęto i zrealizowano pilne zlecenie klienta.");
+
+   if(Math.random()<0.40){
+    changeReputation(10,"Udana realizacja pilnego zlecenia.");
+    log("📢 Klient polecił naszą firmę nowemu kontrahentowi. Dobra opinia zaczyna pracować na naszą korzyść.");
+    changeReputation(2,"Polecenie firmy nowemu kontrahentowi.");
+   }else{
+    log("Zlecenie zostało wykonane, ale nie przyniosło dodatkowej korzyści reputacyjnej.");
+   }
    break;
 
   case "refuse_overtime":
   case "Odmów":
-   log("Odmówiono dodatkowego zlecenia.");
+   log("Odmówiono przyjęcia dodatkowego zlecenia.");
+   changeReputation(-5,"Odmówiono pilnego zlecenia klienta.");
    break;
 
   default:
@@ -2616,6 +2730,7 @@ function resolveEvent(index){
  saveGame();
  render();
 }
+
 function funnyEvent(){
  const dailyLimit=4*S.shiftCount;
 

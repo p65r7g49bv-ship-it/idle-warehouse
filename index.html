@@ -64,6 +64,23 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
 .event-choice{margin-top:12px}
 .event-choice button{margin:4px}
 .contract-progress{height:12px;background:#0c131d;border-radius:20px;overflow:hidden;margin:8px 0 12px}
+.special-contract{
+ border:2px solid #d6a72c !important;
+ background:linear-gradient(145deg,#3b321d,#24251f) !important;
+ box-shadow:0 0 12px rgba(214,167,44,.18);
+}
+
+.special-label{
+ display:inline-block;
+ padding:5px 9px;
+ margin-bottom:8px;
+ border-radius:5px;
+ background:#d6a72c;
+ color:#17130a;
+ font-weight:bold;
+ font-size:11px;
+ letter-spacing:.5px;
+}
 .contract-progress div{height:100%;background:linear-gradient(90deg,#55c58a,#65a9e8);transition:width .2s}
 
 /* Zmniejszona czcionka w zakładkach o 4 px */
@@ -275,14 +292,47 @@ const MODELS={
 };
 
 const COMPANIES=[
- ["North Logistics","Dystrybucja artykułów przemysłowych"],
- ["Baltic Distribution","Towary konsumpcyjne i FMCG"],
- ["PolTrans","Transport i przeładunki"],
- ["MegaMarket","Obsługa sieci handlowych"],
- ["SteelWorks","Wyroby stalowe i materiały"],
- ["FreshCargo","Produkty spożywcze"],
- ["EuroParts","Części i podzespoły"],
- ["Central Supply","Zaopatrzenie zakładów"]
+ ["North Logistics","Dystrybucja artykułów przemysłowych","local"],
+ ["Baltic Distribution","Towary konsumpcyjne i FMCG","local"],
+ ["PolTrans","Transport i przeładunki","local"],
+ ["MegaMarket","Obsługa lokalnych sklepów","local"],
+ ["FreshCargo","Produkty spożywcze","local"],
+ ["Stonoga","Sieć sklepów wielobranżowych","local"],
+ ["Fruitle","Dystrybucja owoców i warzyw","local"],
+
+ ["InPostar","Usługi kurierskie i przesyłki","regional"],
+ ["DHL Expressivo","Transport i logistyka","regional"],
+ ["FedEx Logistics Group","Przesyłki i dystrybucja","regional"],
+ ["Schenkeria","Transport międzynarodowy","regional"],
+ ["Allegrox","Platforma handlowa i dystrybucja","regional"],
+ ["MediaMajster","Elektronika i sprzęt RTV/AGD","regional"],
+ ["EuroParts","Części i podzespoły","regional"],
+
+ ["Amazoon","Handel internetowy i centra dystrybucji","large"],
+ ["IKEA Logistics","Meble i wyposażenie wnętrz","large"],
+ ["Volkwagen Parts","Części samochodowe","large"],
+ ["Samsong Industries","Elektronika i podzespoły","large"],
+ ["Nestoro","Produkty spożywcze","large"],
+ ["CarreFour Logistics","Sieć handlowa i FMCG","large"],
+ ["Bosz","Sprzęt AGD i elektronarzędzia","large"],
+ ["Toyotex","Motoryzacja i części","large"],
+
+ ["Orlenix","Paliwa, chemia i produkty przemysłowe","national"],
+ ["Decathron","Sprzęt sportowy i odzież","national"],
+ ["H&M Distribution","Odzież i tekstylia","national"],
+ ["EuroWalmart","Handel wielkopowierzchniowy","national"],
+ ["GlobalTech Industries","Technologie i elektronika","national"],
+ ["Buildex Group","Materiały budowlane","national"],
+
+ ["Continental Supply","Międzynarodowa dystrybucja przemysłowa","international"],
+ ["InterNova Group","Globalna sieć dostaw","international"],
+ ["WorldParts Corporation","Części i komponenty dla przemysłu","international"],
+ ["United Retail Systems","Międzynarodowa sieć handlowa","international"],
+
+ ["OmniGlobal Holdings","Globalne centrum dystrybucji","global"],
+ ["Titan Industries","Międzynarodowy przemysł ciężki","global"],
+ ["Atlas Worldwide","Globalna logistyka i transport","global"],
+ ["PrimeCore Corporation","Strategiczne dostawy przemysłowe","global"]
 ];
 
 const FIRST_NAMES=["Jan","Adam","Michał","Piotr","Tomasz","Paweł","Kamil","Marcin","Łukasz","Jakub","Mateusz","Robert","Krzysztof","Dawid","Andrzej","Rafał"];
@@ -483,15 +533,41 @@ merged.warehouse.capacity=warehouseCapacities[merged.warehouse.level];
    c.shippedPallets=completed;
   }else{
    c.totalPallets=total;
-   c.receivedPallets=clamp(Math.round(Number(c.receivedPallets)||0),0,total);
-   c.shippedPallets=clamp(Math.round(Number(c.shippedPallets)||0),0,c.receivedPallets);
+   c.receivedPallets=clamp(
+    Math.round(Number(c.receivedPallets)||0),
+    0,
+    total
+   );
+   c.shippedPallets=clamp(
+    Math.round(Number(c.shippedPallets)||0),
+    0,
+    c.receivedPallets
+   );
   }
 
   c.receivedPallets??=0;
   c.shippedPallets??=0;
   c.done??=false;
   c.failed??=false;
+  c.special??=false;
+  c.penalty??=0;
+  c.rep??=0;
+
+  c.advance??=Number(c.value)||0;
+
+  if(c.deadlineHour==null){
+   c.deadlineHour=
+    (Number(merged.gameHour)||0)+
+    Math.max(1,Number(c.days)||1)*8*
+    Math.max(1,Number(merged.shiftCount)||1);
+  }
+
+  c.timeLabel??=(Number(c.days)||1)+" dni";
  });
+
+ if(merged.offers.some(o=>!o.tier)){
+  merged.offers=[];
+ }
 
  merged.nextId=Math.max(
   merged.nextId||2,
@@ -1066,18 +1142,22 @@ function contractsView(){
   const remaining=Math.max(0,total-shipped);
   const percent=Math.min(100,shipped/total*100);
 
-  return `<div class="card">
+  return `<div class="card ${c.special?"special-contract":""}">
+   ${c.special?'<div class="special-label">★ KONTRAKT SPECJALNY</div>':""}
    <h3>${escapeHTML(c.company)}</h3>
-   <p>Wymagany udźwig: ${num(c.load)} kg</p>
-   <p>Łączna liczba palet w kontrakcie: <b>${num(total)}</b></p>
+   <p>Wymagany udźwig: <b>${num(c.load)} kg</b></p>
+   <p>Łączna liczba palet: <b>${num(total)}</b></p>
    <p>Palety przyjęte do magazynu: <b class="good">${num(received)} / ${num(total)}</b></p>
    <p>Palety oczekujące na wywóz: <b class="blue">${num(waiting)}</b></p>
    <p>Palety pozostałe do wywiezienia: <b>${num(remaining)}</b></p>
    <p>Palety wywiezione: <b>${num(shipped)} / ${num(total)}</b></p>
    <div class="contract-progress"><div style="width:${percent}%"></div></div>
    <p class="small">Postęp realizacji: ${percent.toFixed(1).replace(".",",")}%</p>
+   <p>Termin realizacji: <b>${escapeHTML(c.timeLabel||((c.days||1)+" dni"))}</b> od przyjęcia</p>
+   <p>Zapłata otrzymana przy przyjęciu: <span class="good">${money(c.advance)}</span></p>
+   <p>Kara za niewykonanie: <span class="bad">${money(c.penalty)}</span></p>
+   ${c.special?'<p class="bad"><b>Utrata reputacji za porażkę: 10 pkt</b></p>':""}
    <p>Status: <span class="blue">W realizacji</span></p>
-   <p>Wartość kontraktu: ${money(c.value)}</p>
   </div>`;
  }).join("");
 
@@ -1087,7 +1167,7 @@ function contractsView(){
   const shipped=clamp(Number(c.shippedPallets)||0,0,received);
   const percent=c.done?100:Math.min(100,shipped/total*100);
 
-  return `<div class="card" style="width:100%;max-width:520px;padding:10px 14px">
+  return `<div class="card ${c.special?"special-contract":""}" style="width:100%;max-width:520px;padding:10px 14px">
    <div class="row between">
     <b>${escapeHTML(c.company)}</b>
     <span class="${c.done?"good":"bad"}">
@@ -1096,12 +1176,14 @@ function contractsView(){
    </div>
    <div class="row between">
     <span class="small">Palety: ${num(shipped)} / ${num(total)}</span>
-    <span class="small">Wartość: ${money(c.value)}</span>
+    <span class="small">Zapłata: ${money(c.advance||c.value)}</span>
    </div>
    <div class="contract-progress">
     <div style="width:${percent}%"></div>
    </div>
    <p class="small">Postęp: ${percent.toFixed(1).replace(".",",")}% · Udźwig: ${num(c.load)} kg</p>
+   ${c.failed?'<p class="bad">Naliczona kara: '+money(c.penalty)+'</p>':""}
+   ${c.failed&&c.special?'<p class="bad">Utrata reputacji: 10 pkt</p>':""}
   </div>`;
  }).join("");
 
@@ -1111,25 +1193,29 @@ function contractsView(){
   <h3>Możliwości operacyjne</h3>
   <p>Maksymalny udźwig sprawnych wózków: <b>${num(maxLoad())} kg</b></p>
   <p>Pojemność magazynu: <b>${S.warehouse.capacity} miejsc</b></p>
+  <p>Reputacja firmy: <b>${num(S.rep)} pkt</b></p>
   <p>Aktywne kontrakty: ${activeContracts().length}/${contractLimit()}</p>
-  <p class="small">Kontrakt obejmuje przyjęcie towaru do magazynu i jego późniejszy wywóz. Postęp jest liczony na podstawie palet, a nie godzin.</p>
+  <p class="small">Wyższa reputacja odblokowuje dostęp do większych klientów. Mniejsze firmy nadal mogą składać oferty. Zapłata jest wypłacana w całości przy przyjęciu kontraktu.</p>
   <button onclick="generateOffers();render()">Odśwież oferty</button>
  </div>
 
  <h3 style="margin-top:18px">Dostępne oferty</h3>
  <div class="grid">${S.offers.map(o=>{
   const total=contractTotal(o);
-  return `<div class="card">
+  return `<div class="card ${o.special?"special-contract":""}">
+   ${o.special?'<div class="special-label">★ KONTRAKT SPECJALNY — PILNE</div>':""}
    <h3>${escapeHTML(o.company)}</h3>
    <p class="muted">${escapeHTML(o.desc)}</p>
+   <p>Klient: <b>${escapeHTML(o.tierName||"Firma")}</b></p>
    <p>Tempo obsługi: <b>${o.p} palet/h</b></p>
    <p>Łączna liczba palet: <b>${num(total)} palet</b></p>
    <p>Wymagany udźwig wózka: <b>${num(o.load)} kg</b></p>
-   <p>Zajętość magazynu: ${o.storage} miejsc</p>
-   <p>Czas realizacji: ${o.days} dni</p>
-   <p>Zaliczka: <span class="good">${money(o.advance)}</span></p>
-   <p>Kara za niewykonanie: <span class="bad">${money(o.penalty)}</span></p>
-   <p>Reputacja po wykonaniu: +${o.rep}</p>
+   <p>Zajętość magazynu: ${num(o.storage)} miejsc</p>
+   <p>Czas realizacji: <b>${escapeHTML(o.timeLabel||o.days+" dni")}</b></p>
+   <p>Zapłata: <span class="good"><b>${money(o.advance)}</b></span></p>
+   <p>Kara za niewykonanie: <span class="bad"><b>${money(o.penalty)}</b></span></p>
+   ${o.special?'<p class="bad"><b>Utrata reputacji: 10 pkt</b></p>':""}
+   ${!o.special?'<p>Reputacja po wykonaniu: +'+num(o.rep)+'</p>':""}
    <button onclick="acceptContract(${o.id})" ${activeContracts().length>=contractLimit()?"disabled":""}>Przyjmij kontrakt</button>
   </div>`;
  }).join("")||'<div class="empty">Brak dostępnych ofert. Rozbuduj flotę lub magazyn.</div>'}</div>
@@ -1704,67 +1790,263 @@ function promoteEmployee(id){
  log("Awans pracownika "+e.name+": "+e.role+".");saveGame();render();
 }
 
-/* KONTRAKTY */
-function generateOffers(){
- S.offers=[];
- let active=activeContracts().length;
- let count=Math.min(3,contractLimit()-active);
- if(count<=0)return;
- const max=maxLoad();if(max===0)return;
+/* KONTRAKTY — SYSTEM REPUTACJI I KONTRAKTÓW SPECJALNYCH */
 
- let base=[
-  {p:1,storage:3,days:1,advance:500,penalty:250,load:1800,rep:1,value:1800},
-  {p:1,storage:4,days:2,advance:800,penalty:350,load:1800,rep:1,value:2800}
+function contractClientTiers(){
+ const rep=S.rep;
+
+ const tiers=[
+  {
+   key:"local",
+   name:"Małe lokalne firmy",
+   minLoad:1800,
+   maxLoad:1800,
+   pallets:[8,22],
+   payment:[2000,5500],
+   penalty:[4000,6000],
+   repReward:1
+  }
  ];
 
- if(max>=2400)base.push(
-  {p:2,storage:5,days:1,advance:1200,penalty:500,load:2400,rep:2,value:3500},
-  {p:2,storage:7,days:2,advance:1800,penalty:700,load:2400,rep:2,value:5000}
- );
+ if(rep>=31)tiers.push({
+  key:"regional",
+  name:"Firmy regionalne",
+  minLoad:1800,
+  maxLoad:2400,
+  pallets:[20,60],
+  payment:[5000,10000],
+  penalty:[7000,14000],
+  repReward:2
+ });
 
- if(max>=3000&&S.warehouse.level>=2)base.push(
-  {p:3,storage:10,days:2,advance:3000,penalty:1000,load:3000,rep:1,value:8000},
-  {p:4,storage:14,days:2,advance:4500,penalty:1500,load:3000,rep:1,value:11000}
- );
+ if(rep>=51)tiers.push({
+  key:"large",
+  name:"Duże przedsiębiorstwa",
+  minLoad:1800,
+  maxLoad:3000,
+  pallets:[50,70],
+  payment:[8000,20000],
+  penalty:[14000,25000],
+  repReward:3
+ });
 
- if(max>=5000&&S.warehouse.level>=3)base.push(
-  {p:5,storage:18,days:3,advance:7000,penalty:2500,load:5000,rep:5,value:16000},
-  {p:6,storage:24,days:3,advance:9000,penalty:3500,load:5000,rep:5,value:22000}
- );
+ if(rep>=71)tiers.push({
+  key:"national",
+  name:"Ogólnopolskie koncerny",
+  minLoad:1800,
+  maxLoad:5000,
+  pallets:[70,100],
+  payment:[20000,40000],
+  penalty:[25000,45000],
+  repReward:4
+ });
 
- base=base.filter(o=>o.load<=max&&o.storage<=S.warehouse.capacity*2);
- for(let i=0;i<count&&base.length;i++){
-  const b=pick(base),co=pick(COMPANIES);
-  S.offers.push({...b,totalPallets:Math.max(1,b.p*8*b.days),id:S.nextId++,company:co[0],desc:co[1]});
+ if(rep>=81)tiers.push({
+  key:"international",
+  name:"Międzynarodowe korporacje",
+  minLoad:1800,
+  maxLoad:5000,
+  pallets:[100,200],
+  payment:[45000,65000],
+  penalty:[60000,75000],
+  repReward:5
+ });
+
+ if(rep>=95)tiers.push({
+  key:"global",
+  name:"Najwięksi gracze na rynku",
+  minLoad:3000,
+  maxLoad:5000,
+  pallets:[100,240],
+  payment:[80000,100000],
+  penalty:[90000,120000],
+  repReward:6
+ });
+
+ return tiers;
+}
+
+function availableContractLoads(tier){
+ return [1800,2400,3000,5000].filter(load=>
+  load>=tier.minLoad&&
+  load<=tier.maxLoad&&
+  load<=maxLoad()
+ );
+}
+
+function makeRegularOffer(tier){
+ const loads=availableContractLoads(tier);
+ if(!loads.length)return null;
+
+ const total=rand(tier.pallets[0],tier.pallets[1]);
+ const days=rand(1,3);
+ const load=pick(loads);
+ const p=Math.max(2,Math.ceil(total/(days*8)));
+ const companyPool=COMPANIES.filter(c=>c[2]===tier.key);
+ const company=companyPool.length?pick(companyPool):pick(COMPANIES);
+
+ return {
+  id:S.nextId++,
+  tier:tier.key,
+  tierName:tier.name,
+  company:company[0],
+  desc:company[1],
+  p,
+  storage:Math.ceil(total*.35),
+  days,
+  deadlineHours:days*8*S.shiftCount,
+  timeLabel:days+" dni",
+  advance:rand(tier.payment[0],tier.payment[1]),
+  penalty:rand(tier.penalty[0],tier.penalty[1]),
+  load,
+  rep:tier.repReward,
+  value:0,
+  totalPallets:total,
+  special:false
+ };
+}
+
+function makeSpecialOffer(){
+ if(maxLoad()<5000||S.warehouse.level<3)return null;
+
+ const company=pick(COMPANIES.filter(c=>c[2]==="global"));
+ const total=rand(100,240);
+ const payment=rand(200000,400000);
+ const penalty=rand(300000,500000);
+ const p=Math.max(2,Math.ceil(total/8));
+
+ return {
+  id:S.nextId++,
+  tier:"special",
+  tierName:"Kontrakt specjalny",
+  company:company[0]+" — PILNE ZLECENIE",
+  desc:"Pilna dostawa dla strategicznego partnera. Wymagana natychmiastowa mobilizacja największych wózków.",
+  p,
+  storage:Math.ceil(total*.35),
+  days:0,
+  deadlineHours:8,
+  timeLabel:"8 godzin",
+  advance:payment,
+  penalty,
+  load:5000,
+  rep:0,
+  value:0,
+  totalPallets:total,
+  special:true,
+  reputationPenalty:10
+ };
+}
+
+function generateOffers(){
+ S.offers=[];
+
+ const active=activeContracts().length;
+ const count=Math.min(3,contractLimit()-active);
+ if(count<=0)return;
+
+ if(maxLoad()===0)return;
+
+ const tiers=contractClientTiers();
+ const availableTiers=tiers.filter(t=>availableContractLoads(t).length>0);
+
+ if(!availableTiers.length)return;
+
+ const specialEligible=
+  S.rep>=60&&
+  maxLoad()>=5000&&
+  S.warehouse.level>=3;
+
+ const specialChance=Math.random()<.15;
+
+ if(specialEligible&&specialChance){
+  const special=makeSpecialOffer();
+
+  if(special&&special.storage<=S.warehouse.capacity*2){
+   S.offers.push(special);
+  }
+ }
+
+  for(let attempt=0;attempt<count*20&&S.offers.length<count;attempt++){
+  const tier=pick(availableTiers);
+  const offer=makeRegularOffer(tier);
+
+  if(!offer)continue;
+  if(offer.storage>S.warehouse.capacity*2)continue;
+
+  S.offers.push(offer);
  }
 }
 
 function acceptContract(id){
- const o=S.offers.find(x=>x.id===id);if(!o)return;
+ const o=S.offers.find(x=>x.id===id);
+ if(!o)return;
 
-if(effectiveWarehouseCapacity()<=0){
- alert("Magazyn jest nieczynny! Przywróć jego stan techniczny, aby przyjmować kontrakty.");
- return;
-}
-
-if(activeContracts().length>=contractLimit()){
- alert("Osiągnięto limit kontraktów.");
- return;
-}
- if(!S.fleet.some(v=>(MODELS[v.model]?.load||0)>=o.load&&!v.broken&&v.condition>0)){
-  alert("Brak sprawnego wózka o wymaganym udźwigu.");return;
+ if(effectiveWarehouseCapacity()<=0){
+  alert("Magazyn jest nieczynny! Przywróć jego stan techniczny, aby przyjmować kontrakty.");
+  return;
  }
- if(o.storage>S.warehouse.capacity*2){alert("Magazyn ma zbyt małą pojemność.");return}
+
+ if(activeContracts().length>=contractLimit()){
+  alert("Osiągnięto limit kontraktów.");
+  return;
+ }
+
+ if(!S.fleet.some(v=>
+  (MODELS[v.model]?.load||0)>=o.load&&
+  !v.broken&&
+  v.condition>0
+ )){
+  alert("Brak sprawnego wózka o wymaganym udźwigu.");
+  return;
+ }
+
+ if(o.special&&maxLoad()<5000){
+  alert("Kontrakt specjalny wymaga sprawnego wózka o udźwigu 5000 kg.");
+  return;
+ }
+
+ if(o.storage>S.warehouse.capacity*2){
+  alert("Magazyn ma zbyt małą pojemność.");
+  return;
+ }
+
+ if(S.money+o.advance<0){
+  alert("Nie można przyjąć tego kontraktu.");
+  return;
+ }
+
  const total=contractTotal(o);
- S.money+=o.advance;S.finances.income+=o.advance;
+
+ S.money+=o.advance;
+ S.finances.income+=o.advance;
+ S.taxCycleRevenue+=o.advance;
+
  S.contracts.push({
-  ...o,totalPallets:total,receivedPallets:0,shippedPallets:0,
-  progress:0,done:false,failed:false,value:o.value||o.advance*3
+  ...o,
+  totalPallets:total,
+  receivedPallets:0,
+  shippedPallets:0,
+  acceptedAtHour:S.gameHour,
+  deadlineHour:S.gameHour+Math.max(1,Number(o.deadlineHours)||24),
+  progress:0,
+  done:false,
+  failed:false,
+  value:o.advance
  });
+
  S.offers=S.offers.filter(x=>x.id!==id);
- log("Przyjęto kontrakt firmy "+o.company+". Do obsłużenia: "+num(total)+" palet. Wymagany udźwig: "+o.load+" kg.");
+
+ log(
+  "Przyjęto kontrakt firmy "+o.company+
+  ". Zapłata: "+money(o.advance)+
+  ". Do obsłużenia: "+num(total)+
+  " palet. Termin: "+o.timeLabel+"."
+ );
+
  if(S.offers.length===0)generateOffers();
- saveGame();render();
+
+ saveGame();
+ render();
 }
 
 /* ROZWÓJ */
@@ -2003,56 +2285,99 @@ function hourlyTick(){
  S.dayHours++;
 
  activeContracts().forEach(c=>{
-  const capable=S.fleet.some(v=>!v.broken&&v.condition>0&&(MODELS[v.model]?.load||0)>=c.load);
-  if(!capable)return;
-
   const total=contractTotal(c);
   c.totalPallets=total;
-  c.receivedPallets=clamp(Math.round(Number(c.receivedPallets)||0),0,total);
-  c.shippedPallets=clamp(Math.round(Number(c.shippedPallets)||0),0,c.receivedPallets);
 
-  const multiplier=1;
-  const receiveRate=Math.max(1,Math.round(c.p*1.5*multiplier));
+  c.receivedPallets=clamp(
+   Math.round(Number(c.receivedPallets)||0),
+   0,
+   total
+  );
 
-const availableStorage=freePalletPlaces();
+  c.shippedPallets=clamp(
+   Math.round(Number(c.shippedPallets)||0),
+   0,
+   c.receivedPallets
+  );
 
-const receivedNow=Math.min(
- receiveRate,
- total-c.receivedPallets,
- availableStorage
-);
+  const capable=S.fleet.some(v=>
+   !v.broken&&
+   v.condition>0&&
+   (MODELS[v.model]?.load||0)>=c.load
+  );
 
-c.receivedPallets+=receivedNow;
+  if(capable){
+   const multiplier=1;
+   const receiveRate=Math.max(1,Math.round(c.p*1.5*multiplier));
+   const availableStorage=freePalletPlaces();
 
-  const shipRate=Math.max(1,Math.round(c.p*multiplier));
-  const available=c.receivedPallets-c.shippedPallets;
-  const shippedNow=Math.min(shipRate,available,total-c.shippedPallets);
-  c.shippedPallets+=shippedNow;
+   const receivedNow=Math.min(
+    receiveRate,
+    total-c.receivedPallets,
+    availableStorage
+   );
 
-  if(shippedNow>0){
-   const revenue=Math.round(shippedNow*35);
-   S.money+=revenue;
-   S.finances.income+=revenue;
-   S.taxCycleRevenue+=revenue;
+   c.receivedPallets+=receivedNow;
+
+   const shipRate=Math.max(1,Math.round(c.p*multiplier));
+   const available=c.receivedPallets-c.shippedPallets;
+
+   const shippedNow=Math.min(
+    shipRate,
+    available,
+    total-c.shippedPallets
+   );
+
+   c.shippedPallets+=shippedNow;
   }
 
   if(c.shippedPallets>=total&&!c.done){
    c.shippedPallets=total;
    c.receivedPallets=total;
    c.done=true;
-   let reputationReward=c.rep;
 
-if(S.upgrades.marketing>=2&&Math.random()<.5){
- reputationReward*=2;
- log("Kampania marketingowa zwiększyła nagrodę reputacyjną za kontrakt firmy "+c.company+".");
-}
+   let reputationReward=c.rep||0;
 
-changeReputation(reputationReward,"Ukończono kontrakt firmy "+c.company+".");
-   const bonus=Math.round(c.value*.35);
-   S.money+=bonus;
-   S.finances.income+=bonus;
-   S.taxCycleRevenue+=bonus;
-   log("Zakończono kontrakt firmy "+c.company+". Wywieziono "+num(total)+" palet. Premia: "+money(bonus)+".");
+   if(!c.special&&S.upgrades.marketing>=2&&Math.random()<.5){
+    reputationReward*=2;
+    log("Kampania marketingowa zwiększyła nagrodę reputacyjną za kontrakt firmy "+c.company+".");
+   }
+
+   if(reputationReward>0){
+    changeReputation(
+     reputationReward,
+     "Ukończono kontrakt firmy "+c.company+"."
+    );
+   }
+
+   log(
+    "Zakończono kontrakt firmy "+c.company+
+    ". Wywieziono "+num(total)+" palet. "+
+    "Zapłata została rozliczona przy przyjęciu kontraktu."
+   );
+  }
+
+  if(!c.done&&S.gameHour>=Number(c.deadlineHour)){
+   c.failed=true;
+
+   const penalty=Math.max(0,Number(c.penalty)||0);
+
+   S.money-=penalty;
+   S.finances.penalties+=penalty;
+
+   if(c.special){
+    changeReputation(
+     -10,
+     "Nie wykonano kontraktu specjalnego firmy "+c.company+"."
+    );
+   }
+
+   log(
+    "NIEPOWODZENIE KONTRAKTU: "+c.company+
+    ". Nie dotrzymano terminu. Naliczona kara: "+
+    money(penalty)+
+    (c.special?" oraz utrata 10 pkt reputacji.":".")
+   );
   }
  });
 

@@ -1427,11 +1427,23 @@ function monthlyCosts(){
  return monthlyCostBreakdown().total;
 }
 
+
 function financeView(){
  const f=S.finances;
  const c=monthlyCostBreakdown();
- 
-  const rows=[
+
+ const automationLevel=S.upgrades.automation||1;
+ let taxDiscount=0;
+
+ if(automationLevel>=2)taxDiscount+=0.03;
+ if(automationLevel>=3)taxDiscount+=0.05;
+ if(automationLevel>=4)taxDiscount+=0.08;
+
+ const grossTax=Math.round(S.taxCycleRevenue*TAX_RATE);
+ const estimatedTax=Math.round(grossTax*(1-taxDiscount));
+ const effectiveTaxRate=TAX_RATE*(1-taxDiscount);
+
+ const rows=[
   ["Wynagrodzenia pracowników",c.wages],
   ["Składki i obciążenia pracodawcy (23%)",c.employerCosts],
   ["Wynajem wózków",c.rent],
@@ -1444,19 +1456,34 @@ function financeView(){
   ["Zewnętrzna firma sprzątająca",c.cleaningCompany],
   ["Administracja i koszty stałe",c.administration]
  ];
+
  return `<h2>💰 Finanse</h2><div class="grid">
  <div class="card"><h3>Kapitał</h3><p style="font-size:25px" class="price">${money(S.money)}</p>
  <p>Przychody łącznie: ${money(f.income)}</p><p>Koszty łącznie: ${money(f.cost)}</p></div>
- <div class="card"><h3>Rozliczenia</h3><p>Kary: ${money(f.penalties)}</p><p>Podatki: ${money(f.tax)}</p>
- <p>Podatek okresowy: 8% przychodów.</p><p>Rozliczenie co 180 dni.</p></div>
- <div class="card"><h3>Ratunek finansowy</h3><p>Wykorzystana pomoc: ${S.rescue.used}/2</p>
- <p>Zadłużenie: ${money(S.rescue.bankDebt)}</p><p>Termin spłaty: ${S.rescue.bankDeadline?S.rescue.bankDeadline+" dzień":"brak"}</p>
- ${S.rescue.bankDebt>0?`<button onclick="repayDebt()">Spłać zadłużenie</button>`:""}</div>
- <div class="card"><h3>Prognoza miesięczna</h3>
- <p>Przychody i koszty są rozliczane zgodnie z aktualnym stanem firmy.</p>
- <p>Poziom automatyzacji: ${S.upgrades.automation}</p>
- <p>Redukcja kosztów: <b class="good">${num(S.upgrades.automation*4)}%</b></p>
- <p>Szacowany koszt po rabacie: <b class="price">${money(c.total)}</b></p></div></div>
+
+ <div class="card"><h3>Rozliczenia</h3>
+ <p>Kary: ${money(f.penalties)}</p>
+ <p>Podatki zapłacone: ${money(f.tax)}</p>
+ <p>Podatek podstawowy: 8% przychodów.</p>
+ <p>Termin pobrania podatku: co 30 dni.</p>
+ <p>Przychód objęty podatkiem w tym miesiącu: ${money(S.taxCycleRevenue)}</p>
+ <p>Szacowany podatek po rabacie: <b class="price">${money(estimatedTax)}</b></p>
+ </div>
+
+ <div class="card"><h3>Ratunek finansowy</h3>
+ <p>Wykorzystana pomoc: ${S.rescue.used}/2</p>
+ <p>Zadłużenie: ${money(S.rescue.bankDebt)}</p>
+ <p>Termin spłaty: ${S.rescue.bankDeadline?S.rescue.bankDeadline+" dzień":"brak"}</p>
+ ${S.rescue.bankDebt>0?`<button onclick="repayDebt()">Spłać zadłużenie</button>`:""}
+ </div>
+
+ <div class="card"><h3>Automatyzacja i koszty</h3>
+ <p>Poziom automatyzacji: ${automationLevel}</p>
+ <p>Obniżka podatku: <b class="good">${num(taxDiscount*100)}%</b></p>
+ <p>Efektywna stawka podatku: <b>${num(effectiveTaxRate*100)}%</b></p>
+ <p>Miesięczne koszty utrzymania: <b class="price">${money(c.total)}</b></p>
+ <p class="small">Automatyzacja obniża podatek, ale nie zmniejsza kosztów utrzymania firmy.</p>
+ </div></div>
 
  <h3 style="margin-top:20px">Szczegółowy miesięczny rozkład kosztów</h3>
  <div class="card">
@@ -1465,16 +1492,16 @@ function financeView(){
  <thead><tr><th>Kategoria wydatku</th><th>Miesięcznie</th></tr></thead>
  <tbody>
  ${rows.map(([label,value])=>`<tr><td>${label}</td><td>${money(value)}</td></tr>`).join("")}
- <tr class="finance-total"><td>Łączne koszty przed automatyzacją</td><td>${money(c.gross)}</td></tr>
- <tr><td>Rabat z automatyzacji (${num(S.upgrades.automation*4)}%)</td><td class="good">−${money(c.discount)}</td></tr>
- <tr class="finance-total"><td>RAZEM DO ZAPŁATY</td><td class="price">${money(c.total)}</td></tr>
+ <tr class="finance-total"><td>ŁĄCZNE KOSZTY UTRZYMANIA</td><td class="price">${money(c.total)}</td></tr>
  </tbody></table>
- <p class="small">Koszty są pobierane automatycznie co 30 dni. Rozwój automatyzacji zmniejsza końcową kwotę rozliczenia.</p>
+ <p class="small">Koszty utrzymania pobierane są automatycznie co 30 dni. Podatek jest naliczany osobno od przychodów i pomniejszany dzięki automatyzacji.</p>
  </div>
 
- <h3 style="margin-top:20px">Historia rozliczeń</h3><div class="card"><table><thead><tr><th>Dzień</th><th>Przychód</th><th>Koszty</th><th>Bilans</th></tr></thead>
+ <h3 style="margin-top:20px">Historia rozliczeń</h3>
+ <div class="card"><table><thead><tr><th>Dzień</th><th>Przychód</th><th>Koszty</th><th>Bilans</th></tr></thead>
  <tbody>${f.history.slice(-20).reverse().map(h=>`<tr><td>${h.day}</td><td>${money(h.income)}</td><td>${money(h.cost)}</td><td>${money(h.income-h.cost)}</td></tr>`).join("")}</tbody></table></div>`;
 }
+
 
 function reportsView(){
  return `<h2>📊 Raporty i statystyki</h2><div class="grid">

@@ -561,14 +561,31 @@ function unstaffedForklifts(){
  return Math.max(0,forklifts().length-staffedForklifts());
 }
 
+
 function shiftLength(){return 8}
 function shiftStartHour(){return 6}
-function getShift(){return Math.min(S.shiftCount,Math.floor(S.dayHours/8)+1)}
-function getShiftHour(){return S.dayHours%8}
+
+function getShift(){
+ return Math.min(S.shiftCount,Math.floor(S.dayHours/8)+1);
+}
+
+function getShiftHour(){
+ return S.dayHours%8;
+}
+
+function getCurrentHour(){
+ return (shiftStartHour()+S.dayHours)%24;
+}
+
+function getShiftEndHour(){
+ return (shiftStartHour()+getShift()*8)%24;
+}
+
 function formatTime(hours){
  const total=Math.floor(hours*60);
  return String(Math.floor(total/60)).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
 }
+
 function formatCountdown(hours){
  const seconds=Math.max(0,Math.floor(hours*3600));
  return String(Math.floor(seconds/3600)).padStart(2,"0")+":"+String(Math.floor(seconds%3600/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
@@ -628,12 +645,22 @@ function updateTop(){
  document.getElementById("capacityStat").textContent=
  num(effectiveWarehouseCapacity())+" / "+num(S.warehouse.capacity)+" miejsc";
  document.getElementById("dayStat").textContent=S.day;
- document.getElementById("clockTime").textContent=formatTime(getShiftHour())+" / 08:00";
- document.getElementById("remainingTime").textContent=formatCountdown(8-getShiftHour());
- document.getElementById("shiftNumber").textContent=getShift()+" / "+S.shiftCount;
- document.getElementById("shiftProgress").style.width=(getShiftHour()/8*100)+"%";
+
+ document.getElementById("clockTime").textContent=
+ formatTime(getCurrentHour())+" / "+formatTime(getShiftEndHour());
+
+ document.getElementById("remainingTime").textContent=
+ formatCountdown(8-getShiftHour());
+
+ document.getElementById("shiftNumber").textContent=
+ getShift()+" / "+S.shiftCount;
+
+ document.getElementById("shiftProgress").style.width=
+ (getShiftHour()/8*100)+"%";
+
  updateChat();
 }
+
 
 function updateEventArea(){
  const area=document.getElementById("eventArea");
@@ -2093,8 +2120,10 @@ changeReputation(reputationReward,"Ukończono kontrakt firmy "+c.company+".");
   );
  }
 
- if(S.gameHour%2===0)funnyEvent();
- if(S.gameHour%8===0)checkRandomEvent();
+  checkScheduledFunnyEvent();
+
+  if(S.gameHour%2===0)funnyEvent();
+  if(S.gameHour%8===0)checkRandomEvent();
  if(S.dayHours>=8*S.shiftCount)endDay();
 }
 
@@ -2244,6 +2273,24 @@ function funnyEvent(){
  S.funny.count++;
 
  log("💬 "+pick(FUNNY));
+}
+
+function checkScheduledFunnyEvent(){
+ const currentHour=getCurrentHour();
+
+ const events={
+  7:"Ostatnia godzina przed burzą. Czas na ostatnią „dodatkową” przerwę.",
+  8:"Czas na wycieczkę do kantyny.",
+  12:"Bezpieczeństwo Hamuje Pracę w obszarze, także patrzymy co robimy.",
+  17:"Imprezę czas zacząć.",
+  3:"Kryzys czas zacząć."
+ };
+
+ const message=events[currentHour];
+
+ if(message&&Math.random()<0.35){
+  log("💬 "+message);
+ }
 }
 
 

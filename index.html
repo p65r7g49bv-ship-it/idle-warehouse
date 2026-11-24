@@ -390,6 +390,7 @@ function fresh(){
   money:20000,rep:0,day:1,gameHour:0,hourProgress:0,dayHours:0,
   internUntilDay:0,
   shiftCount:1,pendingEvent:null,lastSeen:Date.now(),taxCycleRevenue:0,
+repEventShiftCount:0,
   warehouse:{
  level:1,
  capacity:30,
@@ -447,8 +448,14 @@ function reputationTitle(value=S.rep){
 }
 
 function changeReputation(amount,reason=""){
- const oldValue=S.rep;
- S.rep=Math.max(0,Math.round(S.rep+amount));
+ const oldValue=clamp(Math.round(Number(S.rep)||0),0,100);
+
+ S.rep=clamp(
+  Math.round(oldValue+Number(amount||0)),
+  0,
+  100
+ );
+
  const difference=S.rep-oldValue;
 
  if(difference!==0){
@@ -460,6 +467,17 @@ function changeReputation(amount,reason=""){
 function migrate(data){
  const base=fresh();
  const merged={...base,...data};
+ merged.rep=clamp(
+ Math.round(Number(merged.rep)||0),
+ 0,
+  100
+);
+
+merged.repEventShiftCount=clamp(
+ Math.floor(Number(merged.repEventShiftCount)||0),
+ 0,
+  5
+);
 
  merged.warehouse={...base.warehouse,...(data.warehouse||{})};
 
@@ -2443,6 +2461,8 @@ function hourlyTick(){
    totalImprovement+"%. Aktualny stan: "+
    num(S.warehouse.condition)+"%."
   );
+
+  checkReputationEventAfterShift();
  }
 
   checkScheduledFunnyEvent();
@@ -2618,7 +2638,79 @@ function checkScheduledFunnyEvent(){
  }
 }
 
+function checkReputationEventAfterShift(){
+ S.repEventShiftCount=(Number(S.repEventShiftCount)||0)+1;
 
+ if(S.repEventShiftCount<6)return;
+
+ S.repEventShiftCount=0;
+
+ if(Math.random()>=0.40){
+  saveGame();
+  return;
+ }
+
+ const events=[
+  {
+   message:"Klient publicznie pochwalił terminowość i profesjonalizm naszej firmy. Informacja szybko rozeszła się wśród lokalnych przedsiębiorców.",
+   amount:5,
+   reason:"Klient publicznie pochwalił terminowość firmy."
+  },
+  {
+   message:"Lokalna gazeta opublikowała pozytywny artykuł o naszym centrum logistycznym. Firma zyskuje rozgłos.",
+   amount:3,
+   reason:"Pozytywny artykuł w lokalnej gazecie."
+  },
+  {
+   message:"Jeden z kontrahentów polecił nasze usługi nowemu klientowi. Dobra opinia zaczyna pracować na naszą korzyść.",
+   amount:2,
+   reason:"Polecenie firmy nowemu kontrahentowi."
+  },
+  {
+   message:"Kolejna dostawa dotarła z opóźnieniem. Klienci zaczynają wyrażać niezadowolenie z jakości obsługi.",
+   amount:-5,
+   reason:"Opóźnienie dostawy wpłynęło na opinię klientów."
+  },
+  {
+   message:"W internecie pojawiło się kompromitujące nagranie z magazynu opublikowane przez jednego z pracowników. Film szybko zdobywa popularność.",
+   amount:-10,
+   reason:"Kompromitujące nagranie opublikowane przez pracownika."
+  },
+  {
+   message:"Ważny kontrahent złożył poważną skargę na jakość naszych usług. Sprawa odbiła się szerokim echem w branży.",
+   amount:-15,
+   reason:"Poważna skarga kontrahenta."
+  },
+  {
+   message:"Do firmy napływają kolejne zgłoszenia dotyczące uszkodzonych palet. Kontrahenci zaczynają kwestionować jakość naszej pracy.",
+   amount:-10,
+   reason:"Powtarzające się zgłoszenia o uszkodzonych paletach."
+  },
+  {
+   message:"Nasza firma zdobyła nagrodę w konkursie na Firmę Roku! To duże wyróżnienie i powód do dumy dla całego zespołu.",
+   amount:15,
+   reason:"Nagroda w konkursie na Firmę Roku."
+  },
+  {
+   message:"Doszło do poważnego wypadku z udziałem osób postronnych. Informacja o zdarzeniu wywołała duże poruszenie i poważnie zaszkodziła wizerunkowi przedsiębiorstwa.",
+   amount:-20,
+   reason:"Poważny wypadek z udziałem osób postronnych."
+  },
+  {
+   message:"Reprezentacja naszej firmy wygrała turniej piłki nożnej organizowany przez PZPN! Zespół zdobył uznanie i świetnie wypromował przedsiębiorstwo.",
+   amount:10,
+   reason:"Wygrana w turnieju piłki nożnej organizowanym przez PZPN."
+  }
+ ];
+
+ const event=pick(events);
+
+ log("📢 "+event.message);
+ changeReputation(event.amount,event.reason);
+
+ saveGame();
+}
+ 
 function endDay(){
  S.dayHours=0;
  S.day++;

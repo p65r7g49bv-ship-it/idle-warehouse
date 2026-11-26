@@ -644,7 +644,12 @@ function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
 function pick(a){return a[Math.floor(Math.random()*a.length)]}
 function log(text){
- S.logs.unshift({day:S.day,text});
+ S.logs.unshift({
+  day:S.day,
+  hour:getCurrentHour(),
+  text
+ });
+
  if(S.logs.length>150)S.logs.length=150;
  updateChat();
 }
@@ -754,20 +759,28 @@ function employeeExperienceBonusText(){
 function updateChat(){
  const area=document.getElementById("chatMessages");
  if(!area)return;
+
  const messages=S.logs.slice(0,12);
+
  if(!messages.length){
   area.innerHTML='<div class="chat-empty">Oczekiwanie na wiadomości z magazynu...</div>';
   return;
  }
+
  area.innerHTML=messages.map((l,i)=>{
   const funny=l.text.includes("💬");
+  const eventTime=l.hour===undefined
+   ?"--:--"
+   :formatTime(l.hour);
+
   return `<div class="chat-message ${funny?"funny-message":""}">
-   <span class="chat-meta">${funny?"💬 Wiadomość zespołu":"📋 Dziennik · Dzień "+l.day}</span>
+   <span class="chat-meta">
+    ${funny?"💬 Wiadomość zespołu":"📋 Dziennik"} · Dzień ${l.day} · ${eventTime}
+   </span>
    <p>${escapeHTML(l.text.replace(/^💬\s*/,""))}</p>
   </div>`;
  }).join("");
 }
-
 function askWarehouseName(){
  const name=prompt("Podaj nazwę swojego magazynu:");
  if(name&&name.trim())S.warehouseName=name.trim().slice(0,35);
@@ -1560,7 +1573,16 @@ function reportsView(){
 }
 
 function renderLogs(count){
- return `<div class="logbox">${S.logs.slice(0,count).map(l=>`<p><span class="small">Dzień ${l.day}</span><br>${escapeHTML(l.text)}</p>`).join("")}</div>`;
+ return `<div class="logbox">${S.logs.slice(0,count).map(l=>{
+  const eventTime=l.hour===undefined
+   ?"--:--"
+   :formatTime(l.hour);
+
+  return `<p>
+   <span class="small">Dzień ${l.day} · ${eventTime}</span><br>
+   ${escapeHTML(l.text)}
+  </p>`;
+ }).join("")}</div>`;
 }
 function escapeHTML(s){
  return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2139,13 +2161,6 @@ function acceptContract(id){
  });
 
  S.offers=S.offers.filter(x=>x.id!==id);
-
- log(
-  "Przyjęto kontrakt firmy "+o.company+
-  ". Zapłata: "+money(o.advance)+
-  ". Do obsłużenia: "+num(total)+
-  " palet. Termin: "+o.timeLabel+"."
- );
 
  if(S.offers.length===0)generateOffers();
 

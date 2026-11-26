@@ -425,6 +425,7 @@ function fresh(){
  return {
   warehouseName:"",
   money:20000,rep:0,day:1,gameHour:0,hourProgress:0,dayHours:0,
+  lastMaintenanceChargeDay:0,
   internUntilDay:0,
   shiftCount:1,pendingEvent:null,lastSeen:Date.now(),taxCycleRevenue:0,
 repEventShiftCount:0,
@@ -508,6 +509,13 @@ function changeReputation(amount,reason=""){
 function migrate(data){
  const base=fresh();
  const merged={...base,...data};
+ if(data.lastMaintenanceChargeDay==null){
+ merged.lastMaintenanceChargeDay=
+  Math.floor((Number(merged.day)||1)/30)*30;
+}else{
+ merged.lastMaintenanceChargeDay=
+  Math.max(0,Math.floor(Number(data.lastMaintenanceChargeDay)||0));
+}
  merged.rep=clamp(
  Math.round(Number(merged.rep)||0),
  0,
@@ -3438,10 +3446,13 @@ function endDay(){
  S.funny.month=Math.floor((S.day-1)/30)+1;
  S.funny.count=0;
 
- if(S.day%30===0){
-  settleMonth();
+if(S.day-S.lastMaintenanceChargeDay>=30){
+ settleMonth();
+ S.lastMaintenanceChargeDay=S.day;
+}
 
-  const automationLevel=S.upgrades.automation||1;
+if(S.day%30===0){
+ const automationLevel=S.upgrades.automation||1;
   let taxDiscount=0;
 
   if(automationLevel>=2)taxDiscount+=0.03;

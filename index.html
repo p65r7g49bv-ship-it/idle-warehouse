@@ -1061,7 +1061,7 @@ function fleetView(){
      `
       <p>Cykl serwisowy: ${num(v.serviceHours||0)} / 50 h</p>
       ${forkliftInRoutineService(v)?
-       '<p class="bad"><b>🔧 Serwis zewnętrzny — pozostało około '+Math.max(1,Number(v.serviceUntilHour)-S.gameHour)+' h</b></p>':
+       '<p class="bad"><b>🔧 Serwis zewnętrzny — pozostało około '+Math.max(1,Number(v.serviceUntilHour)-S.gameHour-1)+' h</b></p>':
        '<p class="muted">Następny przegląd za '+(50-Number(v.serviceHours||0))+' h pracy</p>'}
      `:""}
     <p>Wydajność: ${m.throughput} jednostek/h</p>
@@ -2410,9 +2410,7 @@ function hourlyTick(){
    c.receivedPallets
   );
 
-  const capable=S.fleet.some(v=>
-   !v.broken&&
-   v.condition>0&&
+  const capable=forklifts().some(v=>
    (MODELS[v.model]?.load||0)>=c.load
   );
 

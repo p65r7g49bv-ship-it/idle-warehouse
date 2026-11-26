@@ -64,6 +64,23 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
 .event-choice{margin-top:12px}
 .event-choice button{margin:4px}
 .contract-progress{height:12px;background:#0c131d;border-radius:20px;overflow:hidden;margin:8px 0 12px}
+.rental-contract{
+ border:2px solid #c43d3d !important;
+ background:linear-gradient(145deg,#3b2020,#242020) !important;
+ box-shadow:0 0 12px rgba(196,61,61,.18);
+}
+
+.rental-label{
+ display:inline-block;
+ padding:5px 9px;
+ margin-bottom:8px;
+ border-radius:5px;
+ background:#c43d3d;
+ color:#fff;
+ font-weight:bold;
+ font-size:11px;
+ letter-spacing:.5px;
+}
 .special-contract{
  border:2px solid #d6a72c !important;
  background:linear-gradient(145deg,#3b321d,#24251f) !important;
@@ -625,7 +642,21 @@ merged.warehouse.capacity=warehouseCapacities[merged.warehouse.level];
   c.rep??=0;
 
   c.advance??=Number(c.value)||0;
+ if(c.type==="storage"){
+ c.rentalPallets=Math.max(
+  0,
+  Number(c.rentalPallets)||Number(c.totalPallets)||0
+ );
 
+ c.totalValue=Number(c.totalValue)||Number(c.value)||0;
+ c.balance=Number(c.balance)||0;
+
+ if(c.rentalEndsAtHour==null){
+  c.rentalEndsAtHour=
+   Number(c.acceptedAtHour||merged.gameHour)+
+   Math.max(1,Number(c.durationHours)||Number(c.days||1)*8*Math.max(1,Number(merged.shiftCount)||1));
+ }
+}
   if(c.deadlineHour==null){
    c.deadlineHour=
     (Number(merged.gameHour)||0)+
@@ -703,8 +734,13 @@ function operators(){return S.employees.length}
 function totalFleet(){return S.fleet.length}
 function occupiedPallets(){
  return S.contracts.reduce((sum,c)=>{
+  if(c.type==="storage"&&!c.done&&!c.failed){
+   return sum+Math.max(0,Number(c.rentalPallets)||0);
+  }
+
   const received=Math.max(0,Number(c.receivedPallets)||0);
   const shipped=Math.max(0,Number(c.shippedPallets)||0);
+
   return sum+Math.max(0,received-shipped);
  },0);
 }
@@ -1251,6 +1287,26 @@ function contractsView(){
  const finished=S.contracts.filter(c=>c.done||c.failed);
 
  const activeCards=current.map(c=>{
+
+  if(c.type==="storage"){
+   const hoursLeft=Math.max(0,Number(c.rentalEndsAtHour)-S.gameHour);
+   const daysLeft=Math.ceil(
+    hoursLeft/(8*Math.max(1,Number(S.shiftCount)||1))
+   );
+
+   return `<div class="card rental-contract">
+    <div class="rental-label">DŁUGOTERMINOWY WYNAJEM</div>
+    <h3>${escapeHTML(c.company)}</h3>
+    <p>Zarezerwowane miejsca: <b>${num(c.rentalPallets)} palet</b></p>
+    <p>Okres wynajmu: <b>${num(c.days)} dni</b></p>
+    <p>Pozostały czas: <b>${num(daysLeft)} dni</b></p>
+    <p>Wynagrodzenie całkowite: <b>${money(c.totalValue)}</b></p>
+    <p>Zaliczka otrzymana przy podpisaniu: <span class="good">${money(c.advance)}</span></p>
+    <p>Pozostała płatność po zakończeniu: <span class="good">${money(c.balance)}</span></p>
+    <p>Status: <span class="blue">Miejsca zarezerwowane</span></p>
+   </div>`;
+  }
+
   const total=contractTotal(c);
   const received=clamp(Number(c.receivedPallets)||0,0,total);
   const shipped=clamp(Number(c.shippedPallets)||0,0,received);
@@ -1277,7 +1333,23 @@ function contractsView(){
   </div>`;
  }).join("");
 
- const finishedCards=finished.map(c=>{
+const finishedCards=finished.map(c=>{
+
+  if(c.type==="storage"){
+   return `<div class="card rental-contract" style="width:100%;max-width:520px;padding:10px 14px">
+    <div class="row between">
+     <b>${escapeHTML(c.company)}</b>
+     <span class="${c.done?"good":"bad"}">
+      ${c.done?"✓ Zakończony":"✕ Niepowodzenie"}
+     </span>
+    </div>
+    <p class="small">Wynajem: ${num(c.rentalPallets)} miejsc · ${num(c.days)} dni</p>
+    <p class="small">Wartość kontraktu: ${money(c.totalValue)}</p>
+    <p class="small">Otrzymana zaliczka: ${money(c.advance)}</p>
+    <p class="small">Pozostała płatność: ${money(c.done?c.balance:0)}</p>
+   </div>`;
+  }
+
   const total=contractTotal(c);
   const received=clamp(Number(c.receivedPallets)||0,0,total);
   const shipped=clamp(Number(c.shippedPallets)||0,0,received);
@@ -1311,14 +1383,30 @@ function contractsView(){
   <p>Pojemność magazynu: <b>${S.warehouse.capacity} miejsc</b></p>
   <p>Reputacja firmy: <b>${num(S.rep)} pkt</b></p>
   <p>Aktywne kontrakty: ${activeContracts().length}/${contractLimit()}</p>
-  <p class="small">Wyższa reputacja odblokowuje dostęp do większych klientów. Mniejsze firmy nadal mogą składać oferty. Zapłata jest wypłacana w całości przy przyjęciu kontraktu.</p>
+  <p class="small">Wyższa reputacja odblokowuje dostęp do większych klientów i większych rezerwacji magazynowych. Kontrakty transportowe są rozliczane przy przyjęciu, a wynajem magazynu w systemie 20% zaliczki i 80% po zakończeniu.</p>
   <button onclick="generateOffers();render()">Odśwież oferty</button>
  </div>
 
  <h3 style="margin-top:18px">Dostępne oferty</h3>
  <div class="grid">${S.offers.map(o=>{
-  const total=contractTotal(o);
-  return `<div class="card ${o.special?"special-contract":""}">
+  if(o.type==="storage"){
+ return `<div class="card rental-contract">
+  <div class="rental-label">DŁUGOTERMINOWY WYNAJEM MAGAZYNU</div>
+  <h3>${escapeHTML(o.company)}</h3>
+  <p class="muted">${escapeHTML(o.desc)}</p>
+  <p>Klient: <b>${escapeHTML(o.tierName)}</b></p>
+  <p>Rezerwowane miejsca: <b>${num(o.rentalPallets)} palet</b></p>
+  <p>Okres wynajmu: <b>${num(o.days)} dni</b></p>
+  <p>Stawka za paletę: <b>${money(o.pricePerPallet)}</b></p>
+  <p>Wartość całego kontraktu: <span class="good"><b>${money(o.totalValue)}</b></span></p>
+  <p>Zaliczka przy podpisaniu (20%): <span class="good"><b>${money(o.advance)}</b></span></p>
+  <p>Płatność po zakończeniu (80%): <b>${money(o.balance)}</b></p>
+  <button onclick="acceptContract(${o.id})" ${activeContracts().length>=contractLimit()?"disabled":""}>Przyjmij kontrakt</button>
+ </div>`;
+}
+
+const total=contractTotal(o);
+return `<div class="card ${o.special?"special-contract":""}">
    ${o.special?'<div class="special-label">★ KONTRAKT SPECJALNY — PILNE</div>':""}
    <h3>${escapeHTML(o.company)}</h3>
    <p class="muted">${escapeHTML(o.desc)}</p>
@@ -2065,7 +2153,53 @@ function makeRegularOffer(tier){
   special:false
  };
 }
+function makeStorageRentalOffer(){
+ const rep=S.rep;
 
+ let tier;
+
+ if(rep<=30){
+  tier={key:"local",name:"Mała firma lokalna",pallets:[5,15],days:[5,10]};
+ }else if(rep<=50){
+  tier={key:"regional",name:"Firma regionalna",pallets:[10,25],days:[10,15]};
+ }else if(rep<=70){
+  tier={key:"large",name:"Duże przedsiębiorstwo",pallets:[15,40],days:[10,20]};
+ }else if(rep<=80){
+  tier={key:"national",name:"Ogólnopolski koncern",pallets:[25,60],days:[15,25]};
+ }else if(rep<=94){
+  tier={key:"international",name:"Międzynarodowa korporacja",pallets:[40,100],days:[20,30]};
+ }else{
+  tier={key:"global",name:"Globalna korporacja",pallets:[60,150],days:[25,40]};
+ }
+
+ const companyPool=COMPANIES.filter(c=>c[2]===tier.key);
+ const company=companyPool.length?pick(companyPool):pick(COMPANIES);
+
+ const pallets=rand(tier.pallets[0],tier.pallets[1]);
+ const days=rand(tier.days[0],tier.days[1]);
+ const totalValue=pallets*1000;
+ const advance=Math.round(totalValue*.20);
+
+ return {
+  id:S.nextId++,
+  type:"storage",
+  tier:tier.key,
+  tierName:"Długoterminowy wynajem magazynu",
+  company:company[0],
+  desc:"Rezerwacja stałej liczby miejsc paletowych na określony okres.",
+  rentalPallets:pallets,
+  totalPallets:pallets,
+  days,
+  durationHours:days*8*S.shiftCount,
+  timeLabel:days+" dni",
+  pricePerPallet:1000,
+  totalValue,
+  advance,
+  balance:totalValue-advance,
+  value:totalValue,
+  special:false
+ };
+}
 function makeSpecialOffer(){
  if(maxLoad()<5000||S.warehouse.level<3)return null;
 
@@ -2102,14 +2236,16 @@ function generateOffers(){
 
  const active=activeContracts().length;
  const count=Math.min(3,contractLimit()-active);
+
  if(count<=0)return;
+
+ // Każde odświeżenie rozpoczyna się od jednej oferty wynajmu.
+ S.offers.push(makeStorageRentalOffer());
 
  if(maxLoad()===0)return;
 
  const tiers=contractClientTiers();
  const availableTiers=tiers.filter(t=>availableContractLoads(t).length>0);
-
- if(!availableTiers.length)return;
 
  const specialEligible=
   S.rep>=60&&
@@ -2118,7 +2254,7 @@ function generateOffers(){
 
  const specialChance=Math.random()<.15;
 
- if(specialEligible&&specialChance){
+ if(specialEligible&&specialChance&&S.offers.length<count){
   const special=makeSpecialOffer();
 
   if(special&&special.storage<=S.warehouse.capacity*2){
@@ -2126,7 +2262,9 @@ function generateOffers(){
   }
  }
 
-  for(let attempt=0;attempt<count*20&&S.offers.length<count;attempt++){
+ for(let attempt=0;attempt<count*20&&S.offers.length<count;attempt++){
+  if(!availableTiers.length)break;
+
   const tier=pick(availableTiers);
   const offer=makeRegularOffer(tier);
 
@@ -2151,6 +2289,59 @@ function acceptContract(id){
   return;
  }
 
+ // OBSŁUGA DŁUGOTERMINOWEGO WYNAJMU
+ if(o.type==="storage"){
+  const required=Math.max(0,Number(o.rentalPallets)||0);
+
+  if(freePalletPlaces()<required){
+   alert("Brak wystarczającej liczby wolnych miejsc na magazynie. Potrzebujesz "+required+" wolnych miejsc.");
+   return;
+  }
+
+  if(S.money+o.advance<0){
+   alert("Nie można przyjąć tego kontraktu.");
+   return;
+  }
+
+  const totalValue=Number(o.totalValue)||required*1000;
+  const advance=Math.round(totalValue*.20);
+
+  S.money+=advance;
+  S.finances.income+=advance;
+  S.taxCycleRevenue+=advance;
+
+  S.contracts.push({
+   ...o,
+   totalPallets:required,
+   rentalPallets:required,
+   totalValue,
+   advance,
+   balance:totalValue-advance,
+   acceptedAtHour:S.gameHour,
+   rentalEndsAtHour:S.gameHour+Math.max(1,Number(o.durationHours)||24),
+   receivedPallets:0,
+   shippedPallets:0,
+   done:false,
+   failed:false,
+   value:totalValue
+  });
+
+  log(
+   "Podpisano długoterminowy wynajem z firmą "+o.company+
+   ". Zarezerwowano "+num(required)+" miejsc paletowych na "+
+   o.days+" dni. Otrzymano zaliczkę: "+money(advance)+"."
+  );
+
+  S.offers=S.offers.filter(x=>x.id!==id);
+
+  if(S.offers.length===0)generateOffers();
+
+  saveGame();
+  render();
+  return;
+ }
+
+ // STANDARDOWE KONTRAKTY TRANSPORTOWE
  if(!S.fleet.some(v=>
   (MODELS[v.model]?.load||0)>=o.load&&
   !v.broken&&
@@ -2444,6 +2635,29 @@ function hourlyTick(){
  S.dayHours++;
 
  activeContracts().forEach(c=>{
+
+  // KONTRAKT DŁUGOTERMINOWEGO WYNAJMU
+  if(c.type==="storage"){
+   if(S.gameHour>=Number(c.rentalEndsAtHour)){
+    const payment=Math.max(0,Number(c.balance)||0);
+
+    S.money+=payment;
+    S.finances.income+=payment;
+    S.taxCycleRevenue+=payment;
+
+    c.done=true;
+
+    log(
+     "Zakończono wynajem magazynu dla firmy "+c.company+
+     ". Zwolniono "+num(c.rentalPallets)+
+     " miejsc paletowych. Wypłacono pozostałe wynagrodzenie: "+
+     money(payment)+"."
+    );
+   }
+
+   return;
+  }
+
   const total=contractTotal(c);
   c.totalPallets=total;
 

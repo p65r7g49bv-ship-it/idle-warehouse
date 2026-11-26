@@ -393,6 +393,8 @@ function fresh(){
 repEventShiftCount:0,
 palletRepairUntilHour:0,
 palletRepairWorkerId:null,
+staffReductionUntilHour:0,
+shipmentHoldUntilHour:0,
   warehouse:{
  level:1,
  capacity:30,
@@ -489,6 +491,15 @@ merged.palletRepairWorkerId=
  merged.palletRepairWorkerId==null
  ?null
  :Number(merged.palletRepairWorkerId);
+ merged.staffReductionUntilHour=Math.max(
+ 0,
+ Math.floor(Number(merged.staffReductionUntilHour)||0)
+);
+
+merged.shipmentHoldUntilHour=Math.max(
+ 0,
+ Math.floor(Number(merged.shipmentHoldUntilHour)||0)
+);
  merged.warehouse={...base.warehouse,...(data.warehouse||{})};
 
 merged.warehouse.level=clamp(
@@ -2380,16 +2391,18 @@ function hourlyTick(){
 
    c.receivedPallets+=receivedNow;
 
-   const shipRate=Math.max(1,Math.round(c.p*multiplier));
-   const available=c.receivedPallets-c.shippedPallets;
+  if(S.gameHour>Number(S.shipmentHoldUntilHour||0)){
+ const shipRate=Math.max(1,Math.round(c.p*multiplier));
+ const available=c.receivedPallets-c.shippedPallets;
 
-   const shippedNow=Math.min(
-    shipRate,
-    available,
-    total-c.shippedPallets
-   );
+ const shippedNow=Math.min(
+  shipRate,
+  available,
+  total-c.shippedPallets
+ );
 
-   c.shippedPallets+=shippedNow;
+ c.shippedPallets+=shippedNow;
+}
   }
 
   if(c.shippedPallets>=total&&!c.done){
@@ -2447,16 +2460,29 @@ const workers=S.employees;
 const usable=forklifts();
 
 const palletRepairActive=
- S.palletRepairUntilHour>=S.gameHour&&
- S.palletRepairWorkerId!==null;
+ S.palletRepairWorkerId!==null&&
+ S.gameHour<=Number(S.palletRepairUntilHour||0);
 
-const activeWorkers=palletRepairActive
+let activeWorkers=palletRepairActive
  ?workers.filter(e=>e.id!==S.palletRepairWorkerId)
  :workers;
 
-if(palletRepairActive){
+if(
+ palletRepairActive&&
+ S.gameHour>=Number(S.palletRepairUntilHour||0)
+){
  S.palletRepairUntilHour=0;
  S.palletRepairWorkerId=null;
+}
+
+if(
+ Number(S.staffReductionUntilHour||0)>0&&
+ S.gameHour<=Number(S.staffReductionUntilHour)
+){
+ activeWorkers=activeWorkers.slice(
+  0,
+  Math.max(0,activeWorkers.length-1)
+ );
 }
 
 const operatorCount=Math.min(activeWorkers.length,usable.length);
@@ -2529,14 +2555,15 @@ if(operatorCount>0){
   checkScheduledFunnyEvent();
 
   if(S.gameHour%2===0)funnyEvent();
-  if(S.gameHour%8===0)checkRandomEvent();
+  if(S.gameHour%6===0)checkRandomEvent();
  if(S.dayHours>=8*S.shiftCount)endDay();
 }
 
 
 
+
 function checkRandomEvent(){
- if(S.pendingEvent||Math.random()>.16)return;
+ if(S.pendingEvent||Math.random()>=0.40)return;
 
  const events=[
   {
@@ -2575,8 +2602,48 @@ function checkRandomEvent(){
    title:"Nadgodziny",
    description:"Klient prosi o pilną obsługę dodatkowej partii towaru. Przyjęcie zlecenia może poprawić wizerunek firmy.",
    choices:[
-    {label:"Przyjmij zlecenie",action:"accept_overtime"},
+    {label:"Zgódź się",action:"accept_overtime"},
     {label:"Odmów",action:"refuse_overtime"}
+   ]
+  },
+  {
+   title:"Nieobecność pracownika",
+   description:"Jeden z operatorów nie stawił się do pracy. Kierownik musi zdecydować, jak zorganizować obsadę zmiany.",
+   choices:[
+    {label:"Przydziel obowiązki innemu wózkowemu",action:"cover_absence"},
+    {label:"Pracuj w niepełnym składzie",action:"reduced_staff"}
+   ]
+  },
+  {
+   title:"Uszkodzony regał",
+   description:"Pracownik zgłasza uszkodzenie konstrukcji regału. Dalsze korzystanie z niego może doprowadzić do problemów z towarem.",
+   choices:[
+    {label:"Wezwij ekipę techniczną",action:"repair_rack"},
+    {label:"Zignoruj problem",action:"ignore_rack"}
+   ]
+  },
+  {
+   title:"Nieprawidłowy stan magazynowy",
+   description:"Kontrola wykazała rozbieżności pomiędzy dokumentacją a rzeczywistym stanem magazynu.",
+   choices:[
+    {label:"Oddeleguj pracownika na inwentaryzację",action:"inventory_check"},
+    {label:"Zatwierdź obecny stan",action:"approve_inventory"}
+   ]
+  },
+  {
+   title:"Awaria oświetlenia",
+   description:"W części magazynu przestało działać oświetlenie. Praca w takich warunkach może być niebezpieczna.",
+   choices:[
+    {label:"Wezwij elektryka",action:"repair_lighting"},
+    {label:"Kontynuuj pracę",action:"ignore_lighting"}
+   ]
+  },
+  {
+   title:"Reklamacja klienta",
+   description:"Kontrahent złożył reklamację dotyczącą jakości obsługi. Firma musi zdecydować, czy zaproponować rekompensatę.",
+   choices:[
+    {label:"Zaproponuj rekompensatę",action:"compensate_client"},
+    {label:"Odrzuć reklamację",action:"reject_complaint"}
    ]
   }
  ];
@@ -2586,6 +2653,8 @@ function checkRandomEvent(){
  updateEventArea();
 }
 
+
+
 function resolveEvent(index){
  if(!S.pendingEvent)return;
 
@@ -2594,34 +2663,48 @@ function resolveEvent(index){
 
  const action=choice.action||choice.effectName||choice.label;
 
+ let followUpEvent=null;
+
+ const applyReputationEvent=(message,amount,reason)=>{
+  log("📢 "+message);
+  changeReputation(amount,reason);
+ };
+
+ const damagedPalletEvent={
+  title:"Uszkodzona paleta",
+  description:"Zastępstwo doprowadziło do uszkodzenia palety. Operator zgłasza problem i oczekuje decyzji kierownika.",
+  choices:[
+   {label:"Wymień paletę",action:"replace_pallet"},
+   {label:"Zignoruj problem",action:"ignore_pallet"}
+  ]
+ };
+
  switch(action){
 
   // 1. USZKODZONA PALETA
 
-  case "replace_pallet":
-   case "Wymień paletę":{
-    const worker=pick(S.employees);
+  case "replace_pallet":{
+   const worker=pick(S.employees);
 
-    if(worker){
-     S.palletRepairWorkerId=worker.id;
-     S.palletRepairUntilHour=S.gameHour+1;
+   if(worker){
+    S.palletRepairWorkerId=worker.id;
+    S.palletRepairUntilHour=S.gameHour+1;
 
-     log(
-      "Operator "+worker.name+
-      " zajmuje się wymianą uszkodzonej palety. "+
-      "Przez najbliższą godzinę nie będzie realizował innych transportów."
-     );
-    }else{
-     log("Wymieniono uszkodzoną paletę. Brak dostępnego operatora do dodatkowych prac.");
-    }
-    break;
+    log(
+     "Operator "+worker.name+
+     " zajmuje się wymianą uszkodzonej palety. "+
+     "Przez najbliższą godzinę nie będzie realizował innych transportów."
+    );
+   }else{
+    log("Wymieniono uszkodzoną paletę. Brak dostępnego operatora do dodatkowych prac.");
    }
+   break;
+  }
 
   case "ignore_pallet":
-  case "Zignoruj problem":
    if(Math.random()<0.60){
-    log("📢 Uszkodzona paleta doprowadziła do zniszczenia części towaru. Kontrahenci zgłaszają powtarzające się problemy z jakością obsługi.");
-    changeReputation(
+    applyReputationEvent(
+     "Uszkodzona paleta doprowadziła do zniszczenia części towaru. Kontrahenci zgłaszają powtarzające się problemy z jakością obsługi.",
      -10,
      "Powtarzające się zgłoszenia o uszkodzonych paletach."
     );
@@ -2633,31 +2716,28 @@ function resolveEvent(index){
   // 2. BŁĘDNA ETYKIETA
 
   case "fix_labels":
-  case "Popraw etykiety · 250 zł":
-  case "Popraw etykiety":
    log("Poprawiono błędne oznaczenia towaru.");
 
    if(Math.random()<0.50){
-    log("📢 Klient docenił szybką reakcję i profesjonalne rozwiązanie problemu.");
-    changeReputation(5,"Klient docenił poprawienie błędnych etykiet.");
+    applyReputationEvent(
+     "Klient docenił szybką reakcję i profesjonalne rozwiązanie problemu.",
+     5,
+     "Klient docenił poprawienie błędnych etykiet."
+    );
    }else{
     log("Poprawienie etykiet nie przyniosło dodatkowej korzyści reputacyjnej.");
    }
    break;
 
   case "hold_shipment":
-  case "Wstrzymaj wysyłkę":
-   log("Wstrzymano wysyłkę do czasu wyjaśnienia błędnych oznaczeń.");
-   changeReputation(1,"Wstrzymano wysyłkę i uniknięto błędów w dostawie.");
+   S.shipmentHoldUntilHour=S.gameHour+1;
+   log("Wstrzymano wysyłkę do czasu wyjaśnienia błędnych oznaczeń. Realizacja wysyłek zostanie opóźniona o godzinę.");
    break;
 
   // 3. AWARIA WÓZKA
 
-  case "repair_vehicle":
-  case "Wezwij serwis · 900 zł":
-  case "Wezwij serwis":{
+  case "repair_vehicle":{
    const cost=Math.floor(Math.random()*4001)+1000;
-
    S.money-=cost;
 
    const vehicle=pick(S.fleet);
@@ -2677,8 +2757,7 @@ function resolveEvent(index){
    break;
   }
 
-  case "ignore_vehicle":
-  case "Kontynuuj pracę":{
+  case "ignore_vehicle":{
    const vehicle=pick(S.fleet);
 
    if(vehicle){
@@ -2696,8 +2775,8 @@ function resolveEvent(index){
    }
 
    if(Math.random()<0.30){
-    log("📢 Doszło do poważnego wypadku z udziałem osób postronnych. Informacja o zdarzeniu wywołała duże poruszenie i poważnie zaszkodziła wizerunkowi przedsiębiorstwa.");
-    changeReputation(
+    applyReputationEvent(
+     "Doszło do poważnego wypadku z udziałem osób postronnych. Informacja o zdarzeniu wywołała duże poruszenie i poważnie zaszkodziła wizerunkowi przedsiębiorstwa.",
      -20,
      "Poważny wypadek z udziałem osób postronnych."
     );
@@ -2709,11 +2788,8 @@ function resolveEvent(index){
 
   // 4. OPÓŹNIONA DOSTAWA
 
-  case "replacement_transport":
-  case "Zorganizuj transport zastępczy · 700 zł":
-  case "Zorganizuj transport zastępczy":{
+  case "replacement_transport":{
    const cost=Math.floor(Math.random()*1001)+500;
-
    S.money-=cost;
 
    log("Zorganizowano transport zastępczy. Koszt: "+money(cost)+".");
@@ -2722,7 +2798,6 @@ function resolveEvent(index){
   }
 
   case "wait_delivery":
-  case "Poczekaj":
    log("Zdecydowano się poczekać na opóźnioną dostawę.");
    changeReputation(-3,"Opóźnienie dostawy wpłynęło na reputację firmy.");
    break;
@@ -2730,8 +2805,6 @@ function resolveEvent(index){
   // 5. NADGODZINY
 
   case "accept_overtime":
-  case "Przyjmij zlecenie · zysk 1500 zł":
-  case "Przyjmij zlecenie":
    log("Przyjęto i zrealizowano pilne zlecenie klienta.");
 
    if(Math.random()<0.40){
@@ -2744,19 +2817,195 @@ function resolveEvent(index){
    break;
 
   case "refuse_overtime":
-  case "Odmów":
    log("Odmówiono przyjęcia dodatkowego zlecenia.");
    changeReputation(-5,"Odmówiono pilnego zlecenia klienta.");
    break;
+
+  // 6. NIEOBECNOŚĆ PRACOWNIKA
+
+  case "cover_absence":
+   log("Przydzielono zastępstwo do obowiązków nieobecnego operatora.");
+
+   if(Math.random()<0.30){
+    log("📢 Zastępca nie poradził sobie z zadaniem i uszkodził paletę.");
+    followUpEvent=damagedPalletEvent;
+   }else{
+    log("Zastępstwo przebiegło bez problemów. Praca magazynu jest kontynuowana.");
+   }
+   break;
+
+  case "reduced_staff":{
+   const remainingHours=8-(S.dayHours%8);
+
+   S.staffReductionUntilHour=S.gameHour+remainingHours;
+
+   log(
+    "Zdecydowano się pracować w niepełnym składzie. "+
+    "Jeden operator mniej będzie obsługiwał wózki do końca bieżącej zmiany."
+   );
+   break;
+  }
+
+  // 7. USZKODZONY REGAŁ
+
+  case "repair_rack":{
+   const level=Math.max(1,Number(S.warehouse.level)||1);
+   const cost=level*5000;
+
+   S.money-=cost;
+
+   log(
+    "Wezwano ekipę techniczną. Uszkodzony regał został natychmiast naprawiony. "+
+    "Poziom magazynu: "+level+". Koszt naprawy: "+money(cost)+"."
+   );
+   break;
+  }
+
+  case "ignore_rack":
+   log("Zdecydowano się zignorować uszkodzenie regału.");
+
+   if(Math.random()<0.50){
+    applyReputationEvent(
+     "Do firmy napływają kolejne zgłoszenia dotyczące uszkodzonych palet. Kontrahenci zaczynają kwestionować jakość naszej pracy.",
+     -10,
+     "Powtarzające się zgłoszenia o uszkodzonych paletach."
+    );
+   }else{
+    log("Uszkodzenie regału nie doprowadziło tym razem do dodatkowych problemów.");
+   }
+   break;
+
+  // 8. NIEPRAWIDŁOWY STAN MAGAZYNOWY
+
+  case "inventory_check":{
+   const worker=pick(S.employees);
+
+   if(worker){
+    S.palletRepairWorkerId=worker.id;
+    S.palletRepairUntilHour=S.gameHour+2;
+
+    log(
+     "Pracownik "+worker.name+
+     " został oddelegowany do inwentaryzacji. "+
+     "Przez dwie godziny nie będzie realizował transportów palet."
+    );
+   }
+
+   if(Math.random()<0.70){
+    applyReputationEvent(
+     "Klient publicznie pochwalił terminowość i profesjonalizm naszej firmy. Informacja szybko rozeszła się wśród lokalnych przedsiębiorców.",
+     5,
+     "Klient publicznie pochwalił terminowość firmy."
+    );
+   }else{
+    log("Inwentaryzacja nie wykazała błędu, który mógłby przynieść dodatkową korzyść reputacyjną.");
+   }
+   break;
+  }
+
+  case "approve_inventory":
+   log("Zatwierdzono obecny stan magazynowy bez przeprowadzania dodatkowej kontroli.");
+
+   if(Math.random()<0.60){
+    applyReputationEvent(
+     "Ważny kontrahent złożył poważną skargę na jakość naszych usług. Sprawa odbiła się szerokim echem w branży.",
+     -15,
+     "Poważna skarga kontrahenta."
+    );
+   }else{
+    log("Zatwierdzenie stanu magazynowego nie doprowadziło do dodatkowych konsekwencji.");
+   }
+   break;
+
+  // 9. AWARIA OŚWIETLENIA
+
+  case "repair_lighting":{
+   const cost=Math.floor(Math.random()*4001)+1000;
+   S.money-=cost;
+
+   const worker=pick(S.employees);
+
+   if(worker){
+    S.palletRepairWorkerId=worker.id;
+    S.palletRepairUntilHour=S.gameHour+2;
+   }
+
+   log(
+    "Wezwano elektryka. Naprawa oświetlenia kosztowała "+
+    money(cost)+". Prace trwały dwie godziny."
+   );
+
+   if(worker){
+    log(
+     "Operator "+worker.name+
+     " nie będzie realizował transportów przez czas naprawy."
+    );
+   }
+   break;
+  }
+
+  case "ignore_lighting":{
+   log("Zdecydowano się kontynuować pracę pomimo awarii oświetlenia.");
+
+   if(Math.random()<0.60){
+    applyReputationEvent(
+     "W internecie pojawiło się kompromitujące nagranie z magazynu opublikowane przez jednego z pracowników. Film szybko zdobywa popularność.",
+     -10,
+     "Kompromitujące nagranie opublikowane przez pracownika."
+    );
+   }else{
+    log("Nie opublikowano kompromitującego nagrania z magazynu.");
+   }
+
+   if(Math.random()<0.30){
+    applyReputationEvent(
+     "Doszło do poważnego wypadku z udziałem osób postronnych. Informacja o zdarzeniu wywołała duże poruszenie i poważnie zaszkodziła wizerunkowi przedsiębiorstwa.",
+     -20,
+     "Poważny wypadek z udziałem osób postronnych."
+    );
+   }else{
+    log("Nie doszło do poważnego wypadku z udziałem osób postronnych.");
+   }
+   break;
+  }
+
+  // 10. REKLAMACJA KLIENTA
+
+  case "compensate_client":{
+   const cost=S.rep*500;
+
+   S.money-=cost;
+
+   log(
+    "Zaproponowano klientowi rekompensatę. "+
+    "Koszt rekompensaty: "+money(cost)+
+    ". Reputacja firmy została zachowana."
+   );
+   break;
+  }
+
+  case "reject_complaint":{
+   const penalty=S.rep<50?10:20;
+
+   log("Odrzucono reklamację klienta.");
+
+   changeReputation(
+    -penalty,
+    "Odrzucono reklamację klienta. Utrata reputacji: "+penalty+" pkt."
+   );
+   break;
+  }
 
   default:
    log("Nie rozpoznano decyzji w zdarzeniu. Zdarzenie zamknięto.");
  }
 
- S.pendingEvent=null;
+ S.pendingEvent=followUpEvent;
+
  saveGame();
  render();
 }
+
 
 function funnyEvent(){
  const dailyLimit=4*S.shiftCount;

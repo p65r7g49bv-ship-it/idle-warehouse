@@ -2252,7 +2252,7 @@ function generateOffers(){
   maxLoad()>=5000&&
   S.warehouse.level>=3;
 
- const specialChance=Math.random()<.35;
+ const specialChance=Math.random()<.60;
 
  if(specialEligible&&specialChance&&S.offers.length<count){
   const special=makeSpecialOffer();

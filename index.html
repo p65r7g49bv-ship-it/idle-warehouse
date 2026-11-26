@@ -281,7 +281,7 @@ const IMG={
  RX22:"https://trecar.it/wp-content/uploads/2021/10/RX60-testo.jpg",
  RX30:"https://data.still.de/assets/products/Vehicles/Electric_Forklift_Trucks/RX_60_35-50/images/STILL_Fahrzeuge_Elektro-Stapler_RX_60-50_Teaser_800x800.png?fit=max&fm=webp&s=6c41be44a812db58d7752b7e9c2c9fd0&w=1920",
  WAREHOUSE:"https://www.toromontmh.com/media/wysiwyg/RW_JH_Racking_500x400_1.jpg",
- WORKER:"https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=600&q=85"
+ WORKER:"images/worker-default.png"
 };
 
 const MODELS={
@@ -335,8 +335,28 @@ const COMPANIES=[
  ["PrimeCore Corporation","Strategiczne dostawy przemysłowe","global"]
 ];
 
-const FIRST_NAMES=["Jan","Adam","Michał","Piotr","Tomasz","Paweł","Kamil","Marcin","Łukasz","Jakub","Mateusz","Robert","Krzysztof","Dawid","Andrzej","Rafał"];
-const LAST_NAMES=["Kowalski","Nowak","Wiśniewski","Wójcik","Kowalczyk","Kamiński","Lewandowski","Zieliński","Szymański","Woźniak","Dąbrowski","Kozłowski"];
+const FIRST_NAMES=[
+ "Jan","Adam","Michał","Piotr","Tomasz","Paweł","Kamil","Marcin",
+ "Łukasz","Jakub","Mateusz","Robert","Krzysztof","Dawid","Andrzej",
+ "Rafał","Wojciech","Grzegorz","Marek","Artur","Sebastian","Daniel",
+ "Bartosz","Patryk","Damian","Przemysław","Maciej","Szymon","Filip",
+ "Adrian","Radosław","Konrad","Mariusz","Łukasz","Norbert","Dariusz",
+ "Arkadiusz","Hubert","Igor","Oskar","Ryszard","Tadeusz","Jacek",
+ "Michał","Dariusz","Ancymon","Konrad","Wojciech","Zygmunt","Eliasz"
+ "Cezary","Błażej","Mirosław","Wiktor","Dominik","Maksymilian"
+];
+
+const LAST_NAMES=[
+ "Kowalski","Nowak","Wiśniewski","Wójcik","Kowalczyk","Kamiński",
+ "Lewandowski","Zieliński","Szymański","Woźniak","Dąbrowski",
+ "Kozłowski","Jankowski","Mazur","Kwiatkowski","Krawczyk",
+ "Piotrowski","Grabowski","Nowakowski","Pawłowski","Michalski",
+ "Król","Wieczorek","Jabłoński","Wróbel","Majewski","Olszewski",
+ "Stępień","Malinowski","Jaworski","Adamczyk","Dudek","Górski",
+ "Sikora","Walczak","Baran","Rutkowski","Michalak","Szewczyk",
+ "Ostrowski","Tomaszewski","Pietrzak","Zalewski","Wróblewski",
+ "Marciniak","Jasiński","Sadowski","Bąk","Wilk","Lis"
+];
 
 
 const FUNNY=[
@@ -415,7 +435,7 @@ upgrades:{
  maintenance:1,
  warehouseCare:1
 },
-  employees:[{id:1,name:"Jan Kowalski",role:"Magazynier",salary:3800,hours:180,skill:0,udt:true,promotionLevel:0,trainedBasic:false,trainedAdvanced:false}],
+  employees:[{id:1,name:randomEmployeeName(),role:"Magazynier",salary:3800,hours:180,skill:0,udt:true,promotionLevel:0,trainedBasic:false,trainedAdvanced:false}],
   fleet:[{id:1,model:"RX18",rented:true,condition:92,hours:1250,broken:false,serviceHours:0,serviceUntilHour:0}],
   contracts:[],offers:[],nextId:2,
   finances:{income:0,cost:0,penalties:0,tax:0,history:[]},
@@ -643,6 +663,16 @@ function money(n){return num(n)+" zł"}
 function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
 function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function randomEmployeeName(employees=[]){
+ const usedNames=new Set(employees.map(e=>e.name));
+
+ for(let i=0;i<FIRST_NAMES.length*LAST_NAMES.length;i++){
+  const name=pick(FIRST_NAMES)+" "+pick(LAST_NAMES);
+  if(!usedNames.has(name))return name;
+ }
+
+ return pick(FIRST_NAMES)+" "+pick(LAST_NAMES)+" "+(employees.length+1);
+}
 function log(text){
  S.logs.unshift({
   day:S.day,
@@ -1875,7 +1905,7 @@ function hireEmployee(){
  S.money-=cost;
  S.finances.cost+=cost;
 
- const name=pick(FIRST_NAMES)+" "+pick(LAST_NAMES);
+ const name=randomEmployeeName(S.employees);
 
  S.employees.push({
   id:S.nextId++,

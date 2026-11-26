@@ -2019,6 +2019,10 @@ function contractClientTiers(){
   repReward:6
  });
 
+ if(rep>70){
+  return tiers.filter(t=>t.key!=="local");
+ }
+
  return tiers;
 }
 

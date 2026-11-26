@@ -416,7 +416,7 @@ upgrades:{
  warehouseCare:1
 },
   employees:[{id:1,name:"Jan Kowalski",role:"Magazynier",salary:3800,hours:180,skill:0,udt:true,promotionLevel:0,trainedBasic:false,trainedAdvanced:false}],
-  fleet:[{id:1,model:"RX18",rented:true,condition:92,hours:1250,broken:false}],
+  fleet:[{id:1,model:"RX18",rented:true,condition:92,hours:1250,broken:false,serviceHours:0,serviceUntilHour:0}],
   contracts:[],offers:[],nextId:2,
   finances:{income:0,cost:0,penalties:0,tax:0,history:[]},
   rescue:{used:0,bankDebt:0,bankDeadline:0,bankrupt:false},
@@ -548,8 +548,20 @@ merged.warehouse.capacity=warehouseCapacities[merged.warehouse.level];
   v.hours??=0;
   v.broken??=false;
   v.rented??=false;
- });
 
+  v.serviceUntilHour=Math.max(
+   0,
+   Math.floor(Number(v.serviceUntilHour)||0)
+  );
+
+  v.serviceHours=clamp(
+   Math.floor(Number(
+    v.serviceHours??((Number(v.hours)||0)%50)
+   )),
+   0,
+   49
+  );
+ });
  merged.employees.forEach(e=>{
   e.hours??=0;
   e.skill??=0;
@@ -638,7 +650,19 @@ function log(text){
 }
 function activeContracts(){return S.contracts.filter(c=>!c.done&&!c.failed)}
 function contractLimit(){return 2+S.upgrades.planning}
-function forklifts(){return S.fleet.filter(v=>!v.broken&&v.condition>0)}
+function forkliftInRoutineService(v){
+ return !!v.rented&&
+  Number(v.serviceUntilHour||0)>0&&
+  S.gameHour<Number(v.serviceUntilHour);
+}
+
+function forklifts(){
+ return S.fleet.filter(v=>
+  !v.broken&&
+  v.condition>0&&
+  !forkliftInRoutineService(v)
+ );
+}
 function maxLoad(){return forklifts().reduce((m,v)=>Math.max(m,MODELS[v.model]?.load||0),0)}
 function operators(){return S.employees.length}
 function totalFleet(){return S.fleet.length}
@@ -975,7 +999,9 @@ function fleetView(){
  const unstaffedCount=unstaffedForklifts();
  const internActive=S.internUntilDay>S.day;
 
-  const repairList=S.fleet.filter(v=>v.broken||v.condition<100);
+   const repairList=S.fleet.filter(v=>
+  !v.rented&&(v.broken||v.condition<100)
+ );
 
  const repairCost=repairList.reduce((sum,v)=>
   sum+forkliftRepairCost(v),0);
@@ -1030,6 +1056,14 @@ function fleetView(){
     </div>
 
     <p>Przepracowane godziny: ${num(v.hours)}</p>
+
+    ${v.rented?
+     `
+      <p>Cykl serwisowy: ${num(v.serviceHours||0)} / 50 h</p>
+      ${forkliftInRoutineService(v)?
+       '<p class="bad"><b>🔧 Serwis zewnętrzny — pozostało około '+Math.max(1,Number(v.serviceUntilHour)-S.gameHour)+' h</b></p>':
+       '<p class="muted">Następny przegląd za '+(50-Number(v.serviceHours||0))+' h pracy</p>'}
+     `:""}
     <p>Wydajność: ${m.throughput} jednostek/h</p>
     <p>Zużycie energii: ${m.energy} zł/h</p>
 
@@ -1578,7 +1612,9 @@ function rentForklift(model){
   rented:true,
   condition:100,
   hours:0,
-  broken:false
+  broken:false,
+  serviceHours:0,
+  serviceUntilHour:0
  });
 
  log("Wynajęto wózek "+m.name+". Miesięczny koszt wynajmu: "+money(m.rent)+".");
@@ -1734,7 +1770,9 @@ function repairAllForklifts(){
   return;
  }
 
- const damaged=S.fleet.filter(v=>v.broken||v.condition<100);
+ const damaged=S.fleet.filter(v=>
+  !v.rented&&(v.broken||v.condition<100)
+ );
 
  if(!damaged.length){
   alert("Wszystkie wózki są sprawne.");
@@ -2510,8 +2548,9 @@ if(operatorCount>0){
   }
  });
 
- usable.slice(0,operatorCount).forEach(v=>{
+  usable.slice(0,operatorCount).forEach(v=>{
   v.hours++;
+
   const wear=S.upgrades.maintenance>=2?.035*.9:.035;
   v.condition=clamp(v.condition-wear,0,100);
 
@@ -2519,6 +2558,29 @@ if(operatorCount>0){
    v.broken=true;
    changeReputation(-2,"Doszło do poważnej awarii wózka "+MODELS[v.model].name+".");
    log("Awaria wózka "+MODELS[v.model].name+".");
+  }
+
+  if(v.rented){
+   v.serviceHours=(Number(v.serviceHours)||0)+1;
+
+   if(v.serviceHours>=50){
+    const serviceCost=1500;
+
+    v.serviceHours=0;
+    v.serviceUntilHour=S.gameHour+5;
+    v.condition=100;
+    v.broken=false;
+
+    S.money-=serviceCost;
+    S.finances.cost+=serviceCost;
+
+    log(
+     "Wózek "+MODELS[v.model].name+
+     " osiągnął 50 godzin pracy. Zewnętrzny serwis rozpoczął rutynowy przegląd. "+
+     "Stan techniczny przywrócono do 100%. Koszt: "+
+     money(serviceCost)+". Wózek będzie niedostępny przez 4 godziny."
+    );
+   }
   }
  });
 }

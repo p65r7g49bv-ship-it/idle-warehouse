@@ -245,7 +245,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:25px}
 <section class="stats">
  <div class="stat"><span>Kapitał firmy</span><strong id="moneyStat">0 zł</strong></div>
  <div class="stat"><span>Reputacja</span><strong id="repStat">0</strong></div>
- <div class="stat"><span>Pojemność magazynu</span><strong id="capacityStat">0</strong></div>
+ <div class="stat"><span>Najbliższa opłata</span><strong id="monthlyCostStat">0 zł</strong></div>
  <div class="stat"><span>Dzień działalności</span><strong id="dayStat">1</strong></div>
 </section>
 
@@ -917,8 +917,8 @@ function updateHeading(){
 function updateTop(){
  document.getElementById("moneyStat").textContent=money(S.money);
  document.getElementById("repStat").textContent=num(S.rep);
- document.getElementById("capacityStat").textContent=
- num(effectiveWarehouseCapacity())+" / "+num(S.warehouse.capacity)+" miejsc";
+ document.getElementById("monthlyCostStat").textContent=
+ money(monthlyCosts());
  document.getElementById("dayStat").textContent=S.day;
 
  document.getElementById("clockTime").textContent=

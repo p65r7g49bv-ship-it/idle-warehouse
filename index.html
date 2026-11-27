@@ -2257,14 +2257,12 @@ function makeSpecialOffer(){
 }
 
 
+
 function generateOffers(){
  S.offers=[];
 
  // Zawsze jedna oferta długoterminowego wynajmu.
  S.offers.push(makeStorageRentalOffer());
-
- // Cztery miejsca na kontrakty transportowe.
- const transportOfferLimit=4;
 
  if(maxLoad()===0)return;
 
@@ -2276,21 +2274,24 @@ function generateOffers(){
   maxLoad()>=5000&&
   S.warehouse.level>=3;
 
- const specialChance=Math.random()<.70;
+ // Domyślnie cztery zwykłe kontrakty.
+ let targetTransportOffers=4;
 
- // Kontrakt specjalny zajmuje jedno z czterech miejsc transportowych.
- if(specialEligible&&specialChance){
+ // 50% szans na jeden kontrakt specjalny.
+ if(specialEligible&&Math.random()<0.50){
   const special=makeSpecialOffer();
 
   if(special&&special.storage<=S.warehouse.capacity*2){
    S.offers.push(special);
+   targetTransportOffers=5;
   }
  }
 
+ // Uzupełnienie pozostałych miejsc zwykłymi kontraktami.
  for(
   let attempt=0;
-  attempt<transportOfferLimit*30&&
-  S.offers.length<transportOfferLimit+1;
+  attempt<targetTransportOffers*30&&
+  S.offers.length<targetTransportOffers+1;
   attempt++
  ){
   if(!availableTiers.length)break;

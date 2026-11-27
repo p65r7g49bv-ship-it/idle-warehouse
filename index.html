@@ -1321,6 +1321,7 @@ function staffView(){
 /* KONTRAKTY — NOWY SYSTEM PALETOWY */
 
 
+
 function contractsView(){
  const current=S.contracts.filter(c=>!c.done&&!c.failed);
  const finished=S.contracts.filter(c=>c.done||c.failed);
@@ -1426,6 +1427,11 @@ const finishedCards=finished.map(c=>{
   <button onclick="generateOffers();render()">Odśwież oferty</button>
  </div>
 
+ <h3 style="margin-top:20px">📋 Aktywne kontrakty (${current.length})</h3>
+ <div class="grid">
+  ${activeCards||'<div class="empty">Brak aktywnych kontraktów.</div>'}
+ </div>
+
  <h3 style="margin-top:18px">Dostępne oferty</h3>
  <div class="grid">${S.offers.map(o=>{
   if(o.type==="storage"){
@@ -1462,11 +1468,6 @@ return `<div class="card ${o.special?"special-contract":""}">
    <button onclick="acceptContract(${o.id})" ${activeContracts().length>=contractLimit()?"disabled":""}>Przyjmij kontrakt</button>
   </div>`;
  }).join("")||'<div class="empty">Brak dostępnych ofert. Rozbuduj flotę lub magazyn.</div>'}</div>
-
- <h3 style="margin-top:20px">📋 Aktywne kontrakty (${current.length})</h3>
- <div class="grid">
-  ${activeCards||'<div class="empty">Brak aktywnych kontraktów.</div>'}
- </div>
 
  <h3 style="margin-top:22px">📁 Historia kontraktów (${finished.length})</h3>
  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">

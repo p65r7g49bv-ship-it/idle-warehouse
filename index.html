@@ -2239,16 +2239,15 @@ function makeSpecialOffer(){
  };
 }
 
+
 function generateOffers(){
  S.offers=[];
 
- const active=activeContracts().length;
- const count=Math.min(3,contractLimit()-active);
-
- if(count<=0)return;
-
- // Każde odświeżenie rozpoczyna się od jednej oferty wynajmu.
+ // Zawsze jedna oferta długoterminowego wynajmu.
  S.offers.push(makeStorageRentalOffer());
+
+ // Cztery miejsca na kontrakty transportowe.
+ const transportOfferLimit=4;
 
  if(maxLoad()===0)return;
 
@@ -2262,7 +2261,8 @@ function generateOffers(){
 
  const specialChance=Math.random()<.70;
 
- if(specialEligible&&specialChance&&S.offers.length<count){
+ // Kontrakt specjalny zajmuje jedno z czterech miejsc transportowych.
+ if(specialEligible&&specialChance){
   const special=makeSpecialOffer();
 
   if(special&&special.storage<=S.warehouse.capacity*2){
@@ -2270,7 +2270,12 @@ function generateOffers(){
   }
  }
 
- for(let attempt=0;attempt<count*20&&S.offers.length<count;attempt++){
+ for(
+  let attempt=0;
+  attempt<transportOfferLimit*30&&
+  S.offers.length<transportOfferLimit+1;
+  attempt++
+ ){
   if(!availableTiers.length)break;
 
   const tier=pick(availableTiers);
@@ -2282,6 +2287,7 @@ function generateOffers(){
   S.offers.push(offer);
  }
 }
+
 
 function acceptContract(id){
  const o=S.offers.find(x=>x.id===id);

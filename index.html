@@ -1682,7 +1682,10 @@ function monthlyCostBreakdown(){
 
  const cleaningCompany=S.warehouse.cleaningCompany?10000:0;
 
- const administration=S.employees.length*1000;
+ const administration=
+ 15000+
+ S.employees.length*1500+
+ Math.max(0,S.shiftCount-1)*5000;
  const gross=wages+employerCosts+rent+electricity+water+clothing+land+maintenance+facilities+cleaningCompany+administration;
  const total=Math.round(gross);
 

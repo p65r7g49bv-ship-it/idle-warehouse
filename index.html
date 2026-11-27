@@ -826,6 +826,28 @@ function employeeShiftDistribution(){
   (_,index)=>perShift+(index<extra?1:0)
  );
 }
+ function employeesForShift(shift=getShift()){
+ const distribution=employeeShiftDistribution();
+ const index=clamp(Number(shift)||1,1,distribution.length)-1;
+
+ const start=distribution
+  .slice(0,index)
+  .reduce((sum,count)=>sum+count,0);
+
+ return S.employees.slice(
+  start,
+  start+(distribution[index]||0)
+ );
+}
+
+function employeeShiftProductivity(shift){
+ const assigned=employeesForShift(shift);
+ const availableForklifts=forklifts().length;
+
+ return assigned
+  .slice(0,availableForklifts)
+  .reduce((total,e)=>total+employeePalletRate(e),0);
+}
 function formatTime(hours){
  const total=Math.floor(hours*60);
  return String(Math.floor(total/60)).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
@@ -1267,21 +1289,36 @@ function fleetView(){
  `;
 }
 
+
 function staffView(){
  const shiftDistribution=employeeShiftDistribution();
+ const shiftProductivities=shiftDistribution.map(
+  (_,index)=>employeeShiftProductivity(index+1)
+ );
 
  return `<h2>👷 Pracownicy</h2><div class="card"><h3>Zespół magazynu</h3>
  <p>Łączna liczba pracowników: <b>${S.employees.length}</b></p>
- <p>Obsada zmian: <b>${shiftDistribution.map((count,index)=>(index+1)+". zmiana: "+count).join(" · ")}</b></p>
- <p class="muted">Do obsługi każdej zmiany potrzebny jest odpowiedni zespół operatorów.</p>
+
+ ${shiftDistribution.map((count,index)=>`
+  <p>
+   ${index+1}. zmiana:
+   <b>${count} ${count===1?"osoba":"osoby"}</b>
+   · Wydajność:
+   <b class="good">${num(shiftProductivities[index])} palet/h</b>
+  </p>
+ `).join("")}
+
+ <p class="muted">Wydajność uwzględnia doświadczenie pracowników oraz liczbę sprawnych wózków. Pracownicy są przypisani na stałe do swoich zmian.</p>
  <p>Bonus do zdobywania doświadczenia: <b class="good">+${employeeExperienceBonusText()}%</b></p>
  <button onclick="hireEmployee()">Zatrudnij pracownika · 1500 zł</button></div>
+
  <div class="grid" style="margin-top:12px">${S.employees.map(e=>{
   const basicReady=!e.trainedBasic&&S.money>=1800;
   const advancedReady=e.trainedBasic&&!e.trainedAdvanced&&S.money>=3200;
   const basicText=e.trainedBasic?"Szkolenie już ukończone":S.money<1800?"Wymagania: 1 800 zł":"Wymagania: brak wcześniejszego szkolenia";
   const advancedText=e.trainedAdvanced?"Szkolenie już ukończone":!e.trainedBasic?"Wymagania: ukończone szkolenie podstawowe i 3 200 zł":S.money<3200?"Wymagania: 3 200 zł":"Wymagania: szkolenie podstawowe ukończone";
   let promotionReady=false,promotionText="";
+
   if(e.role==="Magazynier"){
    promotionReady=e.hours>=200&&e.trainedBasic;
    promotionText=promotionReady?"Wymagania spełnione":"Wymagania: 200 godzin stażu i szkolenie podstawowe";
@@ -1291,9 +1328,24 @@ function staffView(){
   }else{
    promotionText="Osiągnięto najwyższy poziom stanowiska";
   }
+
   const skill=clamp(Number(e.skill)||0,0,100);
+  const employeeShift=employeeShiftDistribution();
+  let assignedShift=1;
+  let employeeIndex=S.employees.findIndex(worker=>worker.id===e.id);
+  let shiftEnd=0;
+
+  for(let i=0;i<employeeShift.length;i++){
+   shiftEnd+=employeeShift[i];
+   if(employeeIndex<shiftEnd){
+    assignedShift=i+1;
+    break;
+   }
+  }
+
   return `<div class="card"><div class="vehicle"><img class="worker-image" src="${IMG.WORKER}" alt="Pracownik">
  <div><h3>${escapeHTML(e.name)}</h3><div class="small">${escapeHTML(e.role)}</div></div></div>
+ <p>Przypisana zmiana: <b>${assignedShift}</b></p>
  <p>Staż na wózkach: <b>${num(e.hours)} h</b></p>
  <p>Wydajność: <b>${num(employeeProductivityPercent(e))}%</b> · ${num(employeePalletRate(e))} palet/h</p>
  <p>Doświadczenie: <b>${num(skill)} / 100 pkt</b></p>
@@ -1317,6 +1369,7 @@ function staffView(){
  </div></div>`;
  }).join("")}</div>`;
 }
+
 
 /* KONTRAKTY — NOWY SYSTEM PALETOWY */
 
@@ -2681,7 +2734,7 @@ function hourlyTick(){
  S.gameHour++;
  S.dayHours++;
 
-const workers=S.employees;
+const workers=employeesForShift(getShift());
 const usable=forklifts();
 
 const palletRepairActive=

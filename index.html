@@ -814,7 +814,18 @@ function getCurrentHour(){
 function getShiftEndHour(){
  return (shiftStartHour()+getShift()*8)%24;
 }
+function employeeShiftDistribution(){
+ const shifts=Math.max(1,Math.min(3,Number(S.shiftCount)||1));
+ const total=S.employees.length;
 
+ const perShift=Math.floor(total/shifts);
+ const extra=total%shifts;
+
+ return Array.from(
+  {length:shifts},
+  (_,index)=>perShift+(index<extra?1:0)
+ );
+}
 function formatTime(hours){
  const total=Math.floor(hours*60);
  return String(Math.floor(total/60)).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
@@ -1257,8 +1268,11 @@ function fleetView(){
 }
 
 function staffView(){
+ const shiftDistribution=employeeShiftDistribution();
+
  return `<h2>👷 Pracownicy</h2><div class="card"><h3>Zespół magazynu</h3>
  <p>Łączna liczba pracowników: <b>${S.employees.length}</b></p>
+ <p>Obsada zmian: <b>${shiftDistribution.map((count,index)=>(index+1)+". zmiana: "+count).join(" · ")}</b></p>
  <p class="muted">Do obsługi każdej zmiany potrzebny jest odpowiedni zespół operatorów.</p>
  <p>Bonus do zdobywania doświadczenia: <b class="good">+${employeeExperienceBonusText()}%</b></p>
  <button onclick="hireEmployee()">Zatrudnij pracownika · 1500 zł</button></div>

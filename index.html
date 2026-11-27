@@ -778,7 +778,23 @@ function staffedForklifts(){
 function unstaffedForklifts(){
  return Math.max(0,forklifts().length-staffedForklifts());
 }
+function employeePalletRate(e){
+ let base=60;
 
+ if(e.role==="Pracownik transportu wewnętrznego"){
+  base=80;
+ }else if(e.role==="Starszy pracownik transportu wewnętrznego"){
+  base=90;
+ }
+
+ const experienceBonus=Number(e.hours)>=500?10:0;
+
+ return (base+experienceBonus)/10;
+}
+
+function employeeProductivityPercent(e){
+ return employeePalletRate(e)*10;
+}
 
 function shiftLength(){return 8}
 function shiftStartHour(){return 6}
@@ -1265,6 +1281,7 @@ function staffView(){
   return `<div class="card"><div class="vehicle"><img class="worker-image" src="${IMG.WORKER}" alt="Pracownik">
  <div><h3>${escapeHTML(e.name)}</h3><div class="small">${escapeHTML(e.role)}</div></div></div>
  <p>Staż na wózkach: <b>${num(e.hours)} h</b></p>
+ <p>Wydajność: <b>${num(employeeProductivityPercent(e))}%</b> · ${num(employeePalletRate(e))} palet/h</p>
  <p>Doświadczenie: <b>${num(skill)} / 100 pkt</b></p>
  <div class="experience-progress"><div style="width:${skill}%"></div></div>
  <p class="small">${skill>=100?"Maksymalny poziom doświadczenia": "Do maksymalnego poziomu pozostało: "+num(100-skill)+" pkt"}</p>
@@ -2648,6 +2665,69 @@ function hourlyTick(){
  S.gameHour++;
  S.dayHours++;
 
+const workers=S.employees;
+const usable=forklifts();
+
+const palletRepairActive=
+ S.palletRepairWorkerId!==null&&
+ S.gameHour<=Number(S.palletRepairUntilHour||0);
+
+let activeWorkers=palletRepairActive
+ ?workers.filter(e=>e.id!==S.palletRepairWorkerId)
+ :workers;
+
+if(
+ palletRepairActive&&
+ S.gameHour>=Number(S.palletRepairUntilHour||0)
+){
+ S.palletRepairUntilHour=0;
+ S.palletRepairWorkerId=null;
+}
+
+if(
+ Number(S.staffReductionUntilHour||0)>0&&
+ S.gameHour<=Number(S.staffReductionUntilHour)
+){
+ activeWorkers=activeWorkers.slice(
+  0,
+  Math.max(0,activeWorkers.length-1)
+ );
+}
+
+const operatorCount=Math.min(activeWorkers.length,usable.length);
+
+const staffedOperators=activeWorkers
+ .slice(0,operatorCount)
+ .map((worker,index)=>({
+  worker,
+  vehicle:usable[index]
+ }));
+
+const transportContracts=activeContracts()
+ .filter(c=>c.type!=="storage");
+
+const contractRates=new Map();
+
+transportContracts.forEach(contract=>{
+ let rate=0;
+
+ staffedOperators.forEach(operator=>{
+  const vehicleLoad=MODELS[operator.vehicle.model]?.load||0;
+
+  if(vehicleLoad<Number(contract.load||0))return;
+
+  const eligibleCount=transportContracts.filter(other=>
+   vehicleLoad>=Number(other.load||0)
+  ).length;
+
+  if(eligibleCount>0){
+   rate+=employeePalletRate(operator.worker)/eligibleCount;
+  }
+ });
+
+ contractRates.set(contract.id,rate);
+});
+
  activeContracts().forEach(c=>{
 
   // KONTRAKT DŁUGOTERMINOWEGO WYNAJMU
@@ -2676,46 +2756,41 @@ function hourlyTick(){
   c.totalPallets=total;
 
   c.receivedPallets=clamp(
-   Math.round(Number(c.receivedPallets)||0),
+   Number(c.receivedPallets)||0,
    0,
    total
   );
 
   c.shippedPallets=clamp(
-   Math.round(Number(c.shippedPallets)||0),
+   Number(c.shippedPallets)||0,
    0,
    c.receivedPallets
   );
 
-  const capable=forklifts().some(v=>
-   (MODELS[v.model]?.load||0)>=c.load
-  );
+  const hourlyCapacity=contractRates.get(c.id)||0;
 
-  if(capable){
-   const multiplier=1;
-   const receiveRate=Math.max(1,Math.round(c.p*1.5*multiplier));
+  if(hourlyCapacity>0){
    const availableStorage=freePalletPlaces();
 
    const receivedNow=Math.min(
-    receiveRate,
+    hourlyCapacity,
     total-c.receivedPallets,
     availableStorage
    );
 
    c.receivedPallets+=receivedNow;
 
-  if(S.gameHour>Number(S.shipmentHoldUntilHour||0)){
- const shipRate=Math.max(1,Math.round(c.p*multiplier));
- const available=c.receivedPallets-c.shippedPallets;
+   if(S.gameHour>Number(c.shipmentHoldUntilHour||0)){
+    const available=c.receivedPallets-c.shippedPallets;
 
- const shippedNow=Math.min(
-  shipRate,
-  available,
-  total-c.shippedPallets
- );
+    const shippedNow=Math.min(
+     hourlyCapacity,
+     available,
+     total-c.shippedPallets
+    );
 
- c.shippedPallets+=shippedNow;
-}
+    c.shippedPallets+=shippedNow;
+   }
   }
 
   if(c.shippedPallets>=total&&!c.done){
@@ -2768,37 +2843,6 @@ function hourlyTick(){
   }
  });
 
-
-const workers=S.employees;
-const usable=forklifts();
-
-const palletRepairActive=
- S.palletRepairWorkerId!==null&&
- S.gameHour<=Number(S.palletRepairUntilHour||0);
-
-let activeWorkers=palletRepairActive
- ?workers.filter(e=>e.id!==S.palletRepairWorkerId)
- :workers;
-
-if(
- palletRepairActive&&
- S.gameHour>=Number(S.palletRepairUntilHour||0)
-){
- S.palletRepairUntilHour=0;
- S.palletRepairWorkerId=null;
-}
-
-if(
- Number(S.staffReductionUntilHour||0)>0&&
- S.gameHour<=Number(S.staffReductionUntilHour)
-){
- activeWorkers=activeWorkers.slice(
-  0,
-  Math.max(0,activeWorkers.length-1)
- );
-}
-
-const operatorCount=Math.min(activeWorkers.length,usable.length);
 const avgSkill=activeWorkers.length
  ?activeWorkers.reduce((a,e)=>a+e.skill,0)/activeWorkers.length
  :0;
